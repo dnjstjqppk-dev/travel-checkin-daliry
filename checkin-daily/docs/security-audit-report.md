@@ -41,7 +41,7 @@ The remaining advisories are in transitive framework/build dependencies. `npm au
 
 ## Application security changes
 
-- Require `ADMIN_USERNAME`, a bcrypt `ADMIN_PASSWORD_HASH`, and a 32-byte-or-longer `SESSION_SECRET`; fail startup when missing or invalid.
+- Store administrator usernames, roles, active state, and bcrypt password hashes in SQLite; require a 32-byte-or-longer `SESSION_SECRET`, and fail closed when the database has no administrator account.
 - Protect every `/api/admin/*` route with signed, expiring admin sessions and enforce same-origin checks on state-changing admin requests.
 - Use `HttpOnly`, `SameSite=Strict`, eight-hour session cookies, secure by default, and an exact-origin CORS allowlist.
 - Add login throttling, request body limits, security response headers, an isolated admin login route, and a route guard.

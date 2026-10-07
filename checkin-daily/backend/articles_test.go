@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -29,7 +30,16 @@ func TestPublishedArticlesAreVisibleInPublicNewsEndpoints(t *testing.T) {
 		}
 		db = previousDB
 	})
-	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}); err != nil {
+	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}, &AdminAccount{}); err != nil {
+		t.Fatal(err)
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte("test-admin-password"), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&AdminAccount{
+		Username: "editor", PasswordHash: string(passwordHash), Role: "admin", IsActive: true,
+	}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.Create(&Category{Name: "항공", Slug: "airline"}).Error; err != nil {
@@ -37,7 +47,6 @@ func TestPublishedArticlesAreVisibleInPublicNewsEndpoints(t *testing.T) {
 	}
 
 	auth := newAdminAuth(authConfig{
-		username:       "editor",
 		sessionSecret:  []byte(strings.Repeat("s", 32)),
 		allowedOrigins: map[string]struct{}{"https://news.example.com": {}},
 	})

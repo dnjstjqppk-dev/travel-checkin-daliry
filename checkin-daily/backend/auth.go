@@ -4,10 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 const (
@@ -29,11 +31,12 @@ const (
 )
 
 type authConfig struct {
-	username       string
-	passwordHash   []byte
-	sessionSecret  []byte
-	cookieSecure   bool
-	allowedOrigins map[string]struct{}
+	bootstrapUsername     string
+	bootstrapPasswordHash []byte
+	sessionSecret         []byte
+	dummyPasswordHash     []byte
+	cookieSecure          bool
+	allowedOrigins        map[string]struct{}
 }
 
 type sessionClaims struct {
@@ -63,15 +66,19 @@ func loadAuthConfig() (authConfig, error) {
 	username := strings.TrimSpace(os.Getenv("ADMIN_USERNAME"))
 	passwordHash := strings.TrimSpace(os.Getenv("ADMIN_PASSWORD_HASH"))
 	sessionSecret := os.Getenv("SESSION_SECRET")
-	if username == "" || passwordHash == "" || sessionSecret == "" {
-		return authConfig{}, errors.New("ADMIN_USERNAME, ADMIN_PASSWORD_HASH, and SESSION_SECRET must be configured")
-	}
-	if len(sessionSecret) < 32 {
+	if sessionSecret == "" || len(sessionSecret) < 32 {
 		return authConfig{}, errors.New("SESSION_SECRET must be at least 32 bytes")
 	}
-	cost, err := bcrypt.Cost([]byte(passwordHash))
-	if err != nil || cost < bcrypt.DefaultCost {
-		return authConfig{}, errors.New("ADMIN_PASSWORD_HASH must be a valid bcrypt hash")
+	if (username == "") != (passwordHash == "") {
+		return authConfig{}, errors.New("ADMIN_USERNAME and ADMIN_PASSWORD_HASH must both be configured for initial database bootstrap")
+	}
+	var bootstrapHash []byte
+	if passwordHash != "" {
+		cost, err := bcrypt.Cost([]byte(passwordHash))
+		if err != nil || cost < bcrypt.DefaultCost {
+			return authConfig{}, errors.New("ADMIN_PASSWORD_HASH must be a valid bcrypt hash")
+		}
+		bootstrapHash = []byte(passwordHash)
 	}
 	cookieSecure := true
 	if value, ok := os.LookupEnv("COOKIE_SECURE"); ok {
@@ -102,13 +109,42 @@ func loadAuthConfig() (authConfig, error) {
 	if len(origins) == 0 {
 		return authConfig{}, errors.New("CORS_ALLOWED_ORIGINS must contain at least one origin")
 	}
+	dummyPasswordHash, err := bcrypt.GenerateFromPassword([]byte("invalid-admin-password"), bcrypt.DefaultCost)
+	if err != nil {
+		return authConfig{}, errors.New("could not initialize password verification")
+	}
 	return authConfig{
-		username:       username,
-		passwordHash:   []byte(passwordHash),
-		sessionSecret:  []byte(sessionSecret),
-		cookieSecure:   cookieSecure,
-		allowedOrigins: origins,
+		bootstrapUsername:     strings.ToLower(username),
+		bootstrapPasswordHash: bootstrapHash,
+		sessionSecret:         []byte(sessionSecret),
+		dummyPasswordHash:     dummyPasswordHash,
+		cookieSecure:          cookieSecure,
+		allowedOrigins:        origins,
 	}, nil
+}
+
+func bootstrapAdminAccount(config authConfig) error {
+	var count int64
+	if err := db.Model(&AdminAccount{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("admin accounts could not be checked: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+	if config.bootstrapUsername == "" || len(config.bootstrapPasswordHash) == 0 {
+		return errors.New("admin database is empty; run the create-admin command before starting the backend")
+	}
+	account := AdminAccount{
+		Username:     config.bootstrapUsername,
+		PasswordHash: string(config.bootstrapPasswordHash),
+		Role:         "admin",
+		IsActive:     true,
+	}
+	if err := db.Create(&account).Error; err != nil {
+		return fmt.Errorf("initial admin account could not be created: %w", err)
+	}
+	log.Printf("bootstrapped the initial admin account %q in SQLite", account.Username)
+	return nil
 }
 
 func newAdminAuth(config authConfig) *adminAuth {
@@ -135,21 +171,31 @@ func (auth *adminAuth) login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required"})
 		return
 	}
-	usernameMatches := subtle.ConstantTimeCompare([]byte(input.Username), []byte(auth.config.username)) == 1
-	passwordMatches := bcrypt.CompareHashAndPassword(auth.config.passwordHash, []byte(input.Password)) == nil
-	if !usernameMatches || !passwordMatches {
+	var account AdminAccount
+	err := db.Where("LOWER(username) = ?", strings.ToLower(strings.TrimSpace(input.Username))).
+		Where("role = ? AND is_active = ?", "admin", true).First(&account).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "admin account could not be loaded"})
+		return
+	}
+	passwordHash := auth.config.dummyPasswordHash
+	if err == nil {
+		passwordHash = []byte(account.PasswordHash)
+	}
+	passwordMatches := bcrypt.CompareHashAndPassword(passwordHash, []byte(input.Password)) == nil
+	if errors.Is(err, gorm.ErrRecordNotFound) || !passwordMatches {
 		auth.recordFailedLogin(clientIP, time.Now())
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 	auth.clearLoginAttempts(clientIP)
-	token, err := auth.createSession(auth.config.username, time.Now())
+	token, err := auth.createSession(account.Username, time.Now())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create an admin session"})
 		return
 	}
 	http.SetCookie(c.Writer, auth.sessionCookie(token, int(adminSessionTTL.Seconds())))
-	c.JSON(http.StatusOK, gin.H{"username": auth.config.username, "role": "admin", "expiresIn": int(adminSessionTTL.Seconds())})
+	c.JSON(http.StatusOK, gin.H{"username": account.Username, "role": account.Role, "expiresIn": int(adminSessionTTL.Seconds())})
 }
 
 func (auth *adminAuth) requireAdmin(c *gin.Context) {
@@ -159,14 +205,29 @@ func (auth *adminAuth) requireAdmin(c *gin.Context) {
 		return
 	}
 	claims, err := auth.parseSession(cookie.Value, time.Now())
-	if err != nil || claims.Role != "admin" ||
-		subtle.ConstantTimeCompare([]byte(claims.Username), []byte(auth.config.username)) != 1 {
+	if err != nil || claims.Role != "admin" {
 		http.SetCookie(c.Writer, auth.sessionCookie("", -1))
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 		return
 	}
-	c.Set("admin_username", claims.Username)
-	c.Set("admin_role", claims.Role)
+	var account AdminAccount
+	accountErr := db.Where("username = ? AND role = ? AND is_active = ?", claims.Username, "admin", true).First(&account).Error
+	if errors.Is(accountErr, gorm.ErrRecordNotFound) {
+		http.SetCookie(c.Writer, auth.sessionCookie("", -1))
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
+	}
+	if accountErr != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "admin account could not be verified"})
+		return
+	}
+	if claims.Role != account.Role {
+		http.SetCookie(c.Writer, auth.sessionCookie("", -1))
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
+	}
+	c.Set("admin_username", account.Username)
+	c.Set("admin_role", account.Role)
 	c.Next()
 }
 

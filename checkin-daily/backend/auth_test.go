@@ -31,7 +31,7 @@ func TestAdminAPIRequiresAuthenticatedAdminAndSameOriginWrites(t *testing.T) {
 		}
 		db = previousDB
 	})
-	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}); err != nil {
+	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}, &AdminAccount{}); err != nil {
 		t.Fatal(err)
 	}
 	password := "test-admin-password"
@@ -39,9 +39,12 @@ func TestAdminAPIRequiresAuthenticatedAdminAndSameOriginWrites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := db.Create(&AdminAccount{
+		Username: "editor@example.com", PasswordHash: string(hash), Role: "admin", IsActive: true,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
 	auth := newAdminAuth(authConfig{
-		username:       "editor@example.com",
-		passwordHash:   hash,
 		sessionSecret:  []byte(strings.Repeat("s", 32)),
 		allowedOrigins: map[string]struct{}{"https://news.example.com": {}},
 	})
@@ -121,11 +124,19 @@ func TestAdminAPIRequiresAuthenticatedAdminAndSameOriginWrites(t *testing.T) {
 	if allowedWriteResponse.Code != http.StatusCreated {
 		t.Fatalf("expected authenticated same-origin admin write, got %d: %s", allowedWriteResponse.Code, allowedWriteResponse.Body.String())
 	}
+
+	if err := db.Model(&AdminAccount{}).Where("username = ?", "editor@example.com").Update("is_active", false).Error; err != nil {
+		t.Fatal(err)
+	}
+	revokedResponse := httptest.NewRecorder()
+	router.ServeHTTP(revokedResponse, sessionRequest)
+	if revokedResponse.Code != http.StatusUnauthorized {
+		t.Fatalf("expected disabled database account to lose access immediately, got %d", revokedResponse.Code)
+	}
 }
 
 func TestAdminSessionRejectsTamperingExpiryAndRoleEscalation(t *testing.T) {
 	auth := newAdminAuth(authConfig{
-		username:       "editor",
 		sessionSecret:  []byte(strings.Repeat("s", 32)),
 		allowedOrigins: map[string]struct{}{"https://news.example.com": {}},
 	})
@@ -214,6 +225,74 @@ func TestLoadAuthConfigFailsClosedAndRequiresStrongSettings(t *testing.T) {
 	}
 	if _, ok := config.allowedOrigins["https://news.example.com"]; !ok {
 		t.Fatal("expected configured exact origin to be allowed")
+	}
+}
+
+func TestLoadAuthConfigAllowsDBAccountsWithoutBootstrapCredentials(t *testing.T) {
+	t.Setenv("ADMIN_USERNAME", "")
+	t.Setenv("ADMIN_PASSWORD_HASH", "")
+	t.Setenv("SESSION_SECRET", strings.Repeat("s", 32))
+	t.Setenv("CORS_ALLOWED_ORIGINS", "https://news.example.com")
+
+	config, err := loadAuthConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.bootstrapUsername != "" || len(config.bootstrapPasswordHash) != 0 {
+		t.Fatal("expected existing DB accounts to need no bootstrap environment credentials")
+	}
+	if len(config.dummyPasswordHash) == 0 {
+		t.Fatal("expected constant-work password verification hash to be initialized")
+	}
+}
+
+func TestBootstrapAdminAccountStoresOnlyBcryptHashAndIsIdempotent(t *testing.T) {
+	previousDB := db
+	testDB, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s/admin-bootstrap.db", t.TempDir())), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	db = testDB
+	t.Cleanup(func() {
+		sqlDB, err := db.DB()
+		if err != nil {
+			t.Errorf("failed to get test database connection: %v", err)
+		} else if err := sqlDB.Close(); err != nil {
+			t.Errorf("failed to close test database connection: %v", err)
+		}
+		db = previousDB
+	})
+	if err := db.AutoMigrate(&AdminAccount{}); err != nil {
+		t.Fatal(err)
+	}
+	password := "first-admin-password"
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := authConfig{bootstrapUsername: "editor@example.com", bootstrapPasswordHash: hash}
+	if err := bootstrapAdminAccount(config); err != nil {
+		t.Fatal(err)
+	}
+	var account AdminAccount
+	if err := db.First(&account, "username = ?", config.bootstrapUsername).Error; err != nil {
+		t.Fatal(err)
+	}
+	if account.Role != "admin" || !account.IsActive || account.PasswordHash == password {
+		t.Fatalf("admin account was not safely persisted: %#v", account)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(account.PasswordHash), []byte(password)); err != nil {
+		t.Fatalf("stored password hash did not verify: %v", err)
+	}
+	if err := bootstrapAdminAccount(authConfig{}); err != nil {
+		t.Fatal(err)
+	}
+	var count int64
+	if err := db.Model(&AdminAccount{}).Count(&count).Error; err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("expected bootstrap to preserve the existing account, found %d accounts", count)
 	}
 }
 

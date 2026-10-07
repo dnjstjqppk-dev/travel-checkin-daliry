@@ -68,6 +68,16 @@ type AdPlacement struct {
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
 
+type AdminAccount struct {
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	Username     string    `json:"username" gorm:"uniqueIndex;size:254;not null"`
+	PasswordHash string    `json:"-" gorm:"size:100;not null"`
+	Role         string    `json:"role" gorm:"size:20;not null;default:admin"`
+	IsActive     bool      `json:"isActive" gorm:"not null;default:true"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
 type ArticleInput struct {
 	Title      string   `json:"title" binding:"required"`
 	Slug       string   `json:"slug" binding:"required"`
@@ -123,8 +133,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}); err != nil {
+	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}, &AdminAccount{}); err != nil {
 		panic(err)
+	}
+	if err := bootstrapAdminAccount(authConfig); err != nil {
+		log.Fatal(err)
 	}
 	if err := migrateCategorySlugs(); err != nil {
 		panic(err)
