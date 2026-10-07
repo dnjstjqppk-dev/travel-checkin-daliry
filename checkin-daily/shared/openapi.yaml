@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: Check-in Daily API
+  version: 0.1.0
+  description: Public travel journalism API and development CMS endpoints.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Public
+  - name: Admin
+paths:
+  /health:
+    get:
+      tags: [Public]
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+  /api/categories:
+    get:
+      tags: [Public]
+      summary: List article categories
+      responses:
+        '200':
+          description: Available categories
+  /api/admin/categories:
+    get:
+      tags: [Admin]
+      summary: List article categories
+      responses:
+        '200': { description: Category list }
+    post:
+      tags: [Admin]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '201': { description: Category created }
+        '409': { description: Slug already exists }
+  /api/admin/categories/{id}:
+    put:
+      tags: [Admin]
+      summary: Update a category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryInput' }
+      responses:
+        '200': { description: Category updated }
+        '404': { description: Category not found }
+    delete:
+      tags: [Admin]
+      summary: Delete an unused category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Category deleted }
+        '404': { description: Category not found }
+        '409': { description: Category is assigned to articles }
+  /api/articles:
+    get:
+      tags: [Public]
+      summary: List published articles
+      parameters:
+        - in: query
+          name: category
+          description: Category slug returned by /api/categories
+          schema: { type: string }
+      responses:
+        '200':
+          description: Published articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Article' }
+  /api/articles/{slug}:
+    get:
+      tags: [Public]
+      summary: Read a published article
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Article found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '404': { description: Article not found }
+  /api/admin/articles:
+    get:
+      tags: [Admin]
+      summary: List all articles including drafts
+      responses:
+        '200': { description: All articles }
+    post:
+      tags: [Admin]
+      summary: Create an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArticleInput' }
+      responses:
+        '201': { description: Article created }
+        '400': { description: Invalid input }
+  /api/admin/articles/{id}:
+    put:
+      tags: [Admin]
+      summary: Update an article
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ArticleInput' }
+      responses:
+        '200': { description: Article updated }
+        '404': { description: Article not found }
+    delete:
+      tags: [Admin]
+      summary: Delete an article
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Article deleted }
+        '404': { description: Article not found }
+components:
+  schemas:
+    ArticleInput:
+      type: object
+      required: [title, slug, category, status]
+      properties:
+        title: { type: string, maxLength: 180 }
+        slug: { type: string, maxLength: 200 }
+        summary: { type: string, maxLength: 500 }
+        content: { type: string, description: Markdown source }
+        category: { type: string, description: Category slug from /api/categories }
+        author: { type: string }
+        coverImage: { type: string }
+        status: { type: string, enum: [draft, published] }
+    Article:
+      allOf:
+        - $ref: '#/components/schemas/ArticleInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            publishedAt: { type: [string, 'null'], format: date-time }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    CategoryInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string, maxLength: 60 }
+        slug: { type: string, maxLength: 60 }

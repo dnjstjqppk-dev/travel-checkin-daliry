@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - checkin-data:/data
+    environment:
+      PORT: 8080
+      SQLITE_PATH: /data/checkin-daily.db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      API_INTERNAL_BASE: http://backend:8080
+      NUXT_API_INTERNAL_BASE: http://backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  checkin-data:
