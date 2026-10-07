@@ -2,7 +2,7 @@
 const store = useArticlesStore()
 const router = useRouter()
 const categories = await store.loadCategories(true)
-const form = reactive({ title: '', slug: '', summary: '', content: '', category: categories[0]?.slug || '', author: '체크인데일리 편집팀', coverImage: '', status: 'draft' as 'draft' | 'published', cityIds: [] as string[] })
+const form = reactive({ title: '', slug: '', summary: '', content: '', category: categories[0]?.slug || '', author: '체크인데일리 편집팀', coverImage: '', status: 'published' as 'draft' | 'published', cityIds: [] as string[] })
 const saving = ref(false)
 const error = ref('')
 
@@ -31,7 +31,7 @@ async function submit() {
       <label class="field">카테고리<select v-model="form.category" required><option v-for="category in categories" :key="category.id" :value="category.slug">{{ category.name }}</option></select></label>
       <label class="field full">요약<input v-model="form.summary" maxlength="500"></label>
       <label class="field">작성자<input v-model="form.author"></label>
-      <label class="field">발행 상태<select v-model="form.status"><option value="draft">초안</option><option value="published">발행</option></select></label>
+      <label class="field">발행 상태<select v-model="form.status"><option value="published">발행 (사용자 페이지에 공개)</option><option value="draft">초안 (비공개)</option></select></label>
       <div class="field full"><LocationMultiSelect v-model="form.cityIds" /></div>
       <label class="field full">본문 (Markdown)<textarea v-model="form.content" placeholder="# 소제목&#10;&#10;Markdown으로 기사를 작성하세요."></textarea></label>
       <p v-if="error" class="empty-state">{{ error }}</p>

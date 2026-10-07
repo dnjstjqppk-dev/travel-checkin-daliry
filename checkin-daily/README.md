@@ -88,7 +88,7 @@ flutter run
 - `/flights`, `/hotels`: 카테고리별 기사
 - `/articles/:slug`: Markdown 기사 상세
 - `/admin/dashboard`: 초안 및 발행 기사 관리
-- `/admin/articles/new`, `/admin/articles/:id`: Markdown 작성 및 수정
+- `/admin/articles/new`, `/admin/articles/:id`: Markdown 작성 및 수정. 새 기사는 기본적으로 발행되어 사용자 뉴스 페이지에 공개되며, 초안으로 저장하면 비공개로 유지됩니다.
 - `/admin/locations`: 국가·도시 등록 및 관리
 - `/admin/ads`: AdSense 광고 슬롯 등록, 활성화 및 관리
 - `/admin/login`: 별도 관리자 로그인 (세션 미인증 시 관리자 경로에서 자동 이동)
