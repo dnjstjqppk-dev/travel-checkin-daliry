@@ -1,6 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-02-01',
   devtools: { enabled: true },
+  nitro: { preset: 'cloudflare_module' },
   modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {

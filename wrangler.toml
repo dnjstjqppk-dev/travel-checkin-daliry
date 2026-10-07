@@ -1,0 +1,11 @@
+name = "travel-checkin-daily"
+main = "checkin-daily/frontend/.output/server/index.mjs"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
+
+[build]
+command = "npm ci --prefix checkin-daily/frontend && npm --prefix checkin-daily/frontend run build"
+
+[assets]
+directory = "checkin-daily/frontend/.output/public"
+binding = "ASSETS"

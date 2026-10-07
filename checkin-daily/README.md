@@ -39,6 +39,10 @@ npm run dev
 
 Nuxt 개발 서버는 `http://localhost:3000`에서 열립니다. 기본적으로 Nuxt 서버 API 프록시가 `http://localhost:8080`으로 요청을 전달합니다. 다른 API 주소를 쓸 때는 `API_INTERNAL_BASE` 환경 변수를 지정하세요.
 
+### Cloudflare Workers 배포
+
+Cloudflare Workers 빌드/배포 명령은 저장소 루트에서 `npx wrangler deploy`를 실행합니다. 루트의 `wrangler.toml`이 프론트엔드를 빌드해 Nuxt Worker와 정적 자산을 배포합니다. Cloudflare Workers 환경 변수 `API_INTERNAL_BASE`를 외부에서 접근 가능한 Go API 주소로 설정해야 기사 및 관리자 API가 동작합니다. API 서버는 이 Worker 배포에 포함되지 않습니다.
+
 ### Flutter 앱
 
 Flutter 3.19 이상에서:
