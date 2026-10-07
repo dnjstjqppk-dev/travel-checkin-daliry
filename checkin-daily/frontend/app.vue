@@ -27,7 +27,7 @@ async function submitSearch() {
 
 <template>
   <div class="site-shell">
-    <header class="site-header">
+    <header v-if="route.path !== '/admin/login'" class="site-header">
       <NuxtLink class="wordmark" to="/news" aria-label="체크인데일리 홈">
         <span class="wordmark-mark">C.</span>
         <span>CHECK-IN <b>DAILY</b></span>
@@ -49,7 +49,7 @@ async function submitSearch() {
       <button class="theme-toggle" type="button" :aria-pressed="darkMode" @click="darkMode = !darkMode">{{ darkMode ? '라이트' : '다크' }}</button>
     </header>
     <main><NuxtPage /></main>
-    <footer class="site-footer">
+    <footer v-if="route.path !== '/admin/login'" class="site-footer">
       <NuxtLink class="wordmark footer-mark" to="/news">CHECK-IN <b>DAILY</b></NuxtLink>
       <span>여행의 다음 장면을 먼저 읽습니다.</span>
       <span>© 2025 Check-in Daily</span>

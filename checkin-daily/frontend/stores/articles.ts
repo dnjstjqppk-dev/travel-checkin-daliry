@@ -59,7 +59,8 @@ export type ArticleInput = Omit<Article, 'id' | 'publishedAt' | 'createdAt' | 'c
 
 export const useArticlesStore = defineStore('articles', () => {
   const config = useRuntimeConfig()
-  const apiBase = import.meta.server ? config.apiInternalBase : config.public.apiBase
+  const apiBase = import.meta.server ? '' : config.public.apiBase
+  const apiRequest = useRequestFetch()
   const articles = ref<Article[]>([])
   const current = ref<Article | null>(null)
   const adPlacements = ref<AdPlacement[]>([])
@@ -72,7 +73,7 @@ export const useArticlesStore = defineStore('articles', () => {
     try {
       const path = admin ? '/api/admin/articles' : '/api/articles'
       const filters = typeof categoryOrFilters === 'string' ? { category: categoryOrFilters } : categoryOrFilters
-      const loaded = await $fetch<Article[]>(`${apiBase}${path}`, {
+      const loaded = await apiRequest<Article[]>(`${apiBase}${path}`, {
         query: {
           ...(filters.category ? { category: filters.category } : {}),
           ...(filters.country ? { country: filters.country } : {}),
@@ -93,83 +94,83 @@ export const useArticlesStore = defineStore('articles', () => {
   }
 
   async function loadOne(slug: string) {
-    current.value = await $fetch<Article>(`${apiBase}/api/articles/${slug}`)
+    current.value = await apiRequest<Article>(`${apiBase}/api/articles/${encodeURIComponent(slug)}`)
     return current.value
   }
 
   async function loadById(id: string | number, category: string) {
-    current.value = await $fetch<Article>(`${apiBase}/api/articles/id/${id}`, { query: { category } })
+    current.value = await apiRequest<Article>(`${apiBase}/api/articles/id/${id}`, { query: { category } })
     return current.value
   }
 
   async function save(input: ArticleInput, id?: number) {
     const path = id ? `/api/admin/articles/${id}` : '/api/admin/articles'
-    return await $fetch<Article>(`${apiBase}${path}`, {
+    return await apiRequest<Article>(`${apiBase}${path}`, {
       method: id ? 'PUT' : 'POST',
       body: input,
     })
   }
 
   async function remove(id: number) {
-    await $fetch(`${apiBase}/api/admin/articles/${id}`, { method: 'DELETE' })
+    await apiRequest(`${apiBase}/api/admin/articles/${id}`, { method: 'DELETE' })
     articles.value = articles.value.filter((article) => article.id !== id)
   }
 
   async function loadCategories(admin = false) {
     const path = admin ? '/api/admin/categories' : '/api/categories'
-    return await $fetch<Category[]>(`${apiBase}${path}`)
+    return await apiRequest<Category[]>(`${apiBase}${path}`)
   }
 
   async function saveCategory(input: Omit<Category, 'id'>, id?: number) {
     const path = id ? `/api/admin/categories/${id}` : '/api/admin/categories'
-    return await $fetch<Category>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
+    return await apiRequest<Category>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
   }
 
   async function removeCategory(id: number) {
-    await $fetch(`${apiBase}/api/admin/categories/${id}`, { method: 'DELETE' })
+    await apiRequest(`${apiBase}/api/admin/categories/${id}`, { method: 'DELETE' })
   }
 
   async function loadCountries() {
-    return await $fetch<Country[]>(`${apiBase}/api/countries`)
+    return await apiRequest<Country[]>(`${apiBase}/api/countries`)
   }
 
   async function saveCountry(input: Country, code?: string) {
-    const path = code ? `/api/admin/countries/${code}` : '/api/admin/countries'
-    return await $fetch<Country>(`${apiBase}${path}`, { method: code ? 'PUT' : 'POST', body: input })
+    const path = code ? `/api/admin/countries/${encodeURIComponent(code)}` : '/api/admin/countries'
+    return await apiRequest<Country>(`${apiBase}${path}`, { method: code ? 'PUT' : 'POST', body: input })
   }
 
   async function removeCountry(code: string) {
-    await $fetch(`${apiBase}/api/admin/countries/${code}`, { method: 'DELETE' })
+    await apiRequest(`${apiBase}/api/admin/countries/${encodeURIComponent(code)}`, { method: 'DELETE' })
   }
 
   async function loadCities(countryCode: string, admin = false) {
     const path = admin ? '/api/admin/countries' : '/api/countries'
-    return await $fetch<City[]>(`${apiBase}${path}/${countryCode}/cities`)
+    return await apiRequest<City[]>(`${apiBase}${path}/${encodeURIComponent(countryCode)}/cities`)
   }
 
   async function saveCity(countryCode: string, input: Omit<City, 'countryCode' | 'country'>, id?: string) {
-    const path = id ? `/api/admin/cities/${id}` : `/api/admin/countries/${countryCode}/cities`
-    return await $fetch<City>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
+    const path = id ? `/api/admin/cities/${encodeURIComponent(id)}` : `/api/admin/countries/${encodeURIComponent(countryCode)}/cities`
+    return await apiRequest<City>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
   }
 
   async function removeCity(id: string) {
-    await $fetch(`${apiBase}/api/admin/cities/${id}`, { method: 'DELETE' })
+    await apiRequest(`${apiBase}/api/admin/cities/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
   async function loadAdPlacements(admin = false) {
     const path = admin ? '/api/admin/ads' : '/api/ads'
-    const placements = await $fetch<AdPlacement[]>(`${apiBase}${path}`)
+    const placements = await apiRequest<AdPlacement[]>(`${apiBase}${path}`)
     if (admin) adPlacements.value = placements
     return placements
   }
 
   async function saveAdPlacement(input: AdPlacement, id?: string) {
-    const path = id ? `/api/admin/ads/${id}` : '/api/admin/ads'
-    return await $fetch<AdPlacement>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
+    const path = id ? `/api/admin/ads/${encodeURIComponent(id)}` : '/api/admin/ads'
+    return await apiRequest<AdPlacement>(`${apiBase}${path}`, { method: id ? 'PUT' : 'POST', body: input })
   }
 
   async function removeAdPlacement(id: string) {
-    await $fetch(`${apiBase}/api/admin/ads/${id}`, { method: 'DELETE' })
+    await apiRequest(`${apiBase}/api/admin/ads/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
 
   return {

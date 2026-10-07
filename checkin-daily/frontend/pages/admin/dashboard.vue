@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const store = useArticlesStore()
+const router = useRouter()
 await useAsyncData('admin-articles', () => store.load('', true))
 const deleting = ref<number | null>(null)
 
@@ -8,11 +9,16 @@ async function removeArticle(id: number) {
   deleting.value = id
   try { await store.remove(id) } finally { deleting.value = null }
 }
+
+async function logout() {
+  await $fetch('/api/auth/logout', { method: 'POST' })
+  await router.replace('/admin/login')
+}
 </script>
 
 <template>
   <section class="admin-wrap">
-    <div class="admin-top"><div><p class="eyebrow">EDITOR ROOM / CMS</p><h1>기사 관리</h1></div><div class="admin-shortcuts"><NuxtLink class="button" to="/admin/categories">카테고리 관리</NuxtLink><NuxtLink class="button" to="/admin/locations">국가·도시 관리</NuxtLink><NuxtLink class="button" to="/admin/ads">광고 관리</NuxtLink><NuxtLink class="button button-primary" to="/admin/articles/new">+ 새 기사 작성</NuxtLink></div></div>
+    <div class="admin-top"><div><p class="eyebrow">EDITOR ROOM / CMS</p><h1>기사 관리</h1></div><div class="admin-shortcuts"><NuxtLink class="button" to="/admin/categories">카테고리 관리</NuxtLink><NuxtLink class="button" to="/admin/locations">국가·도시 관리</NuxtLink><NuxtLink class="button" to="/admin/ads">광고 관리</NuxtLink><NuxtLink class="button button-primary" to="/admin/articles/new">+ 새 기사 작성</NuxtLink><button class="button" type="button" @click="logout">로그아웃</button></div></div>
     <p v-if="store.error" class="empty-state">{{ store.error }}</p>
     <p v-else-if="!store.articles.length" class="empty-state">등록된 기사가 없습니다.</p>
     <table v-else class="admin-table"><thead><tr><th>ARTICLE</th><th>CATEGORY</th><th>LOCATIONS</th><th>STATUS</th><th>DATE</th><th>ACTIONS</th></tr></thead><tbody>
