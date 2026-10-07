@@ -1,8 +1,9 @@
 export default defineNuxtConfig({
+  srcDir: '.',
   compatibilityDate: '2025-02-01',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   nitro: { preset: 'cloudflare_module' },
-  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt'],
+  modules: ['@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
     apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.API_INTERNAL_BASE || 'http://localhost:8080',

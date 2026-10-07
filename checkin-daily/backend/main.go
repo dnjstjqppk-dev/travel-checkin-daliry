@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -110,11 +111,14 @@ type AdPlacementInput struct {
 var db *gorm.DB
 
 func main() {
+	authConfig, err := loadAuthConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 	databasePath := os.Getenv("SQLITE_PATH")
 	if databasePath == "" {
 		databasePath = "checkin-daily.db"
 	}
-	var err error
 	db, err = gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
 	if err != nil {
 		panic(err)
@@ -135,55 +139,87 @@ func main() {
 		panic(err)
 	}
 
-	router := gin.Default()
-	router.Use(cors())
-	router.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
-	router.GET("/api/categories", listCategories)
-	router.GET("/api/admin/categories", listCategories)
-	router.POST("/api/admin/categories", createCategory)
-	router.PUT("/api/admin/categories/:id", updateCategory)
-	router.DELETE("/api/admin/categories/:id", deleteCategory)
-	router.GET("/api/countries", listCountries)
-	router.GET("/api/countries/:code/cities", listCities)
-	router.GET("/api/admin/countries", listCountries)
-	router.POST("/api/admin/countries", createCountry)
-	router.PUT("/api/admin/countries/:code", updateCountry)
-	router.DELETE("/api/admin/countries/:code", deleteCountry)
-	router.GET("/api/admin/countries/:code/cities", listCities)
-	router.POST("/api/admin/countries/:code/cities", createCity)
-	router.PUT("/api/admin/cities/:id", updateCity)
-	router.DELETE("/api/admin/cities/:id", deleteCity)
-	router.GET("/api/ads", listAdPlacements(false))
-	router.GET("/api/admin/ads", listAdPlacements(true))
-	router.POST("/api/admin/ads", createAdPlacement)
-	router.PUT("/api/admin/ads/:id", updateAdPlacement)
-	router.DELETE("/api/admin/ads/:id", deleteAdPlacement)
-	router.GET("/api/articles", listArticles(false))
-	router.GET("/api/articles/id/:id", getArticleByID)
-	router.GET("/api/articles/:slug", getArticle(false))
-	router.GET("/api/admin/articles", listArticles(true))
-	router.POST("/api/admin/articles", createArticle)
-	router.PUT("/api/admin/articles/:id", updateArticle)
-	router.DELETE("/api/admin/articles/:id", deleteArticle)
-
+	router := newRouter(newAdminAuth(authConfig))
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 	if err := router.Run(":" + port); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
-func cors() gin.HandlerFunc {
+func newRouter(auth *adminAuth) *gin.Engine {
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery(), securityHeaders(), cors(auth.config.allowedOrigins), limitRequestBody())
+	router.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
+	router.POST("/api/auth/login", auth.login)
+	router.GET("/api/auth/session", auth.requireAdmin, auth.session)
+	router.POST("/api/auth/logout", auth.requireAdmin, auth.requireSameOrigin, auth.logout)
+	router.GET("/api/categories", listCategories)
+	router.GET("/api/countries", listCountries)
+	router.GET("/api/countries/:code/cities", listCities)
+	router.GET("/api/ads", listAdPlacements(false))
+	router.GET("/api/articles", listArticles(false))
+	router.GET("/api/articles/id/:id", getArticleByID)
+	router.GET("/api/articles/:slug", getArticle(false))
+
+	admin := router.Group("/api/admin", auth.requireAdmin)
+	admin.GET("/categories", listCategories)
+	admin.GET("/countries", listCountries)
+	admin.GET("/countries/:code/cities", listCities)
+	admin.GET("/ads", listAdPlacements(true))
+	admin.GET("/articles", listArticles(true))
+
+	adminWrite := router.Group("/api/admin", auth.requireAdmin, auth.requireSameOrigin)
+	adminWrite.POST("/categories", createCategory)
+	adminWrite.PUT("/categories/:id", updateCategory)
+	adminWrite.DELETE("/categories/:id", deleteCategory)
+	adminWrite.POST("/countries", createCountry)
+	adminWrite.PUT("/countries/:code", updateCountry)
+	adminWrite.DELETE("/countries/:code", deleteCountry)
+	adminWrite.POST("/countries/:code/cities", createCity)
+	adminWrite.PUT("/cities/:id", updateCity)
+	adminWrite.DELETE("/cities/:id", deleteCity)
+	adminWrite.POST("/ads", createAdPlacement)
+	adminWrite.PUT("/ads/:id", updateAdPlacement)
+	adminWrite.DELETE("/ads/:id", deleteAdPlacement)
+	adminWrite.POST("/articles", createArticle)
+	adminWrite.PUT("/articles/:id", updateArticle)
+	adminWrite.DELETE("/articles/:id", deleteArticle)
+	return router
+}
+
+func cors(allowedOrigins map[string]struct{}) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		origin := strings.TrimRight(strings.TrimSpace(c.GetHeader("Origin")), "/")
+		if origin != "" {
+			if _, ok := allowedOrigins[origin]; !ok {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Vary", "Origin")
+		}
 		if c.Request.Method == http.MethodOptions {
+			if origin == "" {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+			c.Header("Access-Control-Allow-Headers", "Content-Type")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			c.Header("Access-Control-Max-Age", "600")
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
+		c.Next()
+	}
+}
+
+func limitRequestBody() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 2<<20)
 		c.Next()
 	}
 }

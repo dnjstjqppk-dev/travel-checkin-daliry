@@ -63,7 +63,7 @@ const realtime = computed(() => store.articles.slice(0, 5))
             <NuxtLink v-for="article in group.articles" :key="article.id" :to="`/news/${article.category}/article/${article.id}`">
               <span class="compact-date">{{ article.publishedAt?.slice(5, 10) || '속보' }}</span>
               <strong>{{ article.title }}</strong>
-              <span v-if="article.cities?.length" class="compact-location">{{ article.cities[0].countryCode }} · {{ article.cities[0].nameKo }}</span>
+              <span v-if="article.cities?.length" class="compact-location">{{ article.cities[0]?.countryCode }} · {{ article.cities[0]?.nameKo }}</span>
             </NuxtLink>
           </div>
           <p v-else class="empty-state compact-empty">등록된 뉴스가 없습니다.</p>

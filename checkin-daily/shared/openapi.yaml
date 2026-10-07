@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Check-in Daily API
   version: 0.1.0
-  description: Public travel journalism API and development CMS endpoints.
+  description: Public travel journalism API and authenticated admin CMS endpoints. All /api/admin/* routes require the admin session cookie.
 servers:
   - url: http://localhost:8080
 tags:
@@ -16,6 +16,41 @@ paths:
       responses:
         '200':
           description: Service is healthy
+  /api/auth/login:
+    post:
+      tags: [Admin]
+      summary: Authenticate the configured admin and set a short-lived session cookie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLoginInput' }
+      responses:
+        '200':
+          description: Admin session established
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: HttpOnly, SameSite=Strict session cookie; Secure in production.
+        '400': { description: Invalid login request }
+        '401': { description: Invalid credentials }
+        '403': { description: Origin is not allowed }
+        '429': { description: Login rate limit exceeded }
+  /api/auth/session:
+    get:
+      tags: [Admin]
+      summary: Return the current authenticated admin session
+      responses:
+        '200': { description: Current admin identity and role }
+        '401': { description: Session is missing or expired }
+  /api/auth/logout:
+    post:
+      tags: [Admin]
+      summary: End the current admin session
+      responses:
+        '204': { description: Session cookie cleared }
+        '401': { description: Session is missing or expired }
+        '403': { description: Origin is not allowed }
   /api/categories:
     get:
       tags: [Public]
@@ -359,7 +394,18 @@ paths:
         '204': { description: Placement deleted }
         '404': { description: Placement not found }
 components:
+  securitySchemes:
+    AdminSessionCookie:
+      type: apiKey
+      in: cookie
+      name: checkin_admin_session
   schemas:
+    AdminLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, maxLength: 254 }
+        password: { type: string, maxLength: 1024, format: password }
     ArticleInput:
       allOf:
         - $ref: '#/components/schemas/ArticleFields'
