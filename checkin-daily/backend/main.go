@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -109,7 +110,7 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 		if !includeDrafts {
 			query = query.Where("status = ?", "published")
 		}
-		if category := c.Query("category"); category != "" {
+		if category := normalizeSlug(c.Query("category")); category != "" {
 			query = query.Where("category = ?", category)
 		}
 		var articles []Article
@@ -123,7 +124,7 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 
 func getArticle(includeDrafts bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := db.Where("slug = ?", c.Param("slug"))
+		query := db.Where("slug = ?", normalizeSlug(c.Param("slug")))
 		if !includeDrafts {
 			query = query.Where("status = ?", "published")
 		}
@@ -278,19 +279,33 @@ func deleteCategory(c *gin.Context) {
 }
 
 func categoryExists(slug string) bool {
+	normalized := normalizeSlug(slug)
+	if normalized == "" {
+		return false
+	}
 	var count int64
-	db.Model(&Category{}).Where("slug = ?", slug).Count(&count)
+	db.Model(&Category{}).Where("slug = ?", normalized).Count(&count)
 	return count > 0
 }
 
+var slugPattern = regexp.MustCompile(`[^\p{L}\p{N}]+`)
+
 func normalizeSlug(slug string) string {
-	return strings.Trim(strings.ToLower(strings.ReplaceAll(slug, " ", "-")), "-")
+	normalized := strings.TrimSpace(slug)
+	normalized = strings.ToLower(normalized)
+	normalized = slugPattern.ReplaceAllString(normalized, "-")
+	return strings.Trim(normalized, "-")
 }
 
 func articleFromInput(input ArticleInput) Article {
 	input.Slug = normalizeSlug(input.Slug)
+	input.Title = strings.TrimSpace(input.Title)
+	input.Category = normalizeSlug(input.Category)
+	input.Author = strings.TrimSpace(input.Author)
+	input.CoverImage = strings.TrimSpace(input.CoverImage)
+	input.Status = strings.TrimSpace(input.Status)
 	article := Article{
-		Title: input.Title, Slug: input.Slug, Summary: input.Summary, Content: input.Content,
+		Title: input.Title, Slug: input.Slug, Summary: strings.TrimSpace(input.Summary), Content: input.Content,
 		Category: input.Category, Author: input.Author, CoverImage: input.CoverImage, Status: input.Status,
 	}
 	if input.Status == "published" {
