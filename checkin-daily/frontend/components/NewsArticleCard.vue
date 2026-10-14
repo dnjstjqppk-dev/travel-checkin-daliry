@@ -21,21 +21,168 @@ const categoryNames: Record<string, string> = {
 </script>
 
 <template>
-  <article class="news-card">
-    <NuxtLink :to="`/news/${article.category}/article/${article.id}`">
-      <div class="news-card-art" :class="`category-art-${article.category}`">
+  <article class="news-card bkp-news-card">
+    <NuxtLink :to="`/news/${article.category}/article/${article.id}`" class="bkp-card-link">
+      <div class="bkp-card-thumb" :class="`category-art-${article.category}`">
         <img v-if="hasCoverImage(article)" :src="article.coverImage" :alt="article.title" loading="lazy">
-        <span class="art-label">{{ categoryNames[article.category] || article.category }}</span>
+        <div v-else class="bkp-card-placeholder" />
+        <span class="bkp-card-tag">{{ categoryNames[article.category] || article.category }}</span>
       </div>
-      <div class="news-card-meta">{{ article.publishedAt?.slice(0, 10) || '속보' }}<span v-if="article.viewCount"> · 조회 {{ article.viewCount.toLocaleString('ko-KR') }}</span></div>
-      <h3>{{ article.title }}</h3>
-      <p>{{ article.summary }}</p>
-      <div v-if="article.cities?.length" class="location-tags">
-        <span v-for="city in article.cities" :key="city.id">{{ city.countryCode }} · {{ city.nameKo }}</span>
+      <div class="bkp-card-info">
+        <div class="bkp-card-meta">
+          <span>{{ article.publishedAt?.slice(0, 10) || '최신' }}</span>
+          <span v-if="article.viewCount">· 조회 {{ article.viewCount.toLocaleString('ko-KR') }}</span>
+        </div>
+        <h3 class="bkp-card-headline">{{ article.title }}</h3>
+        <p class="bkp-card-desc">{{ article.summary }}</p>
+        <div v-if="article.cities?.length" class="bkp-card-locations">
+          <span v-for="city in article.cities" :key="city.id" class="bkp-loc-chip">
+            {{ city.countryCode }} · {{ city.nameKo }}
+          </span>
+        </div>
       </div>
     </NuxtLink>
-    <button class="save-button" type="button" @click="savedStore.toggle(article.slug)">
-      {{ savedStore.has(article.slug) ? '저장됨' : '+ 스크랩' }}
-    </button>
+    <div class="bkp-card-action">
+      <button class="bkp-card-save" type="button" @click="savedStore.toggle(article.slug)">
+        {{ savedStore.has(article.slug) ? '★ 저장됨' : '☆ 스크랩' }}
+      </button>
+    </div>
   </article>
 </template>
+
+<style scoped>
+.bkp-news-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+}
+
+.bkp-news-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(6, 13, 129, 0.09);
+  border-color: #CBD5E1;
+}
+
+.bkp-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.bkp-card-thumb {
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  background: #060D81;
+}
+
+.bkp-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.bkp-news-card:hover .bkp-card-thumb img {
+  transform: scale(1.04);
+}
+
+.bkp-card-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #060D81 0%, #1E3A8A 100%);
+}
+
+.bkp-card-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #060D81;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.bkp-card-info {
+  padding: 14px 16px 8px;
+}
+
+.bkp-card-meta {
+  font-size: 11px;
+  color: #6B7280;
+  margin-bottom: 6px;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-card-headline {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #111827;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bkp-news-card:hover .bkp-card-headline {
+  color: #060D81;
+}
+
+.bkp-card-desc {
+  font-size: 13px;
+  color: #4B5563;
+  line-height: 1.6;
+  margin: 0 0 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bkp-card-locations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.bkp-loc-chip {
+  font-size: 10px;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  color: #060D81;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.bkp-card-action {
+  padding: 0 16px 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bkp-card-save {
+  background: transparent;
+  border: 0;
+  color: #060D81;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.bkp-card-save:hover {
+  text-decoration: underline;
+}
+</style>
