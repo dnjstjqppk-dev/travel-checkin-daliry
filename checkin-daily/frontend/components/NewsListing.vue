@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { Article } from '~/stores/articles'
+
 const props = defineProps<{
   category?: string
   countryCode?: string
@@ -7,14 +9,17 @@ const props = defineProps<{
 
 const route = useRoute()
 const store = useArticlesStore()
+const requestFetch = useRequestFetch()
 const pageSize = 12
+
 const categoryNames: Record<string, string> = {
   major: '주요뉴스',
   airline: '항공',
   hotel: '호텔',
   destination: '여행지',
-  realtime: '실시간 뉴스',
+  realtime: '실시간 인기 뉴스',
 }
+
 const country = ref<{ code: string; nameKo: string } | null>(null)
 const city = ref<{ id: string; nameKo: string } | null>(null)
 const lastPageCount = ref(pageSize)
@@ -34,6 +39,12 @@ async function loadFirstPage() {
 }
 
 await useAsyncData(`news-list-${route.fullPath}`, loadFirstPage)
+
+const { data: popularArticles } = await useAsyncData<Article[]>(
+  'news-listing-popular',
+  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }),
+  { default: () => [] },
+)
 
 watch(filters, async () => {
   await loadFirstPage()
@@ -57,8 +68,8 @@ watch(() => [props.countryCode, props.cityId], async ([countryCode, cityId]) => 
 const canLoadMore = computed(() => lastPageCount.value === pageSize)
 const title = computed(() => categoryNames[props.category || ''] || '전체 뉴스')
 const breadcrumbs = computed(() => [
-  { label: '뉴스', to: '/news' },
-  ...(props.category ? [{ label: title.value, to: `/news/${props.category}` }] : []),
+  { label: 'HOME', to: '/news' },
+  ...(props.category ? [{ label: (categoryNames[props.category] || props.category).toUpperCase(), to: `/news/${props.category}` }] : []),
   ...(country.value ? [{ label: country.value.nameKo, to: props.category ? `/news/${props.category}/${country.value.code}` : `/news/region/${country.value.code}` }] : []),
   ...(city.value ? [{ label: city.value.nameKo, to: route.path }] : []),
 ])
@@ -71,63 +82,176 @@ async function loadMore() {
     ...(props.category === 'realtime' ? { sort: 'views' as const } : {}),
   }, false, true)
 }
+
+function formatViews(views = 0) {
+  return new Intl.NumberFormat('ko-KR').format(views)
+}
 </script>
 
 <template>
-  <div class="page-wrap news-list-page">
-    <nav class="breadcrumbs" aria-label="현재 위치">
+  <div class="bkp-page-container bkp-listing-root">
+    <!-- 방콕포스트 스타일 상단 브레드크럼 -->
+    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
       <template v-for="(item, index) in breadcrumbs" :key="item.label">
-        <span v-if="index" aria-hidden="true">/</span>
-        <NuxtLink :to="item.to">{{ item.label }}</NuxtLink>
+        <span v-if="index" class="bkp-bc-sep">›</span>
+        <NuxtLink :to="item.to" class="bkp-bc-link">{{ item.label }}</NuxtLink>
       </template>
     </nav>
-    <header class="news-list-heading">
-      <div>
-        <p class="eyebrow">CHECK-IN DAILY / NEWS DESK</p>
-        <h1>{{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span></h1>
-        <p>여행 업계의 오늘을 읽는 간결한 브리핑.</p>
+
+    <!-- 섹션 헤더 바 -->
+    <div class="bkp-list-header-bar">
+      <div class="bkp-list-title-group">
+        <span class="bkp-color-bar default" />
+        <h1 class="bkp-list-page-title">
+          {{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span>
+        </h1>
       </div>
-      <NuxtLink class="button" to="/news">전체 뉴스</NuxtLink>
-    </header>
+      <div class="bkp-list-count">
+        총 {{ store.articles.length }}개의 보도 기사
+      </div>
+    </div>
 
-    <AdSlot v-if="category === 'realtime'" placement-id="list_inline_1" class="list-top-ad" />
-
-    <div class="news-list-layout">
-      <section class="news-list-main">
-        <div class="news-list-toolbar">
-          <span>기사 {{ store.articles.length }}건</span>
-          <NuxtLink v-if="countryCode" :to="category ? `/news/${category}` : '/news/region'">지역 필터 초기화</NuxtLink>
+    <!-- 방콕포스트 2단 레이아웃 (좌측 리스트 68% : 우측 사이드바 32%) -->
+    <div class="bkp-highlight-row">
+      <!-- 좌측: 기사 카드 그리드 -->
+      <section class="bkp-col-main">
+        <div v-if="!store.articles.length" class="bkp-empty-state">
+          등록된 뉴스가 없습니다.
         </div>
-        <p v-if="store.error" class="empty-state">{{ store.error }}</p>
-        <p v-else-if="!store.articles.length" class="empty-state">조건에 맞는 뉴스가 없습니다.</p>
-        <ol v-if="category === 'realtime' && !store.error" class="realtime-ranking-list" aria-label="조회수 인기 뉴스">
-          <li v-for="(article, index) in store.articles" :key="article.id">
-            <span class="realtime-rank" :class="{ 'top-rank': index < 3 }">{{ String(index + 1).padStart(2, '0') }}</span>
-            <NuxtLink class="realtime-rank-card" :to="`/news/${article.category}/article/${article.id}`">
-              <span class="realtime-rank-art" :class="`category-art-${article.category}`">
-                <img v-if="article.coverImage && /^https:\/\//i.test(article.coverImage)" :src="article.coverImage" :alt="article.title" loading="lazy">
-              </span>
-              <span class="realtime-rank-copy"><span class="eyebrow">{{ article.category }}</span><strong>{{ article.title }}</strong><small>{{ article.summary }}</small></span>
-            </NuxtLink>
-            <span class="realtime-views"><strong>{{ (article.viewCount || 0).toLocaleString('ko-KR') }}</strong> 읽음</span>
-          </li>
-        </ol>
-        <section v-else-if="!store.error && store.articles.length" class="news-card-grid" aria-label="뉴스 목록">
-          <template v-for="(article, index) in store.articles" :key="article.id">
-            <NewsArticleCard :article="article" />
-            <AdSlot v-if="index === 3" placement-id="list_inline_1" class="list-grid-ad" />
-            <AdSlot v-if="index === 7" placement-id="list_inline_2" class="list-grid-ad" />
-            <AdSlot v-if="index === 11" placement-id="list_inline_3" class="list-grid-ad" />
-          </template>
-        </section>
-        <button v-if="canLoadMore" class="button load-more" type="button" :disabled="store.loading" @click="loadMore">
-          {{ store.loading ? '불러오는 중...' : '뉴스 더 보기' }}
-        </button>
+        <div v-else class="bkp-card-grid-2">
+          <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+        </div>
+
+        <!-- 더보기 버튼 -->
+        <div v-if="canLoadMore" class="bkp-load-more-wrap">
+          <button class="bkp-load-more-btn" type="button" @click="loadMore">
+            LOAD MORE STORIES (더보기) ↓
+          </button>
+        </div>
       </section>
-      <aside class="news-list-sidebar">
-        <NewsRegionFilter :category="category" :country-code="countryCode" :city-id="cityId" />
-        <CurrencyRates />
+
+      <!-- 우측: 방콕포스트 TOP STORIES & 환율 사이드바 -->
+      <aside class="bkp-col-side">
+        <div class="bkp-side-widget bkp-topstories-widget">
+          <div class="bkp-widget-header">
+            <span class="bkp-widget-indicator" />
+            <h3>TOP STORIES</h3>
+            <NuxtLink to="/news/realtime" class="bkp-widget-more">MORE ↗</NuxtLink>
+          </div>
+          <ol class="bkp-rank-ordered-list">
+            <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="bkp-rank-line">
+              <span class="bkp-rank-number" :class="{ 'red': idx < 3 }">{{ idx + 1 }}</span>
+              <div class="bkp-rank-body">
+                <NuxtLink :to="`/news/${art.category}/article/${art.id}`">
+                  <strong class="bkp-rank-text">{{ art.title }}</strong>
+                </NuxtLink>
+                <div class="bkp-rank-submeta">
+                  <span class="bkp-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
+                  <span>{{ formatViews(art.viewCount) }} views</span>
+                </div>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="bkp-side-widget">
+          <CurrencyRates />
+        </div>
       </aside>
     </div>
   </div>
 </template>
+
+<style scoped>
+.bkp-listing-root {
+  padding: 20px 0 60px;
+}
+
+.bkp-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: #6B7280;
+  margin-bottom: 14px;
+}
+
+.bkp-bc-link {
+  color: #4B5563;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.bkp-bc-link:hover {
+  color: #060D81;
+}
+
+.bkp-bc-sep {
+  color: #9CA3AF;
+}
+
+.bkp-list-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #060D81;
+  padding-bottom: 10px;
+  margin-bottom: 24px;
+}
+
+.bkp-list-title-group {
+  display: flex;
+  align-items: center;
+}
+
+.bkp-list-page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.5px;
+}
+
+.bkp-list-count {
+  font-size: 12px;
+  color: #6B7280;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.bkp-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.bkp-load-more-btn {
+  background: #FFFFFF;
+  border: 1px solid #060D81;
+  color: #060D81;
+  padding: 12px 32px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.bkp-load-more-btn:hover {
+  background: #060D81;
+  color: #FFFFFF;
+}
+
+@media (max-width: 640px) {
+  .bkp-card-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
