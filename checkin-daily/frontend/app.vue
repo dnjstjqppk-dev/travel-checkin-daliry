@@ -3,11 +3,23 @@ const route = useRoute()
 const router = useRouter()
 const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const darkMode = useState('site-dark-mode', () => false)
+const currentDesign = useState<string>('current-design-concept', () => '1')
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 onMounted(() => {
   darkMode.value = localStorage.getItem('checkin-theme') === 'dark'
   document.documentElement.dataset.theme = darkMode.value ? 'dark' : 'light'
+
+  const queryDesign = typeof route.query.design === 'string' ? route.query.design : ''
+  if (['1', '2', '3'].includes(queryDesign)) {
+    currentDesign.value = queryDesign
+  } else {
+    const savedDesign = localStorage.getItem('checkin-design-concept')
+    if (savedDesign && ['1', '2', '3'].includes(savedDesign)) {
+      currentDesign.value = savedDesign
+    }
+  }
+  document.documentElement.dataset.design = currentDesign.value
 })
 
 watch(darkMode, (enabled) => {
@@ -27,30 +39,58 @@ async function submitSearch() {
 </script>
 
 <template>
-  <div class="site-shell">
-    <header v-if="!isAdminRoute" class="site-header">
-      <NuxtLink class="wordmark" to="/news" aria-label="체크인데일리 홈">
-        <span class="wordmark-mark">C.</span>
-        <span>CHECK-IN <b>DAILY</b></span>
-      </NuxtLink>
-      <span class="edition masthead-edition">INDEPENDENT TRAVEL JOURNALISM</span>
-      <nav class="main-nav" aria-label="주요 메뉴">
-        <NuxtLink to="/news">뉴스 홈</NuxtLink>
-        <NuxtLink to="/news/major">주요뉴스</NuxtLink>
-        <NuxtLink to="/news/airline">항공</NuxtLink>
-        <NuxtLink to="/news/hotel">호텔</NuxtLink>
-        <NuxtLink to="/news/destination">여행지</NuxtLink>
-        <NuxtLink to="/news/realtime">인기 뉴스</NuxtLink>
-        <NuxtLink to="/saved">스크랩</NuxtLink>
-      </nav>
-      <form class="header-search" role="search" @submit.prevent="submitSearch">
-        <input v-model="search" aria-label="뉴스 검색" placeholder="뉴스 검색">
-        <button type="submit" aria-label="검색">⌕</button>
-      </form>
-      <button class="theme-toggle" type="button" :aria-pressed="darkMode" :aria-label="darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'" @click="darkMode = !darkMode">{{ darkMode ? '☀' : '◐' }}</button>
+  <div class="site-shell" :class="`theme-design-${currentDesign}`">
+    <!-- 전역 디자인 시안 실시간 전환기 -->
+    <DesignSwitcher v-if="!isAdminRoute" />
+
+    <!-- 안 1 (모던 인텔리전스) 전용 실시간 속보 & 환율 티커 -->
+    <NewsTickerBar v-if="!isAdminRoute && currentDesign === '1'" :articles="[]" />
+
+    <!-- 공개 사이트 헤더 -->
+    <header v-if="!isAdminRoute" class="site-header" :class="`header-design-${currentDesign}`">
+      <!-- 안 2 (에디토리얼 매거진) 전용 클래식 마스트헤드 상단 바 -->
+      <div v-if="currentDesign === '2'" class="magazine-top-meta page-wrap">
+        <span>VOL. 24 · ISSUE AUTUMN 2026</span>
+        <span>SEOUL · TOKYO · PARIS · NEW YORK</span>
+        <button class="theme-toggle" type="button" :aria-pressed="darkMode" :aria-label="darkMode ? '라이트 모드' : '다크 모드'" @click="darkMode = !darkMode">
+          {{ darkMode ? '☀ LIGHT' : '◐ DARK' }}
+        </button>
+      </div>
+
+      <div class="header-main-row page-wrap">
+        <NuxtLink class="wordmark" to="/news" aria-label="체크인데일리 홈">
+          <span class="wordmark-mark">C.</span>
+          <span class="wordmark-title">CHECK-IN <b>DAILY</b></span>
+        </NuxtLink>
+
+        <span v-if="currentDesign === '1'" class="edition masthead-edition">INTELLIGENCE DESK</span>
+        <span v-else-if="currentDesign === '2'" class="edition masthead-edition">INDEPENDENT JOURNALISM</span>
+
+        <nav class="main-nav" aria-label="주요 메뉴">
+          <NuxtLink to="/news">뉴스 홈</NuxtLink>
+          <NuxtLink to="/news/major">주요뉴스</NuxtLink>
+          <NuxtLink to="/news/airline">항공</NuxtLink>
+          <NuxtLink to="/news/hotel">호텔</NuxtLink>
+          <NuxtLink to="/news/destination">여행지</NuxtLink>
+          <NuxtLink to="/news/realtime">인기 순위</NuxtLink>
+          <NuxtLink to="/saved">스크랩</NuxtLink>
+        </nav>
+
+        <div class="header-actions">
+          <form class="header-search" role="search" @submit.prevent="submitSearch">
+            <input v-model="search" aria-label="뉴스 검색" placeholder="기사, 항공, 호텔 검색">
+            <button type="submit" aria-label="검색">⌕</button>
+          </form>
+          <button v-if="currentDesign !== '2'" class="theme-toggle" type="button" :aria-pressed="darkMode" :aria-label="darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'" @click="darkMode = !darkMode">
+            {{ darkMode ? '☀' : '◐' }}
+          </button>
+        </div>
+      </div>
     </header>
+
     <main v-if="!isAdminRoute"><NuxtLayout><NuxtPage /></NuxtLayout></main>
     <div v-else class="admin-route-root"><NuxtLayout><NuxtPage /></NuxtLayout></div>
+
     <footer v-if="!isAdminRoute" class="public-footer">
       <div class="public-footer-main page-wrap">
         <div class="public-footer-brand">
