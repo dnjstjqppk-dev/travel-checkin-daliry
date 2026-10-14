@@ -1879,7 +1879,7 @@ html[data-design="3"] .wordmark-mark {
 }
 
 /* ==========================================================================
-   BANGKOK POST (방콕포스트) STYLE BENCHMARK ARCHITECTURE
+   BANGKOK POST (방콕포스트) STYLE BENCHMARK ARCHITECTURE - OFFICIAL 1:1 REPLICATION
    Reference: https://www.bangkokpost.com/
    ========================================================================== */
 
@@ -1891,55 +1891,98 @@ html[data-design="3"] .wordmark-mark {
   --bkp-muted: #4B5563;
   --bkp-line: #E5E7EB;
   --bkp-bg-gray: #F8F9FA;
+  --bkp-font-serif: Georgia, 'Times New Roman', Times, serif;
+  --bkp-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --bkp-font-mono: 'DM Mono', monospace;
 }
 
+/* 0. 글로벌 레이아웃 컨테이너 및 베이스 */
+.bkp-theme-root,
 .bkp-shell {
   background: #FFFFFF !important;
   color: var(--bkp-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--bkp-font-sans);
   min-height: 100vh;
 }
 
-/* 1. 최상단 날짜/유틸리티 바 */
+.bkp-page-container {
+  width: 100%;
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+  box-sizing: border-box;
+}
+
+/* 1. 최상단 실시간 유틸리티 바 (divnav-top) */
+.bkp-header-wrapper,
+.bkp-top-bar-wrapper {
+  background: #FFFFFF;
+  border-bottom: 0;
+  width: 100%;
+}
+
+.bkp-utility-bar,
 .bkp-top-bar {
   background: #F3F4F6;
   border-bottom: 1px solid #E5E7EB;
-  font-size: 11px;
-  height: 36px;
+  height: 38px;
   display: flex;
   align-items: center;
+  font-size: 11px;
 }
+
+.bkp-utility-inner,
 .bkp-top-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
 }
+
+.bkp-datetime-label,
 .bkp-date-box {
   display: flex;
   align-items: center;
   gap: 8px;
   color: #4B5563;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--bkp-font-mono);
   font-weight: 600;
+  font-size: 11px;
 }
+
+.bkp-red-bullet,
 .bkp-live-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--bkp-red);
   box-shadow: 0 0 6px var(--bkp-red);
+  display: inline-block;
 }
+
+.bkp-utility-links,
 .bkp-top-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
+
+.bkp-tagline-text,
 .bkp-edition-tag {
   color: #6B7280;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--bkp-font-mono);
   letter-spacing: 0.5px;
+  font-size: 10.5px;
+  font-weight: 500;
 }
+
+.bkp-pipe {
+  color: #D1D5DB;
+}
+
+.bkp-mode-toggle,
 .bkp-theme-btn {
   background: transparent;
   border: 1px solid #D1D5DB;
@@ -1948,65 +1991,111 @@ html[data-design="3"] .wordmark-mark {
   cursor: pointer;
   border-radius: 3px;
   color: #374151;
+  font-family: var(--bkp-font-mono);
+  font-weight: 700;
 }
 
-/* 2. 메인 마스트헤드 (로고 + 검색) */
+.bkp-mode-toggle:hover,
+.bkp-theme-btn:hover {
+  background: #E5E7EB;
+}
+
+/* 2. 메인 마스트헤드 (대형 신문사 로고 + 통합 검색창 + 스크랩북) */
+.bkp-masthead-bar,
 .bkp-masthead {
   background: #FFFFFF;
-  border-bottom: 0;
-  padding: 0;
-  display: block !important;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 22px 0;
+  width: 100%;
 }
+
 .bkp-masthead-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 0 20px;
   gap: 20px;
 }
+
+.bkp-logo-unit {
+  display: flex;
+  align-items: center;
+}
+
+.bkp-main-brand,
 .bkp-logo-link {
   display: flex;
   align-items: center;
   gap: 14px;
   text-decoration: none;
+  color: inherit;
 }
+
+.bkp-brand-mark,
 .bkp-logo-mark {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   background: var(--bkp-navy);
   color: #FFFFFF;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 4px;
+  font-family: var(--bkp-font-serif);
+  line-height: 1;
 }
+
+.bkp-brand-mark.small,
+.bkp-logo-mark.small {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+
+.bkp-brand-headings,
 .bkp-logo-text {
   display: flex;
   flex-direction: column;
 }
+
+.bkp-brand-name,
 .bkp-logo-title {
-  font-size: clamp(26px, 3.5vw, 36px);
-  font-weight: 800;
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 900;
   letter-spacing: -0.5px;
   color: var(--bkp-navy);
-  line-height: 1.05;
+  line-height: 1;
+  font-family: var(--bkp-font-serif);
 }
+
+.bkp-brand-name b,
 .bkp-logo-title b {
   color: var(--bkp-red);
 }
+
+.bkp-brand-name.white,
+.bkp-logo-title.white {
+  color: #FFFFFF;
+}
+
+.bkp-brand-motto,
 .bkp-logo-sub {
   font-size: 10px;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--bkp-font-mono);
   letter-spacing: 1.5px;
   color: #6B7280;
-  margin-top: 4px;
+  margin-top: 5px;
+  font-weight: 600;
 }
+
+.bkp-masthead-tools,
 .bkp-header-tools {
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
+.bkp-search-box,
 .bkp-search-form {
   display: flex;
   border: 1px solid #D1D5DB;
@@ -2014,14 +2103,18 @@ html[data-design="3"] .wordmark-mark {
   overflow: hidden;
   background: #FFFFFF;
 }
+
+.bkp-search-box input,
 .bkp-search-form input {
-  padding: 8px 14px;
+  padding: 9px 14px;
   font-size: 13px;
   border: 0;
   outline: 0;
-  width: 240px;
+  width: 230px;
   color: #111827;
 }
+
+.bkp-search-box button,
 .bkp-search-form button {
   background: var(--bkp-navy);
   color: #FFFFFF;
@@ -2031,10 +2124,17 @@ html[data-design="3"] .wordmark-mark {
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.bkp-search-box button:hover,
 .bkp-search-form button:hover {
   background: var(--bkp-navy-dark);
 }
+
+.bkp-btn-subscribe,
 .bkp-saved-btn {
   display: inline-flex;
   align-items: center;
@@ -2042,24 +2142,38 @@ html[data-design="3"] .wordmark-mark {
   background: #FEF2F2;
   border: 1px solid #FECACA;
   color: var(--bkp-red);
-  padding: 8px 14px;
+  padding: 9px 14px;
   border-radius: 4px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 800;
   text-decoration: none;
+  white-space: nowrap;
+  font-family: var(--bkp-font-mono);
 }
+
+.bkp-btn-subscribe:hover,
 .bkp-saved-btn:hover {
   background: #FEE2E2;
 }
 
-/* 3. 방콕포스트 시그니처 딥 네이비(#060D81) 메인 네비게이션 바 */
+/* 3. 방콕포스트 시그니처 딥 네이비(#060D81) 메인 GNB 메뉴 바 */
+.bkp-nav-wrapper,
 .bkp-nav-bar {
   background: var(--bkp-navy);
-  box-shadow: 0 2px 8px rgba(6, 13, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(6, 13, 129, 0.22);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
 }
+
+.bkp-nav-container,
 .bkp-nav-inner {
-  padding: 0;
+  padding-left: 16px;
+  padding-right: 16px;
 }
+
+.bkp-menu-list,
 .bkp-nav-list {
   list-style: none;
   margin: 0;
@@ -2069,73 +2183,121 @@ html[data-design="3"] .wordmark-mark {
   overflow-x: auto;
   scrollbar-width: none;
 }
+
+.bkp-menu-list::-webkit-scrollbar,
 .bkp-nav-list::-webkit-scrollbar {
   display: none;
 }
+
+.bkp-menu-list li,
 .bkp-nav-list li {
+  margin: 0;
+  padding: 0;
   white-space: nowrap;
 }
+
+.bkp-menu-list a,
 .bkp-nav-list a {
   display: block;
   color: #FFFFFF;
-  padding: 13px 20px;
+  padding: 13px 18px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-decoration: none;
   border-bottom: 4px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
+
+.bkp-menu-list a:hover,
+.bkp-menu-list a.active,
+.bkp-menu-list a.router-link-active,
 .bkp-nav-list a:hover,
 .bkp-nav-list a.active,
 .bkp-nav-list a.router-link-active {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   border-bottom-color: var(--bkp-red);
+  color: #FFFFFF;
 }
 
-/* 4. 본문 컨테이너 및 섹션 1: 하이라이트 (좌 68% : 우 32%) */
-.bkp-container {
-  width: min(1200px, 94vw);
-  margin: 0 auto;
-  padding: 24px 0 60px;
+/* 4. 메인 컨텐츠 및 방콕포스트 68% : 32% 2단 그리드 */
+.bkp-main-content {
+  min-height: 80vh;
+  background: #FFFFFF;
 }
-.bkp-highlight-section {
+
+.bkp-home-root,
+.bkp-listing-root,
+.bkp-article-page {
+  padding-top: 24px;
+  padding-bottom: 60px;
+}
+
+.bkp-highlight-row,
+.bkp-highlight-section,
+.bkp-news-columns {
   display: grid;
-  grid-template-columns: 1.38fr 0.62fr;
+  grid-template-columns: 1.45fr 0.55fr;
   gap: 32px;
-  margin-bottom: 44px;
   align-items: start;
+  margin-top: 20px;
+  margin-bottom: 44px;
 }
+
+.bkp-col-main,
 .bkp-lead-column {
   min-width: 0;
 }
+
+.bkp-col-side,
+.bkp-sidebar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* 5. 좌측 대형 16:9 메인 탑 리드 기사 */
+.bkp-hero-lead-card,
 .bkp-main-lead-card {
   background: #FFFFFF;
   border-bottom: 2px solid #E5E7EB;
   padding-bottom: 24px;
+  margin-bottom: 24px;
 }
+
+.bkp-hero-lead-link,
 .bkp-lead-link {
   display: block;
   text-decoration: none;
   color: inherit;
 }
+
+.bkp-hero-img-wrap,
 .bkp-lead-figure {
-  height: 380px;
+  height: 420px;
+  width: 100%;
   position: relative;
   overflow: hidden;
   border-radius: 4px;
-  background: #060D81;
+  background: var(--bkp-navy);
 }
+
+.bkp-hero-img-wrap img,
 .bkp-lead-figure img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 0.4s ease;
 }
+
+.bkp-hero-lead-card:hover .bkp-hero-img-wrap img,
 .bkp-main-lead-card:hover .bkp-lead-figure img {
   transform: scale(1.02);
 }
+
+.bkp-hero-fallback,
 .bkp-figure-fallback {
   width: 100%;
   height: 100%;
@@ -2143,12 +2305,16 @@ html[data-design="3"] .wordmark-mark {
   display: grid;
   place-items: center;
   color: #FFFFFF;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
 }
+
+.bkp-hero-fallback.small,
 .bkp-figure-fallback.small {
-  height: 150px;
+  height: 100%;
 }
+
+.bkp-cat-badge,
 .bkp-badge-category {
   position: absolute;
   top: 14px;
@@ -2161,24 +2327,35 @@ html[data-design="3"] .wordmark-mark {
   border-radius: 2px;
   letter-spacing: 0.5px;
 }
+
+.bkp-hero-info,
 .bkp-lead-body {
   padding-top: 16px;
 }
+
+.bkp-hero-meta,
 .bkp-meta-line {
   font-size: 12px;
   color: #6B7280;
+  font-family: var(--bkp-font-mono);
   margin-bottom: 8px;
 }
+
+.bkp-hero-headline,
 .bkp-lead-title {
-  font-size: clamp(24px, 3vw, 32px);
-  font-weight: 800;
-  line-height: 1.3;
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 900;
+  line-height: 1.25;
   color: #111827;
   margin: 0 0 10px;
 }
-.bkp-lead-title:hover {
+
+.bkp-hero-lead-card:hover .bkp-hero-headline,
+.bkp-main-lead-card:hover .bkp-lead-title {
   color: var(--bkp-navy);
 }
+
+.bkp-hero-summary,
 .bkp-lead-excerpt {
   font-size: 15px;
   color: #4B5563;
@@ -2189,6 +2366,8 @@ html[data-design="3"] .wordmark-mark {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.bkp-hero-cta,
 .bkp-read-more {
   display: inline-block;
   color: var(--bkp-navy);
@@ -2197,35 +2376,52 @@ html[data-design="3"] .wordmark-mark {
   letter-spacing: 0.5px;
 }
 
-/* 서브 하이라이트 2열 */
+/* 6. 서브 하이라이트 2열 카드 */
+.bkp-sublead-row,
 .bkp-sublead-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-top: 24px;
 }
+
+.bkp-sublead-item,
+.bkp-sublead-card {
+  min-width: 0;
+}
+
+.bkp-sublead-item a,
 .bkp-sublead-card a {
   display: block;
   text-decoration: none;
   color: inherit;
 }
+
+.bkp-sublead-img,
 .bkp-sublead-thumb {
-  height: 160px;
+  height: 170px;
+  width: 100%;
   position: relative;
   overflow: hidden;
   border-radius: 4px;
   background: #E5E7EB;
   margin-bottom: 10px;
 }
+
+.bkp-sublead-img img,
 .bkp-sublead-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
+  display: block;
+  transition: transform 0.3s ease;
 }
+
+.bkp-sublead-item:hover .bkp-sublead-img img,
 .bkp-sublead-card:hover .bkp-sublead-thumb img {
   transform: scale(1.03);
 }
+
+.bkp-sub-cat,
 .bkp-tag-pill {
   position: absolute;
   bottom: 8px;
@@ -2237,6 +2433,7 @@ html[data-design="3"] .wordmark-mark {
   padding: 3px 6px;
   border-radius: 2px;
 }
+
 .bkp-sublead-title {
   font-size: 16px;
   font-weight: 700;
@@ -2248,9 +2445,13 @@ html[data-design="3"] .wordmark-mark {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.bkp-sublead-title:hover {
+
+.bkp-sublead-item:hover .bkp-sublead-title,
+.bkp-sublead-card:hover .bkp-sublead-title {
   color: var(--bkp-navy);
 }
+
+.bkp-sublead-desc,
 .bkp-sublead-summary {
   font-size: 13px;
   color: #6B7280;
@@ -2261,24 +2462,27 @@ html[data-design="3"] .wordmark-mark {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.bkp-sublead-date,
 .bkp-sublead-time {
   font-size: 11px;
   color: #9CA3AF;
+  font-family: var(--bkp-font-mono);
 }
 
-/* 5. 우측 사이드바: TOP STORIES */
-.bkp-sidebar-column {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-  min-width: 0;
-}
-.bkp-top-stories-box {
+/* 7. 우측 사이드바: 방콕포스트 TOP STORIES 랭킹 박스 */
+.bkp-side-widget,
+.bkp-top-stories-box,
+.bkp-topstories-widget {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
   border-top: 3px solid var(--bkp-navy);
   padding: 20px;
+  border-radius: 2px;
 }
+
+.bkp-widget-header,
+.bkp-box-header,
 .bkp-box-title {
   display: flex;
   align-items: center;
@@ -2287,6 +2491,9 @@ html[data-design="3"] .wordmark-mark {
   padding-bottom: 10px;
   margin-bottom: 16px;
 }
+
+.bkp-widget-indicator,
+.bkp-header-indicator,
 .bkp-title-indicator {
   width: 4px;
   height: 16px;
@@ -2294,6 +2501,9 @@ html[data-design="3"] .wordmark-mark {
   margin-right: 8px;
   display: inline-block;
 }
+
+.bkp-widget-header h3,
+.bkp-box-header h3,
 .bkp-box-title h3 {
   margin: 0;
   font-size: 16px;
@@ -2302,12 +2512,25 @@ html[data-design="3"] .wordmark-mark {
   letter-spacing: 0.5px;
   flex: 1;
 }
+
+.bkp-widget-more,
+.bkp-box-more,
 .bkp-more-link {
   color: #6B7280;
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
+  font-family: var(--bkp-font-mono);
 }
+
+.bkp-side-note {
+  font-size: 12px;
+  color: #9CA3AF;
+  padding: 12px 0;
+}
+
+.bkp-rank-ordered-list,
+.bkp-ranked-ol,
 .bkp-ranking-list {
   list-style: none;
   margin: 0;
@@ -2315,6 +2538,9 @@ html[data-design="3"] .wordmark-mark {
   display: flex;
   flex-direction: column;
 }
+
+.bkp-rank-line,
+.bkp-ranked-item,
 .bkp-ranking-item {
   display: grid;
   grid-template-columns: 28px 1fr;
@@ -2323,20 +2549,45 @@ html[data-design="3"] .wordmark-mark {
   border-bottom: 1px solid #F3F4F6;
   align-items: baseline;
 }
+
+.bkp-rank-line:last-child,
+.bkp-ranked-item:last-child,
 .bkp-ranking-item:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
+
+.bkp-rank-number,
+.bkp-rank-badge,
 .bkp-rank-num {
-  font-family: 'DM Mono', monospace;
+  font-family: var(--bkp-font-mono);
   font-size: 20px;
   font-weight: 800;
   color: #9CA3AF;
   line-height: 1;
+  text-align: center;
 }
+
+.bkp-rank-number.red,
+.bkp-rank-badge.accent,
 .bkp-rank-num.accent {
   color: var(--bkp-red);
 }
+
+.bkp-rank-body,
+.bkp-ranked-content {
+  min-width: 0;
+}
+
+.bkp-rank-body a,
+.bkp-ranked-content a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.bkp-rank-text,
+.bkp-ranked-title,
 .bkp-rank-title {
   font-size: 13px;
   line-height: 1.45;
@@ -2345,26 +2596,41 @@ html[data-design="3"] .wordmark-mark {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  font-weight: 600;
 }
-.bkp-rank-title:hover {
+
+.bkp-rank-line:hover .bkp-rank-text,
+.bkp-ranked-item:hover .bkp-ranked-title,
+.bkp-ranking-item:hover .bkp-rank-title {
   color: var(--bkp-navy);
 }
+
+.bkp-rank-submeta,
+.bkp-ranked-meta,
 .bkp-rank-meta {
   margin-top: 4px;
   font-size: 11px;
   color: #6B7280;
   display: flex;
   gap: 8px;
+  font-family: var(--bkp-font-mono);
 }
+
+.bkp-rank-tag,
+.bkp-ranked-cat,
 .bkp-rank-cat {
   color: var(--bkp-navy);
   font-weight: 700;
 }
 
-/* 6. 카테고리별 섹션 블록 (Bangkok Post Section Strips) */
-.bkp-section-block {
+/* 8. 섹션별 스트립 & 3열 기사 그리드 */
+.bkp-category-section,
+.bkp-section-block,
+.bkp-related-section,
+.bkp-search-view {
   margin-bottom: 48px;
 }
+
 .bkp-sec-header {
   display: flex;
   align-items: center;
@@ -2373,16 +2639,19 @@ html[data-design="3"] .wordmark-mark {
   padding-bottom: 10px;
   margin-bottom: 22px;
 }
+
 .bkp-sec-title-wrap {
   display: flex;
   align-items: center;
 }
+
 .bkp-color-bar {
   width: 5px;
   height: 20px;
   margin-right: 10px;
   display: inline-block;
 }
+
 .bkp-color-bar.airline { background: #0284C7; }
 .bkp-color-bar.hotel { background: #D97706; }
 .bkp-color-bar.destination { background: #10B981; }
@@ -2395,115 +2664,254 @@ html[data-design="3"] .wordmark-mark {
   color: #111827;
   letter-spacing: 0.5px;
 }
+
+.bkp-sec-more,
 .bkp-view-all {
   color: var(--bkp-navy);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
+  font-family: var(--bkp-font-mono);
 }
+
+.bkp-sec-more:hover,
 .bkp-view-all:hover {
   text-decoration: underline;
 }
 
-/* 7. 방콕포스트 3열 카드 그리드 */
 .bkp-card-grid-3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
-.bkp-card-grid-3 .news-card {
-  border: 1px solid #E5E7EB;
-  background: #FFFFFF;
-  border-radius: 4px;
-  overflow: hidden;
-  padding: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s, box-shadow 0.2s;
+
+.bkp-card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
 }
-.bkp-card-grid-3 .news-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-.bkp-card-grid-3 .news-card-art {
-  height: 180px;
-  border-radius: 0;
-  margin-bottom: 0;
-}
-.bkp-card-grid-3 .news-card a {
-  display: block;
-}
-.bkp-card-grid-3 .news-card-meta {
-  padding: 12px 16px 4px;
-  font-size: 11px;
+
+.bkp-empty-state {
+  padding: 40px 0;
   color: #6B7280;
+  text-align: center;
+  font-size: 14px;
 }
-.bkp-card-grid-3 .news-card h3 {
-  padding: 0 16px;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: #111827;
-  margin: 4px 0 8px;
+
+/* 9. 브레드크럼 */
+.bkp-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: var(--bkp-font-mono);
+  color: #6B7280;
+  margin-bottom: 16px;
 }
-.bkp-card-grid-3 .news-card p {
-  padding: 0 16px;
-  font-size: 13px;
+
+.bkp-bc-link {
   color: #4B5563;
-  line-height: 1.6;
-  margin: 0 0 12px;
+  text-decoration: none;
+  font-weight: 600;
 }
-.bkp-card-grid-3 .news-card .location-tags {
-  padding: 0 16px 14px;
+
+.bkp-bc-link:hover {
+  color: var(--bkp-navy);
 }
-.bkp-card-grid-3 .save-button {
-  margin: 0 16px 14px;
+
+.bkp-bc-sep {
+  color: #9CA3AF;
+}
+
+.bkp-bc-current {
   color: var(--bkp-navy);
   font-weight: 700;
 }
 
-/* 8. 정통 일간지 푸터 */
+/* 10. 기사 상세 페이지 */
+.bkp-article-main-body {
+  background: #FFFFFF;
+}
+
+.bkp-article-header {
+  margin-bottom: 24px;
+}
+
+.bkp-article-sec-badge {
+  display: inline-block;
+  background: var(--bkp-navy);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+
+.bkp-article-headline {
+  font-size: clamp(26px, 3.8vw, 38px);
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin: 0 0 16px;
+}
+
+.bkp-article-lead-summary {
+  font-size: 17px;
+  font-weight: 500;
+  color: #4B5563;
+  line-height: 1.7;
+  border-left: 3px solid var(--bkp-navy);
+  padding-left: 16px;
+  margin: 0 0 20px;
+  font-style: italic;
+}
+
+.bkp-article-byline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 12px 0;
+  font-size: 11px;
+  color: #6B7280;
+  font-family: var(--bkp-font-mono);
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.bkp-byline-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bkp-share-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.bkp-share-btn {
+  background: #F3F4F6;
+  border: 1px solid #D1D5DB;
+  color: #374151;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 3px;
+  font-family: var(--bkp-font-mono);
+}
+
+.bkp-share-btn:hover {
+  background: #E5E7EB;
+}
+
+.bkp-share-btn.save {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: var(--bkp-red);
+}
+
+.bkp-hero-figure,
+.bkp-article-featured-image {
+  margin: 20px 0 24px;
+}
+
+.bkp-hero-figure img,
+.bkp-article-featured-image img {
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+.bkp-fig-caption,
+.bkp-image-caption {
+  font-size: 12px;
+  color: #6B7280;
+  font-style: italic;
+  margin-top: 6px;
+  padding-left: 4px;
+  border-left: 2px solid #D1D5DB;
+}
+
+.bkp-prose-body,
+.bkp-article-content-html {
+  font-size: 17px;
+  line-height: 1.85;
+  color: #1F2937;
+  margin-top: 24px;
+}
+
+.bkp-prose-body h2,
+.bkp-article-content-html h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--bkp-navy);
+  margin-top: 36px;
+  border-bottom: 2px solid #E5E7EB;
+  padding-bottom: 8px;
+}
+
+/* 11. 정통 일간지 다크 푸터 */
+.bkp-site-footer,
 .bkp-footer {
   background: #0B1120;
   color: #94A3B8;
-  padding-top: 48px;
   border-top: 4px solid var(--bkp-navy);
+  margin-top: 60px;
+  width: 100%;
 }
+
+.bkp-footer-main {
+  padding: 48px 0 36px;
+}
+
 .bkp-footer-grid {
   display: grid;
   grid-template-columns: 1.5fr 1fr 1fr;
   gap: 40px;
-  padding-bottom: 40px;
 }
+
+.bkp-fcol,
+.bkp-footer-col {
+  min-width: 0;
+}
+
 .bkp-footer-logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   text-decoration: none;
   margin-bottom: 14px;
 }
-.bkp-logo-mark.small {
-  width: 32px;
-  height: 32px;
-  font-size: 16px;
-}
-.bkp-footer-logo .bkp-logo-title {
-  color: #FFFFFF;
-  font-size: 24px;
-}
+
+.bkp-footer-summary,
 .bkp-footer-desc {
   font-size: 13px;
   line-height: 1.7;
   color: #94A3B8;
-  max-width: 400px;
+  margin: 12px 0;
+  max-width: 440px;
 }
-.bkp-social-icons {
-  margin-top: 14px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  color: #64748B;
+
+.bkp-footer-meta-tags {
   display: flex;
   gap: 8px;
+  font-family: var(--bkp-font-mono);
+  font-size: 11px;
+  color: #64748B;
 }
+
+.bkp-fcol h4,
 .bkp-footer-col h4 {
   color: #FFFFFF;
   font-size: 13px;
@@ -2513,6 +2921,8 @@ html[data-design="3"] .wordmark-mark {
   border-left: 3px solid var(--bkp-red);
   padding-left: 8px;
 }
+
+.bkp-fcol ul,
 .bkp-footer-col ul {
   list-style: none;
   margin: 0;
@@ -2521,33 +2931,42 @@ html[data-design="3"] .wordmark-mark {
   flex-direction: column;
   gap: 10px;
 }
+
+.bkp-fcol a,
 .bkp-footer-col a {
   color: #94A3B8;
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s;
 }
+
+.bkp-fcol a:hover,
 .bkp-footer-col a:hover {
   color: #FFFFFF;
 }
+
 .bkp-footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 20px 0;
   font-size: 11px;
   color: #64748B;
-  font-family: 'DM Mono', monospace;
-}
-.bkp-footer-legal {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  font-family: var(--bkp-font-mono);
 }
 
-/* 9. 반응형 모바일 최적화 */
+.bkp-footer-legal-row,
+.bkp-footer-legal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 12. 모바일 반응형 룰 */
 @media (max-width: 900px) {
-  .bkp-highlight-section {
+  .bkp-highlight-row,
+  .bkp-highlight-section,
+  .bkp-news-columns {
     grid-template-columns: 1fr;
   }
   .bkp-card-grid-3 {
@@ -2557,156 +2976,28 @@ html[data-design="3"] .wordmark-mark {
     grid-template-columns: 1fr;
   }
 }
+
 @media (max-width: 640px) {
+  .bkp-sublead-row,
   .bkp-sublead-grid,
-  .bkp-card-grid-3 {
+  .bkp-card-grid-3,
+  .bkp-card-grid-2 {
     grid-template-columns: 1fr;
   }
+  .bkp-hero-img-wrap,
   .bkp-lead-figure {
     height: 240px;
   }
   .bkp-masthead-inner {
     flex-direction: column;
     align-items: flex-start;
+    gap: 16px;
   }
+  .bkp-search-box input,
   .bkp-search-form input {
     width: 160px;
   }
-}
-
-/* 10. 방콕포스트 스타일 기사 상세 페이지 (Article Detail) */
-.article-editorial-layout {
-  display: grid;
-  grid-template-columns: 1.38fr 0.62fr;
-  gap: 36px;
-  padding: 24px 0 60px;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: start;
-}
-.article-editorial-header h1 {
-  font-size: clamp(26px, 3.5vw, 36px);
-  font-weight: 800;
-  color: #111827;
-  line-height: 1.3;
-  margin: 12px 0 16px;
-}
-.article-editorial-header .eyebrow {
-  color: var(--bkp-navy);
-  font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-.article-editorial-header .article-summary {
-  font-size: 16px;
-  line-height: 1.7;
-  color: #4B5563;
-  border-left: 3px solid var(--bkp-navy);
-  padding-left: 14px;
-  margin-bottom: 20px;
-}
-.article-byline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid #E5E7EB;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 12px 0;
-  margin: 18px 0;
-  font-size: 12px;
-  color: #6B7280;
-}
-.article-author-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  background: var(--bkp-navy);
-  color: #FFFFFF;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  margin-right: 10px;
-}
-.article-cover {
-  height: 420px;
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px;
-  margin: 24px 0;
-}
-.article-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.article-body {
-  font-size: 16px;
-  line-height: 1.85;
-  color: #1F2937;
-  margin-top: 24px;
-}
-.article-body h2 {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--bkp-navy);
-  margin-top: 36px;
-  border-bottom: 2px solid #E5E7EB;
-  padding-bottom: 8px;
-}
-.article-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
-}
-.article-back-to-news {
-  background: #F3F4F6;
-  border: 1px solid #E5E7EB;
-  color: var(--bkp-navy);
-  padding: 12px 16px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  text-align: center;
-  display: block;
-}
-.article-back-to-news:hover {
-  background: #E5E7EB;
-}
-
-/* 11. 방콕포스트 스타일 카테고리 목록 페이지 (News Listing) */
-.news-list-layout {
-  display: grid;
-  grid-template-columns: 1.38fr 0.62fr;
-  gap: 36px;
-  padding: 24px 0 60px;
-  max-width: 1200px;
-  margin: 0 auto;
-  align-items: start;
-}
-.news-list-heading {
-  border-bottom: 3px solid var(--bkp-navy);
-  padding-bottom: 12px;
-  margin-bottom: 24px;
-}
-.news-list-heading h1 {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--bkp-navy);
-  margin: 4px 0;
-}
-.news-list-main .news-card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-
-@media (max-width: 900px) {
-  .article-editorial-layout,
-  .news-list-layout {
-    grid-template-columns: 1fr;
+  .bkp-tagline-text {
+    display: none;
   }
 }
-
-
