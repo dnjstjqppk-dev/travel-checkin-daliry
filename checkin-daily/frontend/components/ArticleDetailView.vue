@@ -40,21 +40,44 @@ function renderMarkdown(raw: string): string {
 const html = computed(() => renderMarkdown(article.content || ''))
 
 const router = useRouter()
+const apiFetch = useRequestFetch()
+
 const { data: recommendedData } = await useAsyncData(
   `article-recommended-${article.id}-${locale.value}`,
-  () => $fetch<Article[]>('/api/articles', { query: { category, limit: 5, sort: 'views' } }),
+  () => apiFetch<Article[]>('/api/articles', { query: { category, limit: 5, sort: 'views' } }).catch(() => []),
+  { default: () => [] },
 )
 const recommendedArticles = computed(() => (recommendedData.value || []).filter((item) => item.id !== article.id).slice(0, 3))
 
-const { data: popularArticles } = await useAsyncData<Article[]>(
+const { data: popularData } = await useAsyncData<Article[]>(
   `article-popular-rail-${locale.value}`,
-  () => $fetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }),
+  () => apiFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }).catch(() => []),
   { default: () => [] },
 )
+const popularArticles = computed(() => popularData.value || [])
 
-const categoryDisplayName = computed(() => {
-  return t(category) || category
-})
+function getCategoryName(cat: string): string {
+  const map: Record<string, string> = {
+    major: t('major'),
+    airline: t('airline'),
+    hotel: t('hotel'),
+    destination: t('destination'),
+    realtime: t('realtime'),
+    region: t('region'),
+  }
+  return map[cat] || t(cat) || cat
+}
+
+const categoryNames = computed(() => ({
+  major: t('major'),
+  airline: t('airline'),
+  hotel: t('hotel'),
+  destination: t('destination'),
+  realtime: t('realtime'),
+  region: t('region'),
+}))
+
+const categoryDisplayName = computed(() => getCategoryName(category))
 
 const articleCanonicalUrl = `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}`
 
@@ -227,7 +250,7 @@ function goBack() {
               <span class="bkp-color-bar default" />
               <h2>RELATED STORIES</h2>
             </div>
-            <NuxtLink :to="locUrl(`/news/${category}`)" class="bkp-sec-more">MORE {{ (categoryNames[category] || category).toUpperCase() }} →</NuxtLink>
+            <NuxtLink :to="locUrl(`/news/${category}`)" class="bkp-sec-more">MORE {{ categoryDisplayName.toUpperCase() }} →</NuxtLink>
           </div>
           <div class="bkp-card-grid-3">
             <NewsArticleCard v-for="item in recommendedArticles" :key="item.id" :article="item" />
@@ -251,7 +274,7 @@ function goBack() {
                   <strong class="bkp-rank-text">{{ art.title }}</strong>
                 </NuxtLink>
                 <div class="bkp-rank-submeta">
-                  <span class="bkp-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
+                  <span class="bkp-rank-tag">{{ getCategoryName(art.category) }}</span>
                   <span>{{ art.viewCount?.toLocaleString('ko-KR') || 0 }} views</span>
                 </div>
               </div>

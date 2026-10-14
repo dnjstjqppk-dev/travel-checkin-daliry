@@ -28,14 +28,26 @@ interface WorkerEnvironment {
   ADMIN_BOOTSTRAP_TOKEN?: string
 }
 
+let cachedDb: D1Database | undefined
+
 export function getWorkerEnvironment(event: H3Event): WorkerEnvironment | undefined {
   const platform = event.context._platform?.cloudflare?.env
   const development = event.context.cloudflare?.env
   return (platform ?? development) as WorkerEnvironment | undefined
 }
 
-export function getD1Database(event: H3Event): D1Database | undefined {
-  return getWorkerEnvironment(event)?.DB
+export function getD1Database(event?: H3Event): D1Database | undefined {
+  if (event) {
+    const db = getWorkerEnvironment(event)?.DB
+    if (db) {
+      cachedDb = db
+      ;(globalThis as any).__cf_db = db
+      return db
+    }
+  }
+  if (cachedDb) return cachedDb
+  if ((globalThis as any).__cf_db) return (globalThis as any).__cf_db
+  return undefined
 }
 
 export async function d1All<Row>(
