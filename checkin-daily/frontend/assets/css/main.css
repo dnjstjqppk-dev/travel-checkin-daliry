@@ -783,6 +783,204 @@ html[data-theme="dark"] .ads-slot-preview { border-color: var(--line); backgroun
   gap: 10px;
 }
 
+/* --- [안 1 전용 헤더 스타일] --- */
+.header-intel {
+  background: #ffffff;
+  border-bottom: 2px solid #0f172a;
+  padding: 12px 0;
+}
+.intel-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.intel-mark {
+  background: #0f172a !important;
+}
+.intel-desk-badge {
+  background: #d97706;
+  color: #ffffff;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+.intel-search input {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+}
+
+/* --- [안 2 전용 헤더: 클래식 신문 제호 마스트헤드] --- */
+.header-magazine {
+  background: #fbf9f5 !important;
+  border-bottom: 0 !important;
+  padding: 0 !important;
+}
+.mag-masthead-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7e5e4;
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: #78716c;
+}
+.mag-text-btn {
+  background: transparent;
+  border: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #78716c;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+.mag-masthead-center {
+  text-align: center;
+  padding: 32px 0 20px;
+}
+.mag-masthead-title {
+  display: inline-block;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 5.5vw, 64px);
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: #1c1917;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-decoration: none;
+}
+.mag-masthead-title:hover {
+  color: #183b32;
+}
+.mag-masthead-sub {
+  margin: 10px 0 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: #a8a29e;
+  text-transform: uppercase;
+}
+.mag-masthead-nav-bar {
+  border-top: 1px solid #1c1917;
+  border-bottom: 2px solid #1c1917;
+  padding: 12px 0;
+  margin-bottom: 16px;
+}
+.mag-nav {
+  display: flex;
+  justify-content: center;
+  gap: clamp(14px, 3.5vw, 42px);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+.mag-nav a {
+  color: #44403c;
+  transition: color 0.2s;
+}
+.mag-nav a:hover, .mag-nav a.router-link-active {
+  color: #c2410c;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* --- [안 3 전용 헤더: 모던 플로팅 벤토 헤더] --- */
+.header-bento {
+  margin: 14px auto 20px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+.bento-header-inner {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border-radius: 9999px;
+  padding: 10px 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.bento-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #0b0f19;
+  text-decoration: none;
+}
+.bento-logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #0284c7;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.bento-search-pill {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  flex: 1;
+  max-width: 440px;
+  gap: 8px;
+}
+.bento-search-pill input {
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  width: 100%;
+  outline: 0;
+  color: #0f172a;
+}
+.bento-search-pill button {
+  background: #0284c7;
+  color: #ffffff;
+  border: 0;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bento-nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bento-nav-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.bento-nav-link:hover, .bento-nav-link.router-link-active {
+  color: #0284c7;
+  background: #f0f9ff;
+}
+.bento-bookmark-pill {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+
 /* --------------------------------------------------------------------------
    [안 1] 모던 인텔리전스 (html[data-design="1"])
    -------------------------------------------------------------------------- */
