@@ -4,8 +4,9 @@
 
 ## 구성
 
-- `backend/`: Go, Gin, GORM, SQLite REST API. 첫 실행 때 기사, 뉴스 카테고리, 국가·도시 및 광고 슬롯 샘플을 저장합니다.
+- `backend/`: 로컬 Docker 개발용 Go, Gin, GORM, SQLite REST API. 첫 실행 때 기사, 뉴스 카테고리, 국가·도시 및 광고 슬롯 샘플을 저장합니다.
 - `frontend/`: Nuxt 4 SSR, Vue 3, Pinia. 국가 > 도시 뉴스 라우팅, 종속 지역 필터, 관리자 Markdown CMS 및 AdSense 슬롯 관리를 제공합니다.
+- 운영 배포는 Nuxt Cloudflare Worker가 HTTP API도 제공하고 D1에 저장합니다. 별도 Go API 호스트나 유료 디스크는 사용하지 않습니다.
 - `mobile/`: Flutter, Riverpod, Dio 기반 기사 목록 앱.
 - `shared/openapi.yaml`: API 명세.
 
@@ -59,9 +60,41 @@ Nuxt 개발 서버는 `http://localhost:3000`에서 열립니다. 기본적으�
 
 ### Cloudflare Workers 배포
 
-Cloudflare Workers 빌드/배포 명령은 저장소 루트에서 `npx wrangler deploy`를 실행합니다. 루트의 `wrangler.toml`이 프론트엔드를 빌드해 Nuxt Worker와 정적 자산을 배포합니다. Cloudflare Workers 환경 변수 `NUXT_API_INTERNAL_BASE`를 외부에서 접근 가능한 Go API 주소로 설정해야 기사 및 관리자 API가 서버 렌더링과 브라우저 요청에서 동작합니다. API 서버는 이 Worker 배포에 포함되지 않습니다.
+운영 API와 프론트엔드는 같은 Nuxt Cloudflare Worker에서 제공됩니다. D1은 SQLite 호환 데이터베이스이며 `checkin-daily/frontend/migrations/`의 마이그레이션이 기본 카테고리·지역·샘플 기사를 만듭니다. 운영 API를 위해 별도의 Go 서버, API HTTPS 주소, DB 호스트, Render 디스크 또는 결제 계정은 필요하지 않습니다.
 
-Go API 운영 환경에는 `CORS_ALLOWED_ORIGINS=https://<실제-프론트엔드-도메인>` 및 `COOKIE_SECURE=true`를 설정합니다. `SESSION_SECRET`은 프론트엔드 Worker가 아닌 Go API 호스트의 비밀 환경 변수로 주입하고, 관리자 비밀번호 해시는 SQLite에 보관합니다. 관리자 브라우저는 세션 쿠키를 사용할 수 있도록 Worker의 same-origin `/api/*` 프록시를 이용해야 합니다.
+**0원 유지:** Cloudflare 대시보드에서 Workers 요금제가 **Free**인지 확인하고 유료 요금제로 업그레이드하지 마세요. Free 한도를 넘으면 요청/쿼리가 거부되며 유료 사용량으로 넘어가지 않습니다. 현재 공개된 무료 한도는 Workers 요청 100,000회/일, D1 읽기 5백만 행/일, 쓰기 100,000행/일, 전체 저장 공간 5GB입니다. Worker CPU 시간은 Free 플랜의 기본 제한이 적용되며, Free 플랜은 별도의 CPU 제한 설정을 지원하지 않습니다. 계정의 유료 요금제나 다른 Cloudflare 리소스 요금은 이 설정이 막아주지 않으므로 무료 요금제만 사용해야 합니다.
+
+먼저 Cloudflare 대시보드에서 Workers 요금제가 **Free**인지 확인하고, 저장소 루트에서 Wrangler에 로그인합니다. 무료 요금제임을 확인할 수 없으면 원격 리소스를 만들거나 배포하지 마세요.
+
+```sh
+npx wrangler login
+npx wrangler d1 create checkin-daily-db
+```
+
+`d1 create` 출력의 실제 ID를 루트 `wrangler.toml`의 `database_id`에 입력한 다음 마이그레이션을 적용하고 배포하세요.
+
+```sh
+npx wrangler d1 migrations apply checkin-daily-db --remote
+npx wrangler deploy
+```
+
+배포 뒤 Worker HTTPS 주소에서 API도 함께 동작합니다. 초기 관리자 생성은 일회용 부트스트랩 토큰으로 보호됩니다. 긴 임의 토큰을 입력해 Worker secret으로 등록합니다.
+
+```sh
+npx wrangler secret put ADMIN_BOOTSTRAP_TOKEN
+```
+
+그 토큰을 `Authorization: Bearer <토큰>` 헤더에 넣고, `/api/auth/bootstrap`으로 관리자 이름과 직접 정한 12자 이상의 비밀번호를 JSON POST 요청으로 보냅니다. 계정 생성이 끝나면 부트스트랩 토큰을 즉시 제거하세요.
+
+```sh
+npx wrangler secret delete ADMIN_BOOTSTRAP_TOKEN
+```
+
+초기 계정 생성 이후에는 부트스트랩 요청이 거부됩니다.
+
+마이그레이션은 새 D1에 샘플 데이터를 넣습니다. 기존 로컬 SQLite 데이터베이스의 관리자가 작성한 기사는 자동 복사되지 않으므로, 운영 배포 전에 필요한 데이터를 별도로 내보내 D1로 가져와야 합니다.
+
+로컬 `npm run dev`와 Docker Compose는 기존 Go API를 사용하므로 로컬 개발 흐름은 유지됩니다. 이 Go 프로세스는 Cloudflare 운영 배포에는 포함되지 않습니다.
 
 ### Flutter 앱
 
@@ -98,6 +131,10 @@ flutter run
 - `GET /api/ads`, `GET|POST /api/admin/ads`, `PUT|DELETE /api/admin/ads/:id`
 - `GET|POST /api/admin/articles`, `PUT|DELETE /api/admin/articles/:id`
 - `GET /api/categories`, `GET|POST /api/admin/categories`, `PUT|DELETE /api/admin/categories/:id`
+
+### 편집 기사 초기 데이터
+
+Cloudflare D1의 `0003_seed_verified_travel_articles.sql` 마이그레이션은 주요뉴스, 항공, 호텔, 여행지, 인기뉴스(실시간) 카테고리에 출처 링크가 포함된 편집 기사 각 10건을 등록합니다. 기업·정부·국제기구 원문 링크와 발표 기준일은 기사 본문에서 확인할 수 있습니다. 통계 전망은 확정 실적과 구분해 표기하며, 썸네일은 Unsplash CDN을 사용합니다. 이 데이터는 초기 편집 콘텐츠이며 뉴스 자동 수집·갱신 기능은 아닙니다.
 
 ## 개발 단계 보안 안내
 

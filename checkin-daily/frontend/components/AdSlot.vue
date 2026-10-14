@@ -41,7 +41,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="isConfigured" class="ad-slot" :class="`ad-slot-${placement?.format}`" :aria-label="placement?.name">
+  <aside v-if="isConfigured" class="ad-slot" :class="`ad-slot-${placement?.format}`" :aria-label="placement?.name">
+    <span class="ad-slot-label">광고</span>
     <ins
       class="adsbygoogle"
       style="display:block"
@@ -50,8 +51,6 @@ onMounted(() => {
       :data-ad-format="placement?.format || 'auto'"
       data-full-width-responsive="true"
     />
-  </div>
-  <div v-else-if="requestError" class="ad-slot ad-slot-placeholder" aria-label="광고">
-    <span>{{ requestError }}</span>
-  </div>
+  </aside>
+  <p v-else-if="requestError" class="ad-load-error" role="status">광고 설정을 불러오지 못했습니다.</p>
 </template>

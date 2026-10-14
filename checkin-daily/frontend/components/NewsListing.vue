@@ -26,7 +26,11 @@ const filters = computed(() => ({
 }))
 
 async function loadFirstPage() {
-  lastPageCount.value = await store.load({ ...filters.value, limit: pageSize })
+  lastPageCount.value = await store.load({
+    ...filters.value,
+    limit: pageSize,
+    ...(props.category === 'realtime' ? { sort: 'views' as const } : {}),
+  })
 }
 
 await useAsyncData(`news-list-${route.fullPath}`, loadFirstPage)
@@ -60,7 +64,12 @@ const breadcrumbs = computed(() => [
 ])
 
 async function loadMore() {
-  lastPageCount.value = await store.load({ ...filters.value, limit: pageSize, offset: store.articles.length }, false, true)
+  lastPageCount.value = await store.load({
+    ...filters.value,
+    limit: pageSize,
+    offset: store.articles.length,
+    ...(props.category === 'realtime' ? { sort: 'views' as const } : {}),
+  }, false, true)
 }
 </script>
 
@@ -81,6 +90,8 @@ async function loadMore() {
       <NuxtLink class="button" to="/news">전체 뉴스</NuxtLink>
     </header>
 
+    <AdSlot v-if="category === 'realtime'" placement-id="list_inline_1" class="list-top-ad" />
+
     <div class="news-list-layout">
       <section class="news-list-main">
         <div class="news-list-toolbar">
@@ -89,8 +100,25 @@ async function loadMore() {
         </div>
         <p v-if="store.error" class="empty-state">{{ store.error }}</p>
         <p v-else-if="!store.articles.length" class="empty-state">조건에 맞는 뉴스가 없습니다.</p>
-        <section v-else class="news-card-grid" aria-label="뉴스 목록">
-          <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+        <ol v-if="category === 'realtime' && !store.error" class="realtime-ranking-list" aria-label="조회수 인기 뉴스">
+          <li v-for="(article, index) in store.articles" :key="article.id">
+            <span class="realtime-rank" :class="{ 'top-rank': index < 3 }">{{ String(index + 1).padStart(2, '0') }}</span>
+            <NuxtLink class="realtime-rank-card" :to="`/news/${article.category}/article/${article.id}`">
+              <span class="realtime-rank-art" :class="`category-art-${article.category}`">
+                <img v-if="article.coverImage && /^https:\/\//i.test(article.coverImage)" :src="article.coverImage" :alt="article.title" loading="lazy">
+              </span>
+              <span class="realtime-rank-copy"><span class="eyebrow">{{ article.category }}</span><strong>{{ article.title }}</strong><small>{{ article.summary }}</small></span>
+            </NuxtLink>
+            <span class="realtime-views"><strong>{{ (article.viewCount || 0).toLocaleString('ko-KR') }}</strong> 읽음</span>
+          </li>
+        </ol>
+        <section v-else-if="!store.error && store.articles.length" class="news-card-grid" aria-label="뉴스 목록">
+          <template v-for="(article, index) in store.articles" :key="article.id">
+            <NewsArticleCard :article="article" />
+            <AdSlot v-if="index === 3" placement-id="list_inline_1" class="list-grid-ad" />
+            <AdSlot v-if="index === 7" placement-id="list_inline_2" class="list-grid-ad" />
+            <AdSlot v-if="index === 11" placement-id="list_inline_3" class="list-grid-ad" />
+          </template>
         </section>
         <button v-if="canLoadMore" class="button load-more" type="button" :disabled="store.loading" @click="loadMore">
           {{ store.loading ? '불러오는 중...' : '뉴스 더 보기' }}
@@ -98,7 +126,7 @@ async function loadMore() {
       </section>
       <aside class="news-list-sidebar">
         <NewsRegionFilter :category="category" :country-code="countryCode" :city-id="cityId" />
-        <AdSlot placement-id="sidebar_rect" />
+        <CurrencyRates />
       </aside>
     </div>
   </div>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'admin' })
+
 const store = useArticlesStore()
 const router = useRouter()
 const categories = await store.loadCategories(true)

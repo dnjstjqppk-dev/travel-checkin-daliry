@@ -26,6 +26,7 @@ type Article struct {
 	Author      string     `json:"author" gorm:"size:80"`
 	CoverImage  string     `json:"coverImage"`
 	Status      string     `json:"status" gorm:"size:20;index;not null;default:draft"`
+	ViewCount   int64      `json:"viewCount" gorm:"not null;default:0"`
 	PublishedAt *time.Time `json:"publishedAt"`
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
@@ -239,7 +240,12 @@ func limitRequestBody() gin.HandlerFunc {
 
 func listArticles(includeDrafts bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query := db.Model(&Article{}).Preload("Cities.Country").Order("published_at desc, created_at desc")
+		query := db.Model(&Article{}).Preload("Cities.Country")
+		if !includeDrafts && c.Query("sort") == "views" {
+			query = query.Order("view_count desc, published_at desc, created_at desc")
+		} else {
+			query = query.Order("published_at desc, created_at desc")
+		}
 		if !includeDrafts {
 			query = query.Where("status = ?", "published")
 		}
@@ -317,6 +323,13 @@ func getArticle(includeDrafts bool) gin.HandlerFunc {
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
 		}
+		if !includeDrafts {
+			if err := db.Model(&Article{}).Where("id = ?", article.ID).UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "article view could not be recorded"})
+				return
+			}
+			article.ViewCount++
+		}
 		c.JSON(http.StatusOK, article)
 	}
 }
@@ -331,6 +344,11 @@ func getArticleByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 		return
 	}
+	if err := db.Model(&Article{}).Where("id = ?", article.ID).UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "article view could not be recorded"})
+		return
+	}
+	article.ViewCount++
 	c.JSON(http.StatusOK, article)
 }
 
@@ -1054,10 +1072,17 @@ func seedLocations() error {
 
 func seedAdPlacements() error {
 	placements := []AdPlacement{
-		{ID: "main_top", Name: "메인 상단 배너", Format: "auto"},
+		{ID: "main_top", Name: "메인 상단 · 헤드라인 위", Format: "auto"},
+		{ID: "main_mid", Name: "메인 피드 중간 · 히어로와 갤러리 사이", Format: "auto"},
+		{ID: "main_bottom", Name: "메인 갤러리 하단", Format: "auto"},
+		{ID: "list_inline_1", Name: "뉴스 목록 · 4번째 카드 다음", Format: "auto"},
+		{ID: "list_inline_2", Name: "뉴스 목록 · 8번째 카드 다음", Format: "auto"},
+		{ID: "list_inline_3", Name: "뉴스 목록 · 12번째 카드 다음", Format: "auto"},
 		{ID: "sidebar_rect", Name: "사이드바 사각형", Format: "rectangle"},
-		{ID: "article_top", Name: "기사 상단", Format: "auto"},
-		{ID: "article_bottom", Name: "기사 하단", Format: "auto"},
+		{ID: "article_top", Name: "기사 상세 · 제목과 본문 사이", Format: "auto"},
+		{ID: "article_mid", Name: "기사 상세 · 본문 하단", Format: "auto"},
+		{ID: "article_bottom", Name: "기사 상세 · 본문 다음", Format: "auto"},
+		{ID: "article_related", Name: "기사 상세 · 추천 기사 위", Format: "auto"},
 	}
 	for _, placement := range placements {
 		if err := db.FirstOrCreate(&placement, AdPlacement{ID: placement.ID}).Error; err != nil {

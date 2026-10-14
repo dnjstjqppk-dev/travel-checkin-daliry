@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'admin' })
+
 const route = useRoute()
 const router = useRouter()
 const store = useArticlesStore()

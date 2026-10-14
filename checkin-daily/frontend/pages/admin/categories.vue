@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'admin' })
+
 const store = useArticlesStore()
 const categories = ref(await store.loadCategories(true))
 const form = reactive({ name: '', slug: '' })

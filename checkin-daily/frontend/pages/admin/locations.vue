@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { City, Country } from '~/stores/articles'
 
+definePageMeta({ layout: 'admin' })
+
 const store = useArticlesStore()
 const countries = ref(await store.loadCountries())
 const selectedCode = ref(countries.value[0]?.code || '')

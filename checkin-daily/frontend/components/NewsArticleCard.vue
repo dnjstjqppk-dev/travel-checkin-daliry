@@ -4,6 +4,10 @@ import type { Article } from '~/stores/articles'
 defineProps<{ article: Article }>()
 const savedStore = useSavedStore()
 
+function hasCoverImage(article: Article) {
+  return Boolean(article.coverImage && /^https:\/\//i.test(article.coverImage))
+}
+
 const categoryNames: Record<string, string> = {
   major: '주요뉴스',
   airline: '항공',
@@ -19,8 +23,11 @@ const categoryNames: Record<string, string> = {
 <template>
   <article class="news-card">
     <NuxtLink :to="`/news/${article.category}/article/${article.id}`">
-      <div class="news-card-art"><span class="art-label">{{ categoryNames[article.category] || article.category }}</span></div>
-      <div class="news-card-meta">{{ article.author }} · {{ article.publishedAt?.slice(0, 10) || '속보' }}</div>
+      <div class="news-card-art" :class="`category-art-${article.category}`">
+        <img v-if="hasCoverImage(article)" :src="article.coverImage" :alt="article.title" loading="lazy">
+        <span class="art-label">{{ categoryNames[article.category] || article.category }}</span>
+      </div>
+      <div class="news-card-meta">{{ article.publishedAt?.slice(0, 10) || '속보' }}<span v-if="article.viewCount"> · 조회 {{ article.viewCount.toLocaleString('ko-KR') }}</span></div>
       <h3>{{ article.title }}</h3>
       <p>{{ article.summary }}</p>
       <div v-if="article.cities?.length" class="location-tags">

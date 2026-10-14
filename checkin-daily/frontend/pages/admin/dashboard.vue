@@ -1,28 +1,121 @@
 <script setup lang="ts">
-const store = useArticlesStore()
-const router = useRouter()
-await useAsyncData('admin-articles', () => store.load('', true))
-const deleting = ref<number | null>(null)
+definePageMeta({ layout: 'admin' })
 
-async function removeArticle(id: number) {
-  if (!window.confirm('이 기사를 삭제할까요?')) return
-  deleting.value = id
-  try { await store.remove(id) } finally { deleting.value = null }
+const store = useArticlesStore()
+const filters = ref<'all' | 'published' | 'draft'>('all')
+const search = ref('')
+const { error: loadError } = await useAsyncData('admin-articles', () => store.load('', true))
+const deleting = ref<number | null>(null)
+const filterTabs = computed(() => [
+  { id: 'all' as const, label: '전체', count: store.articles.length },
+  { id: 'published' as const, label: '발행됨', count: publishedCount.value },
+  { id: 'draft' as const, label: '초안', count: draftCount.value },
+])
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' })
 }
 
-async function logout() {
-  await $fetch('/api/auth/logout', { method: 'POST' })
-  await router.replace('/admin/login')
+const publishedCount = computed(() => store.articles.filter((article) => article.status === 'published').length)
+const draftCount = computed(() => store.articles.filter((article) => article.status === 'draft').length)
+const filteredArticles = computed(() => {
+  const query = search.value.trim().toLocaleLowerCase()
+  return [...store.articles]
+    .filter((article) => filters.value === 'all' || article.status === filters.value)
+    .filter((article) => !query || [article.title, article.summary, article.category].some((value) => value.toLocaleLowerCase().includes(query)))
+    .sort((left, right) => new Date(right.updatedAt ?? right.createdAt).getTime() - new Date(left.updatedAt ?? left.createdAt).getTime())
+})
+
+async function removeArticle(id: number) {
+  if (!window.confirm('이 기사를 삭제할까요? 삭제한 콘텐츠는 복구할 수 없습니다.')) return
+  deleting.value = id
+  try {
+    await store.remove(id)
+  } catch {
+    store.error = '기사를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    deleting.value = null
+  }
 }
 </script>
 
 <template>
   <section class="admin-wrap">
-    <div class="admin-top"><div><p class="eyebrow">EDITOR ROOM / CMS</p><h1>기사 관리</h1></div><div class="admin-shortcuts"><NuxtLink class="button" to="/admin/categories">카테고리 관리</NuxtLink><NuxtLink class="button" to="/admin/locations">국가·도시 관리</NuxtLink><NuxtLink class="button" to="/admin/ads">광고 관리</NuxtLink><NuxtLink class="button button-primary" to="/admin/articles/new">+ 새 기사 작성</NuxtLink><button class="button" type="button" @click="logout">로그아웃</button></div></div>
-    <p v-if="store.error" class="empty-state">{{ store.error }}</p>
-    <p v-else-if="!store.articles.length" class="empty-state">등록된 기사가 없습니다.</p>
-    <table v-else class="admin-table"><thead><tr><th>ARTICLE</th><th>CATEGORY</th><th>LOCATIONS</th><th>STATUS</th><th>DATE</th><th>ACTIONS</th></tr></thead><tbody>
-      <tr v-for="article in store.articles" :key="article.id"><td>{{ article.title }}</td><td>{{ article.category }}</td><td>{{ article.cities?.map((city) => `${city.countryCode}/${city.id}`).join(', ') || '-' }}</td><td><span class="status" :class="{ draft: article.status === 'draft' }">{{ article.status === 'published' ? '발행' : '초안' }}</span></td><td>{{ article.publishedAt?.slice(0, 10) || '-' }}</td><td><NuxtLink :to="`/admin/articles/${article.id}`">수정</NuxtLink><button class="button button-danger" :disabled="deleting === article.id" @click="removeArticle(article.id)">삭제</button></td></tr>
-    </tbody></table>
+    <div class="admin-page-heading">
+      <div>
+        <p class="admin-overline">CONTENT OVERVIEW</p>
+        <h1>뉴스룸 현황 <span aria-hidden="true">✦</span></h1>
+        <p class="admin-heading-copy">오늘의 뉴스룸 콘텐츠와 발행 현황을 확인하세요.</p>
+      </div>
+      <NuxtLink class="button button-primary admin-create-button" to="/admin/articles/new"><span aria-hidden="true">＋</span> 새 기사 작성</NuxtLink>
+    </div>
+
+    <p v-if="loadError || store.error" class="admin-alert" role="alert">{{ store.error || '기사 목록을 불러오지 못했습니다.' }}</p>
+
+    <div class="admin-stats" aria-label="콘텐츠 요약">
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">전체 콘텐츠</span>
+        <strong>{{ store.articles.length }}</strong>
+        <span class="admin-stat-note">뉴스룸에 등록된 기사</span>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">발행됨</span>
+        <strong>{{ publishedCount }}</strong>
+        <span class="admin-stat-note"><span class="admin-online-dot" aria-hidden="true"></span> 독자에게 공개 중</span>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-label">초안</span>
+        <strong>{{ draftCount }}</strong>
+        <span class="admin-stat-note">검토 또는 작성 중</span>
+      </article>
+    </div>
+
+    <section class="admin-content-panel">
+      <div class="admin-panel-heading">
+        <div>
+          <h2>콘텐츠 목록</h2>
+          <p>기사의 발행 상태와 내용을 관리합니다.</p>
+        </div>
+        <label class="admin-search">
+          <span aria-hidden="true">⌕</span>
+          <input v-model="search" type="search" placeholder="기사 제목 검색" aria-label="기사 제목 검색">
+        </label>
+      </div>
+
+      <div class="admin-list-toolbar">
+        <div class="admin-filter-tabs" role="group" aria-label="발행 상태 필터">
+          <button v-for="tab in filterTabs" :key="tab.id" type="button" :class="{ active: filters === tab.id }" @click="filters = tab.id">{{ tab.label }} <span>{{ tab.count }}</span></button>
+        </div>
+        <span class="admin-result-count">{{ filteredArticles.length }}개 기사</span>
+      </div>
+
+      <div v-if="filteredArticles.length" class="admin-table-scroll">
+        <table class="admin-table admin-articles-table">
+          <thead><tr><th>기사</th><th>카테고리</th><th>지역</th><th>상태</th><th>최종 수정</th><th>관리</th></tr></thead>
+          <tbody>
+            <tr v-for="article in filteredArticles" :key="article.id">
+              <td class="admin-article-cell">
+                <NuxtLink :to="`/admin/articles/${article.id}`" class="admin-article-title">{{ article.title }}</NuxtLink>
+                <span class="admin-article-slug">/{{ article.slug }}</span>
+              </td>
+              <td><span class="admin-category-pill">{{ article.category }}</span></td>
+              <td class="admin-location-cell">{{ article.cities?.map((city) => city.nameKo).join(', ') || '전체 지역' }}</td>
+              <td><span class="admin-status" :class="article.status">{{ article.status === 'published' ? '발행됨' : '초안' }}</span></td>
+              <td class="admin-date-cell">{{ formatDate(article.updatedAt ?? article.createdAt) }}</td>
+              <td class="admin-row-actions">
+                <NuxtLink :to="`/admin/articles/${article.id}`" :aria-label="`${article.title} 수정`">수정</NuxtLink>
+                <button type="button" :disabled="deleting === article.id" :aria-label="`${article.title} 삭제`" @click="removeArticle(article.id)">{{ deleting === article.id ? '삭제 중' : '삭제' }}</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-else class="admin-empty-state">
+        <span class="admin-empty-icon" aria-hidden="true">✎</span>
+        <strong>{{ search ? '검색 결과가 없습니다' : filters === 'all' ? '아직 등록된 기사가 없습니다' : filters === 'draft' ? '저장된 초안이 없습니다' : '발행된 기사가 없습니다' }}</strong>
+        <p>{{ search ? '다른 제목이나 키워드로 검색해 보세요.' : '첫 기사를 작성해 뉴스룸을 채워보세요.' }}</p>
+        <NuxtLink v-if="!search && filters === 'all'" class="button button-primary" to="/admin/articles/new">첫 기사 작성</NuxtLink>
+      </div>
+    </section>
   </section>
 </template>

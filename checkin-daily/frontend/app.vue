@@ -3,6 +3,7 @@ const route = useRoute()
 const router = useRouter()
 const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const darkMode = useState('site-dark-mode', () => false)
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 onMounted(() => {
   darkMode.value = localStorage.getItem('checkin-theme') === 'dark'
@@ -27,32 +28,48 @@ async function submitSearch() {
 
 <template>
   <div class="site-shell">
-    <header v-if="route.path !== '/admin/login'" class="site-header">
+    <header v-if="!isAdminRoute" class="site-header">
       <NuxtLink class="wordmark" to="/news" aria-label="체크인데일리 홈">
         <span class="wordmark-mark">C.</span>
         <span>CHECK-IN <b>DAILY</b></span>
       </NuxtLink>
+      <span class="edition masthead-edition">INDEPENDENT TRAVEL JOURNALISM</span>
       <nav class="main-nav" aria-label="주요 메뉴">
         <NuxtLink to="/news">뉴스 홈</NuxtLink>
         <NuxtLink to="/news/major">주요뉴스</NuxtLink>
         <NuxtLink to="/news/airline">항공</NuxtLink>
         <NuxtLink to="/news/hotel">호텔</NuxtLink>
         <NuxtLink to="/news/destination">여행지</NuxtLink>
-        <NuxtLink to="/news/realtime">실시간</NuxtLink>
+        <NuxtLink to="/news/realtime">인기 뉴스</NuxtLink>
         <NuxtLink to="/saved">스크랩</NuxtLink>
-        <NuxtLink to="/admin/news">에디터룸</NuxtLink>
       </nav>
       <form class="header-search" role="search" @submit.prevent="submitSearch">
         <input v-model="search" aria-label="뉴스 검색" placeholder="뉴스 검색">
         <button type="submit" aria-label="검색">⌕</button>
       </form>
-      <button class="theme-toggle" type="button" :aria-pressed="darkMode" @click="darkMode = !darkMode">{{ darkMode ? '라이트' : '다크' }}</button>
+      <button class="theme-toggle" type="button" :aria-pressed="darkMode" :aria-label="darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'" @click="darkMode = !darkMode">{{ darkMode ? '☀' : '◐' }}</button>
     </header>
-    <main><NuxtPage /></main>
-    <footer v-if="route.path !== '/admin/login'" class="site-footer">
-      <NuxtLink class="wordmark footer-mark" to="/news">CHECK-IN <b>DAILY</b></NuxtLink>
-      <span>여행의 다음 장면을 먼저 읽습니다.</span>
-      <span>© 2025 Check-in Daily</span>
+    <main v-if="!isAdminRoute"><NuxtLayout><NuxtPage /></NuxtLayout></main>
+    <div v-else class="admin-route-root"><NuxtLayout><NuxtPage /></NuxtLayout></div>
+    <footer v-if="!isAdminRoute" class="public-footer">
+      <div class="public-footer-main page-wrap">
+        <div class="public-footer-brand">
+          <NuxtLink class="wordmark footer-mark" to="/news"><span class="wordmark-mark">C.</span><span>CHECK-IN <b>DAILY</b></span></NuxtLink>
+          <p>여행 업계의 변화를 읽고,<br>더 나은 다음 여정을 준비합니다.</p>
+          <span class="footer-editorial-note">독립적인 여행 전문 뉴스룸</span>
+        </div>
+        <div class="public-footer-links">
+          <div><strong>뉴스룸</strong><NuxtLink to="/news/major">주요 뉴스</NuxtLink><NuxtLink to="/news/airline">항공</NuxtLink><NuxtLink to="/news/hotel">호텔</NuxtLink></div>
+          <div><strong>여행 인사이트</strong><NuxtLink to="/news/destination">여행지</NuxtLink><NuxtLink to="/news/realtime">많이 읽는 뉴스</NuxtLink><NuxtLink to="/news/region">국가별 뉴스</NuxtLink></div>
+          <div><strong>나의 뉴스룸</strong><NuxtLink to="/saved">스크랩한 기사</NuxtLink><NuxtLink to="/admin/login">에디터 로그인</NuxtLink><NuxtLink to="/news">최신 기사</NuxtLink></div>
+        </div>
+      </div>
+      <div class="public-footer-bottom">
+        <div class="page-wrap">
+          <span>© 2026 CHECK-IN DAILY. 여행의 다음 장면을 먼저 읽습니다.</span>
+          <span>환율은 공개 환율 API 기준 참고 정보이며 실제 결제 환율과 다를 수 있습니다.</span>
+        </div>
+      </div>
     </footer>
   </div>
 </template>

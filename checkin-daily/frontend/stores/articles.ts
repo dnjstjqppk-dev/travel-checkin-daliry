@@ -12,6 +12,8 @@ export interface Article {
   status: 'draft' | 'published'
   publishedAt: string | null
   createdAt: string
+  updatedAt?: string
+  viewCount?: number
   cities?: City[]
 }
 
@@ -44,6 +46,7 @@ export interface ArticleFilters {
   search?: string
   limit?: number
   offset?: number
+  sort?: 'recent' | 'views'
 }
 
 export interface AdPlacement {
@@ -80,6 +83,7 @@ export const useArticlesStore = defineStore('articles', () => {
           ...(filters.city ? { city: filters.city } : {}),
           ...(filters.search ? { q: filters.search } : {}),
           ...(filters.limit ? { limit: filters.limit, offset: filters.offset || 0 } : {}),
+          ...(filters.sort ? { sort: filters.sort } : {}),
         },
       })
       articles.value = append ? [...articles.value, ...loaded] : loaded

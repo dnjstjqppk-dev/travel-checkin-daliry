@@ -293,7 +293,7 @@ func TestSeedDataSupportsNewsCategoriesAndCountryCityFilters(t *testing.T) {
 	if err := db.Model(&AdPlacement{}).Count(&adCount).Error; err != nil {
 		t.Fatal(err)
 	}
-	if articleCount != 5 || countryCount != 10 || cityCount != 16 || adCount != 4 {
-		t.Fatalf("expected repeatable seed counts article/country/city/ad = 5/10/16/4, got %d/%d/%d/%d", articleCount, countryCount, cityCount, adCount)
+	if articleCount != 5 || countryCount != 10 || cityCount != 16 || adCount != 11 {
+		t.Fatalf("expected repeatable seed counts article/country/city/ad = 5/10/16/11, got %d/%d/%d/%d", articleCount, countryCount, cityCount, adCount)
 	}
 }
