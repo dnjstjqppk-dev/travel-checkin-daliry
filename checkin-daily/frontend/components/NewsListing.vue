@@ -12,12 +12,20 @@ const store = useArticlesStore()
 const requestFetch = useRequestFetch()
 const pageSize = 12
 
+const { locale, t } = useI18n()
+function locUrl(path: string) {
+  if (locale.value === 'en') {
+    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
+  }
+  return path.replace(/^\/en/, '') || '/news'
+}
+
 const categoryNames: Record<string, string> = {
-  major: '주요뉴스',
-  airline: '항공',
-  hotel: '호텔',
-  destination: '여행지',
-  realtime: '실시간 인기 뉴스',
+  major: locale.value === 'en' ? 'Major' : '주요뉴스',
+  airline: locale.value === 'en' ? 'Airlines' : '항공',
+  hotel: locale.value === 'en' ? 'Hotels' : '호텔',
+  destination: locale.value === 'en' ? 'Destinations' : '여행지',
+  realtime: locale.value === 'en' ? 'Top Stories' : '실시간 인기 뉴스',
 }
 
 const country = ref<{ code: string; nameKo: string } | null>(null)
@@ -68,10 +76,10 @@ watch(() => [props.countryCode, props.cityId], async ([countryCode, cityId]) => 
 const canLoadMore = computed(() => lastPageCount.value === pageSize)
 const title = computed(() => categoryNames[props.category || ''] || '전체 뉴스')
 const breadcrumbs = computed(() => [
-  { label: 'HOME', to: '/news' },
-  ...(props.category ? [{ label: (categoryNames[props.category] || props.category).toUpperCase(), to: `/news/${props.category}` }] : []),
-  ...(country.value ? [{ label: country.value.nameKo, to: props.category ? `/news/${props.category}/${country.value.code}` : `/news/region/${country.value.code}` }] : []),
-  ...(city.value ? [{ label: city.value.nameKo, to: route.path }] : []),
+  { label: 'HOME', to: locUrl('/news') },
+  ...(props.category ? [{ label: (categoryNames[props.category] || props.category).toUpperCase(), to: locUrl(`/news/${props.category}`) }] : []),
+  ...(country.value ? [{ label: country.value.nameKo, to: locUrl(props.category ? `/news/${props.category}/${country.value.code}` : `/news/region/${country.value.code}`) }] : []),
+  ...(city.value ? [{ label: city.value.nameKo, to: locUrl(route.path) }] : []),
 ])
 
 async function loadMore() {
@@ -136,13 +144,13 @@ function formatViews(views = 0) {
           <div class="bkp-widget-header">
             <span class="bkp-widget-indicator" />
             <h3>TOP STORIES</h3>
-            <NuxtLink to="/news/realtime" class="bkp-widget-more">MORE ↗</NuxtLink>
+            <NuxtLink :to="locUrl('/news/realtime')" class="bkp-widget-more">MORE ↗</NuxtLink>
           </div>
           <ol class="bkp-rank-ordered-list">
             <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="bkp-rank-line">
               <span class="bkp-rank-number" :class="{ 'red': idx < 3 }">{{ idx + 1 }}</span>
               <div class="bkp-rank-body">
-                <NuxtLink :to="`/news/${art.category}/article/${art.id}`">
+                <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)">
                   <strong class="bkp-rank-text">{{ art.title }}</strong>
                 </NuxtLink>
                 <div class="bkp-rank-submeta">

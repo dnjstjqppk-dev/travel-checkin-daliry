@@ -1,0 +1,31 @@
+name: Daily Travel News Automated AI Crawler
+
+on:
+  schedule:
+    # 매일 한국 시간 09:00 (UTC 00:00)에 자동 실행
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 수동 즉시 실행 지원
+
+jobs:
+  crawl-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+
+      - name: Run AI Travel News Crawler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node scripts/cron_travel_crawler.cjs
+

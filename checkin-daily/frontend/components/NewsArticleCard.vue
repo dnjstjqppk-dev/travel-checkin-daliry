@@ -18,11 +18,19 @@ const categoryNames: Record<string, string> = {
   hotels: '호텔',
   industry: '업계',
 }
+
+const { locale } = useI18n()
+function locUrl(path: string) {
+  if (locale.value === 'en') {
+    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
+  }
+  return path.replace(/^\/en/, '') || '/news'
+}
 </script>
 
 <template>
   <article class="news-card bkp-news-card">
-    <NuxtLink :to="`/news/${article.category}/article/${article.id}`" class="bkp-card-link">
+    <NuxtLink :to="locUrl(`/news/${article.category}/article/${article.id}`)" class="bkp-card-link">
       <div class="bkp-card-thumb" :class="`category-art-${article.category}`">
         <img v-if="hasCoverImage(article)" :src="article.coverImage" :alt="article.title" loading="lazy">
         <div v-else class="bkp-card-placeholder" />
@@ -30,8 +38,8 @@ const categoryNames: Record<string, string> = {
       </div>
       <div class="bkp-card-info">
         <div class="bkp-card-meta">
-          <span>{{ article.publishedAt?.slice(0, 10) || '최신' }}</span>
-          <span v-if="article.viewCount">· 조회 {{ article.viewCount.toLocaleString('ko-KR') }}</span>
+          <span>{{ article.publishedAt?.slice(0, 10) || 'LATEST' }}</span>
+          <span v-if="article.viewCount">· {{ article.viewCount.toLocaleString('ko-KR') }} {{ locale === 'en' ? 'views' : '조회' }}</span>
         </div>
         <h3 class="bkp-card-headline">{{ article.title }}</h3>
         <p class="bkp-card-desc">{{ article.summary }}</p>
@@ -44,7 +52,7 @@ const categoryNames: Record<string, string> = {
     </NuxtLink>
     <div class="bkp-card-action">
       <button class="bkp-card-save" type="button" @click="savedStore.toggle(article.slug)">
-        {{ savedStore.has(article.slug) ? '★ 저장됨' : '☆ 스크랩' }}
+        {{ savedStore.has(article.slug) ? (locale === 'en' ? '★ SAVED' : '★ 저장됨') : (locale === 'en' ? '☆ SAVE' : '☆ 스크랩') }}
       </button>
     </div>
   </article>

@@ -7,6 +7,26 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const isArticleRoute = computed(() => route.path.includes('/article/'))
 const isMobileDrawerOpen = ref(false)
 const isMobileSearchOpen = ref(false)
+const { locale, t, locUrl, switchLocale, supportedLocales } = useI18n()
+const isLangModalOpen = ref(false)
+
+const currentLocaleMeta = computed(() => {
+  return supportedLocales.find((l) => l.code === locale.value) || supportedLocales[0]
+})
+
+function openLangModal() {
+  isLangModalOpen.value = true
+  isMobileDrawerOpen.value = false
+}
+
+function closeLangModal() {
+  isLangModalOpen.value = false
+}
+
+async function handleSelectLocale(code: import('./composables/useI18n').Locale) {
+  closeLangModal()
+  await switchLocale(code)
+}
 
 // 방콕포스트 스타일 실시간 날짜 & 시간
 const currentDateTime = ref('')
@@ -74,7 +94,8 @@ function toggleMobileSearch() {
 async function submitSearch() {
   const query = search.value.trim()
   isMobileSearchOpen.value = false
-  await router.push(query ? { path: '/news', query: { q: query } } : '/news')
+  const target = locUrl('/news')
+  await router.push(query ? { path: target, query: { q: query } } : target)
 }
 </script>
 
@@ -90,6 +111,24 @@ async function submitSearch() {
           </div>
           <div class="bkp-utility-links">
             <span class="bkp-tagline-text">THE WORLD’S WINDOW ON TRAVEL JOURNALISM</span>
+            <span class="bkp-pipe">|</span>
+            <!-- 다국어 6개 국어 언어 스위처 트리거 -->
+            <div class="bkp-lang-selector-top">
+              <button
+                type="button"
+                class="bkp-lang-trigger-btn"
+                aria-label="언어 선택 / Select Language"
+                @click="openLangModal"
+              >
+                <span class="bkp-lang-globe">🌐</span>
+                <span class="bkp-lang-flag">{{ currentLocaleMeta.flag }}</span>
+                <span class="bkp-lang-name">{{ currentLocaleMeta.nativeName }}</span>
+                <span class="bkp-lang-code">({{ currentLocaleMeta.code.toUpperCase() }})</span>
+                <svg class="bkp-lang-chevron" width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </button>
+            </div>
             <span class="bkp-pipe">|</span>
             <button
               class="bkp-mode-toggle"
@@ -120,13 +159,17 @@ async function submitSearch() {
             </svg>
           </button>
 
-          <!-- 로고 영역 -->
+          <!-- 로고 영역: 공식 벡터 SVG 로고 -->
           <div class="bkp-logo-unit">
-            <NuxtLink to="/news" class="bkp-main-brand" title="Check-in Daily">
-              <span class="bkp-brand-mark">C.</span>
-              <div class="bkp-brand-headings">
-                <span class="bkp-brand-name">CHECK-IN <b>DAILY</b></span>
-                <span class="bkp-brand-motto">THE WORLD'S WINDOW ON TRAVEL & HOSPITALITY</span>
+            <NuxtLink :to="locUrl('/news')" class="bkp-main-brand" title="Check-in Daily">
+              <!-- 데스크톱용 풀 벡터 로고 -->
+              <img src="/logo.svg" alt="Check-in Daily" class="bkp-vector-logo bkp-desktop-only" width="310" height="52">
+              <!-- 모바일용 콤팩트 브랜드 유닛 -->
+              <div class="bkp-mobile-only bkp-mobile-logo-wrap">
+                <img src="/favicon.svg" alt="Check-in Daily" class="bkp-mobile-logo-icon" width="36" height="36">
+                <div class="bkp-brand-headings">
+                  <span class="bkp-brand-name">CHECK-IN <b>DAILY</b></span>
+                </div>
               </div>
             </NuxtLink>
           </div>
@@ -134,19 +177,28 @@ async function submitSearch() {
           <!-- 데스크톱 검색 & 북마크 도구 -->
           <div class="bkp-masthead-tools bkp-desktop-only">
             <form class="bkp-search-box" role="search" @submit.prevent="submitSearch">
-              <input v-model="search" placeholder="Search news, airlines, hotels..." aria-label="뉴스 검색">
+              <input v-model="search" :placeholder="t('search_placeholder')" aria-label="뉴스 검색">
               <button type="submit" aria-label="검색">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <span>SEARCH</span>
+                <span>{{ t('search') }}</span>
               </button>
             </form>
-            <NuxtLink to="/saved" class="bkp-btn-subscribe" title="스크랩한 뉴스">
-              <span>★ SCRAPBOOK</span>
+            <NuxtLink :to="locUrl('/saved')" class="bkp-btn-subscribe" title="스크랩한 뉴스">
+              <span>★ {{ t('saved').toUpperCase() }}</span>
             </NuxtLink>
           </div>
 
           <!-- 모바일 전용 상단 우측 액션 버튼들 -->
           <div class="bkp-mobile-actions bkp-mobile-only">
+            <!-- 모바일 언어 스위치 버튼 (모달 오픈) -->
+            <button
+              class="bkp-mobile-lang-pill"
+              type="button"
+              aria-label="언어 변경 (Select Language)"
+              @click="openLangModal"
+            >
+              <span>🌐 {{ currentLocaleMeta.flag }} {{ locale.toUpperCase() }}</span>
+            </button>
             <button
               class="bkp-mobile-btn"
               type="button"
@@ -159,7 +211,7 @@ async function submitSearch() {
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
             </button>
-            <NuxtLink to="/saved" class="bkp-mobile-btn" aria-label="스크랩북 이동">
+            <NuxtLink :to="locUrl('/saved')" class="bkp-mobile-btn" aria-label="스크랩북 이동">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
@@ -174,11 +226,11 @@ async function submitSearch() {
             <input
               v-model="search"
               type="search"
-              placeholder="항공사, 호텔, 여행지 검색..."
+              :placeholder="t('search_placeholder')"
               aria-label="모바일 뉴스 검색"
               autofocus
             >
-            <button type="submit" class="bkp-mobile-search-submit">검색</button>
+            <button type="submit" class="bkp-mobile-search-submit">{{ t('search') }}</button>
           </form>
         </div>
       </div>
@@ -187,14 +239,14 @@ async function submitSearch() {
       <nav class="bkp-nav-wrapper" aria-label="메인 카테고리 네비게이션">
         <div class="bkp-page-container bkp-nav-container">
           <ul class="bkp-menu-list">
-            <li><NuxtLink to="/news" active-class="active">ALL NEWS</NuxtLink></li>
-            <li><NuxtLink to="/news/major" active-class="active">MAJOR</NuxtLink></li>
-            <li><NuxtLink to="/news/airline" active-class="active">AIRLINES & MILES</NuxtLink></li>
-            <li><NuxtLink to="/news/hotel" active-class="active">HOTELS & STAY</NuxtLink></li>
-            <li><NuxtLink to="/news/destination" active-class="active">DESTINATIONS</NuxtLink></li>
-            <li><NuxtLink to="/news/realtime" active-class="active">TOP STORIES</NuxtLink></li>
-            <li><NuxtLink to="/news/region" active-class="active">BY REGION</NuxtLink></li>
-            <li><NuxtLink to="/saved" active-class="active">SAVED</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news')" active-class="active">{{ t('all_news').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/major')" active-class="active">{{ t('major').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/airline')" active-class="active">{{ t('airline').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/hotel')" active-class="active">{{ t('hotel').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/destination')" active-class="active">{{ t('destination').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/realtime')" active-class="active">{{ t('realtime').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/news/region')" active-class="active">{{ t('region').toUpperCase() }}</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/saved')" active-class="active">{{ t('saved').toUpperCase() }}</NuxtLink></li>
           </ul>
         </div>
       </nav>
@@ -214,10 +266,8 @@ async function submitSearch() {
       >
         <div class="bkp-drawer-header">
           <div class="bkp-drawer-brand">
-            <span class="bkp-brand-mark small">C.</span>
-            <div class="bkp-brand-headings">
-              <span class="bkp-brand-name">CHECK-IN <b>DAILY</b></span>
-            </div>
+            <img src="/favicon.svg" alt="Check-in Daily" width="30" height="30">
+            <span class="bkp-brand-name">CHECK-IN <b>DAILY</b></span>
           </div>
           <button class="bkp-drawer-close-btn" type="button" aria-label="메뉴 닫기" @click="closeMobileDrawer">
             ✕
@@ -229,68 +279,90 @@ async function submitSearch() {
           <span>{{ currentDateTime || '14 Oct 2026' }}</span>
         </div>
 
+        <!-- 모바일 6개국어 언어 그리드 선택기 -->
+        <div class="bkp-drawer-lang-selector">
+          <div class="bkp-drawer-lang-header">
+            <span class="bkp-drawer-lang-label">🌐 SELECT LANGUAGE (언어 선택)</span>
+            <span class="bkp-drawer-lang-current">{{ currentLocaleMeta.flag }} {{ currentLocaleMeta.nativeName }}</span>
+          </div>
+          <div class="bkp-drawer-lang-grid">
+            <button
+              v-for="item in supportedLocales"
+              :key="item.code"
+              type="button"
+              class="bkp-dlang-card"
+              :class="{ active: locale === item.code }"
+              @click="() => { switchLocale(item.code); closeMobileDrawer(); }"
+            >
+              <span class="bkp-dlang-flag">{{ item.flag }}</span>
+              <span class="bkp-dlang-native">{{ item.nativeName }}</span>
+              <span class="bkp-dlang-code">{{ item.code.toUpperCase() }}</span>
+            </button>
+          </div>
+        </div>
+
         <nav class="bkp-drawer-nav">
           <div class="bkp-drawer-sec-label">SECTIONS</div>
           <ul class="bkp-drawer-list">
             <li>
-              <NuxtLink to="/news" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">📰</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">전체 뉴스 홈</span>
+                  <span class="name-ko">{{ t('all_news') }}</span>
                   <span class="name-en">ALL NEWS</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/major" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/major')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">⭐</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">주요 헤드라인</span>
+                  <span class="name-ko">{{ t('major') }}</span>
                   <span class="name-en">MAJOR STORIES</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/airline" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/airline')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">✈️</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">항공 & 마일리지</span>
+                  <span class="name-ko">{{ t('airline') }}</span>
                   <span class="name-en">AIRLINES & MILES</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/hotel" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/hotel')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">🏨</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">호텔 & 스테이</span>
+                  <span class="name-ko">{{ t('hotel') }}</span>
                   <span class="name-en">HOTELS & RESORTS</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/destination" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/destination')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">🗺️</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">여행지 심층 탐색</span>
+                  <span class="name-ko">{{ t('destination') }}</span>
                   <span class="name-en">DESTINATIONS</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/realtime" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/realtime')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">🔥</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">실시간 인기 뉴스</span>
+                  <span class="name-ko">{{ t('realtime') }}</span>
                   <span class="name-en">TOP STORIES</span>
                 </div>
               </NuxtLink>
             </li>
             <li>
-              <NuxtLink to="/news/region" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/news/region')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">🌏</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">국가/도시별 뉴스</span>
+                  <span class="name-ko">{{ t('region') }}</span>
                   <span class="name-en">BY REGION</span>
                 </div>
               </NuxtLink>
@@ -300,10 +372,10 @@ async function submitSearch() {
           <div class="bkp-drawer-sec-label">MY SERVICES</div>
           <ul class="bkp-drawer-list">
             <li>
-              <NuxtLink to="/saved" @click="closeMobileDrawer">
+              <NuxtLink :to="locUrl('/saved')" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">📌</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">나의 스크랩북</span>
+                  <span class="name-ko">{{ t('saved') }}</span>
                   <span class="name-en">SAVED ARTICLES</span>
                 </div>
               </NuxtLink>
@@ -312,7 +384,7 @@ async function submitSearch() {
               <NuxtLink to="/admin/login" @click="closeMobileDrawer">
                 <span class="bkp-drawer-icon">⚙️</span>
                 <div class="bkp-drawer-item-text">
-                  <span class="name-ko">편집국 관리자 로그인</span>
+                  <span class="name-ko">{{ t('admin_login') }}</span>
                   <span class="name-en">EDITORIAL DESK</span>
                 </div>
               </NuxtLink>
@@ -333,6 +405,59 @@ async function submitSearch() {
       </aside>
     </Teleport>
 
+    <!-- 글로벌 6개국어 언어 선택 팝업 모달 -->
+    <Teleport to="body">
+      <div
+        v-if="isLangModalOpen"
+        class="bkp-modal-backdrop"
+        @click.self="closeLangModal"
+      >
+        <div class="bkp-lang-modal" role="dialog" aria-labelledby="lang-modal-title" aria-modal="true">
+          <div class="bkp-lang-modal-head">
+            <div class="bkp-lang-modal-title-wrap">
+              <span class="bkp-lang-modal-icon">🌐</span>
+              <div>
+                <h3 id="lang-modal-title" class="bkp-lang-modal-title">Select Language / 언어 선택</h3>
+                <p class="bkp-lang-modal-sub">Choose your preferred edition of Check-in Daily</p>
+              </div>
+            </div>
+            <button class="bkp-lang-modal-close" type="button" aria-label="닫기" @click="closeLangModal">
+              ✕
+            </button>
+          </div>
+
+          <div class="bkp-lang-modal-grid">
+            <button
+              v-for="item in supportedLocales"
+              :key="item.code"
+              type="button"
+              class="bkp-lang-option-card"
+              :class="{ active: locale === item.code }"
+              @click="handleSelectLocale(item.code)"
+            >
+              <div class="bkp-lang-card-left">
+                <span class="bkp-lang-card-flag">{{ item.flag }}</span>
+                <div class="bkp-lang-card-text">
+                  <span class="bkp-lang-card-native">{{ item.nativeName }}</span>
+                  <span class="bkp-lang-card-en">{{ item.name }}</span>
+                </div>
+              </div>
+              <div class="bkp-lang-card-right">
+                <span class="bkp-lang-badge">{{ item.code.toUpperCase() }}</span>
+                <span v-if="locale === item.code" class="bkp-lang-active-check">✓</span>
+              </div>
+            </button>
+          </div>
+
+          <div class="bkp-lang-modal-foot">
+            <p class="bkp-lang-modal-note">
+              * 언어 전환 시 각 언어별 전용 URL(예: <code>/news</code>, <code>/en/news</code>, <code>/zh/news</code>, <code>/th/news</code>, <code>/vi/news</code>, <code>/es/news</code>)로 즉시 이동합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- 메인 컨텐츠 영역 -->
     <main v-if="!isAdminRoute" class="bkp-main-content">
       <NuxtLayout><NuxtPage /></NuxtLayout>
@@ -348,25 +473,25 @@ async function submitSearch() {
       class="bkp-mobile-bottom-nav"
       aria-label="모바일 하단 내비게이션"
     >
-      <NuxtLink to="/news" class="bkp-bnav-item" active-class="active" exact-active-class="active">
+      <NuxtLink :to="locUrl('/news')" class="bkp-bnav-item" active-class="active" exact-active-class="active">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>홈</span>
+        <span>{{ t('home') }}</span>
       </NuxtLink>
-      <NuxtLink to="/news/airline" class="bkp-bnav-item" active-class="active">
+      <NuxtLink :to="locUrl('/news/airline')" class="bkp-bnav-item" active-class="active">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.8-.2-1.6.2-2 1-.3.8-.1 1.7.5 2.2l4.8 3.6-2.5 2.5-2.2-.5c-.5-.1-1.1.1-1.4.5-.4.4-.4 1.1 0 1.5l2.2 2.2 2.2 2.2c.4.4 1.1.4 1.5 0 .4-.3.6-.9.5-1.4l-.5-2.2 2.5-2.5 3.6 4.8c.5.6 1.4.8 2.2.5.8-.4 1.2-1.2 1-2z"/></svg>
-        <span>항공</span>
+        <span>{{ t('airline') }}</span>
       </NuxtLink>
-      <NuxtLink to="/news/hotel" class="bkp-bnav-item" active-class="active">
+      <NuxtLink :to="locUrl('/news/hotel')" class="bkp-bnav-item" active-class="active">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
-        <span>호텔</span>
+        <span>{{ t('hotel') }}</span>
       </NuxtLink>
-      <NuxtLink to="/news/destination" class="bkp-bnav-item" active-class="active">
+      <NuxtLink :to="locUrl('/news/destination')" class="bkp-bnav-item" active-class="active">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
-        <span>여행지</span>
+        <span>{{ t('places') }}</span>
       </NuxtLink>
-      <NuxtLink to="/saved" class="bkp-bnav-item" active-class="active">
+      <NuxtLink :to="locUrl('/saved')" class="bkp-bnav-item" active-class="active">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span>스크랩</span>
+        <span>{{ t('saved') }}</span>
       </NuxtLink>
     </nav>
 
@@ -375,12 +500,11 @@ async function submitSearch() {
       <div class="bkp-footer-main">
         <div class="bkp-page-container bkp-footer-grid">
           <div class="bkp-fcol brand-col">
-            <NuxtLink to="/news" class="bkp-footer-logo">
-              <span class="bkp-brand-mark small">C.</span>
-              <span class="bkp-brand-name white">CHECK-IN <b>DAILY</b></span>
+            <NuxtLink :to="locUrl('/news')" class="bkp-footer-logo">
+              <img src="/logo-white.svg" alt="Check-in Daily" class="bkp-footer-vector-logo" width="280" height="46">
             </NuxtLink>
             <p class="bkp-footer-summary">
-              체크인데일리는 글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어입니다.
+              {{ t('footer_tagline') }}
             </p>
             <div class="bkp-footer-meta-tags">
               <span>EDITORIAL OFFICE: SEOUL & BANGKOK</span>
@@ -390,23 +514,23 @@ async function submitSearch() {
           </div>
 
           <div class="bkp-fcol">
-            <h4>SECTIONS</h4>
+            <h4>{{ t('sections').toUpperCase() }}</h4>
             <ul>
-              <li><NuxtLink to="/news">전체 뉴스 (All News)</NuxtLink></li>
-              <li><NuxtLink to="/news/major">주요 뉴스 (Major)</NuxtLink></li>
-              <li><NuxtLink to="/news/airline">항공 & 마일리지 (Airlines)</NuxtLink></li>
-              <li><NuxtLink to="/news/hotel">호텔 & 스테이 (Hotels)</NuxtLink></li>
-              <li><NuxtLink to="/news/destination">여행지 탐색 (Destinations)</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news')">{{ t('all_news') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/major')">{{ t('major') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/airline')">{{ t('airline') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/hotel')">{{ t('hotel') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/destination')">{{ t('destination') }}</NuxtLink></li>
             </ul>
           </div>
 
           <div class="bkp-fcol">
-            <h4>SERVICES</h4>
+            <h4>{{ t('my_services').toUpperCase() }}</h4>
             <ul>
-              <li><NuxtLink to="/news/realtime">실시간 랭킹 (Top Stories)</NuxtLink></li>
-              <li><NuxtLink to="/news/region">국가/도시별 뉴스</NuxtLink></li>
-              <li><NuxtLink to="/saved">나의 스크랩북 (Saved)</NuxtLink></li>
-              <li><NuxtLink to="/admin/login">편집국 관리자 로그인</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/realtime')">{{ t('realtime') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/news/region')">{{ t('region') }}</NuxtLink></li>
+              <li><NuxtLink :to="locUrl('/saved')">{{ t('saved') }}</NuxtLink></li>
+              <li><NuxtLink to="/admin/login">{{ t('admin_login') }}</NuxtLink></li>
             </ul>
           </div>
         </div>
@@ -414,8 +538,8 @@ async function submitSearch() {
 
       <div class="bkp-footer-bottom">
         <div class="bkp-page-container bkp-footer-legal-row">
-          <span>© 2026 CHECK-IN DAILY MEDIA GROUP. BANGKOK POST STYLE ARCHITECTURE.</span>
-          <span>모든 기사 및 콘텐츠는 저작권법의 보호를 받습니다. 무단 전재 및 배포를 금합니다.</span>
+          <span>© 2026 CHECK-IN DAILY MEDIA GROUP. BANGKOK POST STYLE ARCHITECTURE. ALL RIGHTS RESERVED.</span>
+          <span>본 사이트는 글로벌 여행 저널리즘 미디어 플랫폼으로 모든 기사는 저작권법의 보호를 받습니다. 무단 전재 및 배포를 금합니다.</span>
         </div>
       </div>
     </footer>
@@ -508,6 +632,455 @@ async function submitSearch() {
 
 .bkp-mode-toggle:hover {
   background: #E5E7EB;
+}
+
+/* 6-Language Switcher (Top Utility Bar) */
+.bkp-lang-selector-top {
+  display: inline-flex;
+  align-items: center;
+}
+
+.bkp-lang-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #E5E7EB;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: #1F2937;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bkp-lang-trigger-btn:hover {
+  background: #060D81;
+  border-color: #060D81;
+  color: #FFFFFF;
+}
+
+.bkp-lang-globe {
+  font-size: 12px;
+}
+
+.bkp-lang-flag {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.bkp-lang-name {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bkp-lang-code {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+.bkp-lang-chevron {
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.bkp-lang-trigger-btn:hover .bkp-lang-chevron {
+  transform: translateY(1px);
+}
+
+.bkp-mobile-lang-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #060D81;
+  color: #FFFFFF;
+  border: 0;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(6, 13, 129, 0.2);
+}
+
+.bkp-mobile-lang-pill:active {
+  transform: scale(0.96);
+}
+
+/* Vector Logos */
+.bkp-vector-logo {
+  max-height: 48px;
+  width: auto;
+  display: block;
+}
+
+.bkp-mobile-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bkp-footer-vector-logo {
+  max-height: 42px;
+  width: auto;
+  display: block;
+  margin-bottom: 12px;
+}
+
+/* Drawer Language Selector */
+.bkp-drawer-lang-selector {
+  padding: 14px 16px;
+  border-bottom: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.bkp-drawer-lang-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bkp-drawer-lang-label {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 800;
+  color: #64748B;
+  letter-spacing: 0.5px;
+}
+
+.bkp-drawer-lang-current {
+  font-size: 11px;
+  font-weight: 700;
+  color: #060D81;
+  background: #EEF2FF;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.bkp-drawer-lang-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.bkp-dlang-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1E293B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.bkp-dlang-card.active {
+  background: #060D81;
+  border-color: #060D81;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(6, 13, 129, 0.25);
+}
+
+.bkp-dlang-flag {
+  font-size: 15px;
+  margin-right: 6px;
+}
+
+.bkp-dlang-native {
+  flex: 1;
+  font-size: 12px;
+}
+
+.bkp-dlang-code {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  opacity: 0.75;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.bkp-dlang-card.active .bkp-dlang-code {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* Global 6-Language Modal */
+.bkp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: bkpFadeIn 0.18s ease-out;
+}
+
+@keyframes bkpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bkp-lang-modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  animation: bkpScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #E2E8F0;
+}
+
+@keyframes bkpScaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.bkp-lang-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.bkp-lang-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bkp-lang-modal-icon {
+  font-size: 26px;
+}
+
+.bkp-lang-modal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0F172A;
+  font-family: 'DM Mono', -apple-system, sans-serif;
+}
+
+.bkp-lang-modal-sub {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: #64748B;
+}
+
+.bkp-lang-modal-close {
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: #64748B;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.bkp-lang-modal-close:hover {
+  background: #E2E8F0;
+  color: #0F172A;
+}
+
+.bkp-lang-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 16px 20px;
+  background: #FFFFFF;
+}
+
+.bkp-lang-option-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.bkp-lang-option-card:hover {
+  border-color: #060D81;
+  background: #EEF2FF;
+  transform: translateY(-1px);
+}
+
+.bkp-lang-option-card.active {
+  border-color: #060D81;
+  background: #060D81;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(6, 13, 129, 0.25);
+}
+
+.bkp-lang-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bkp-lang-card-flag {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.bkp-lang-card-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.bkp-lang-card-native {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.bkp-lang-option-card.active .bkp-lang-card-native {
+  color: #FFFFFF;
+}
+
+.bkp-lang-card-en {
+  font-size: 11px;
+  color: #64748B;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-lang-option-card.active .bkp-lang-card-en {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bkp-lang-card-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bkp-lang-badge {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 800;
+  padding: 2px 5px;
+  background: #E2E8F0;
+  color: #475569;
+  border-radius: 3px;
+}
+
+.bkp-lang-option-card.active .bkp-lang-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.bkp-lang-active-check {
+  font-size: 14px;
+  font-weight: 900;
+  color: #38BDF8;
+}
+
+.bkp-lang-modal-foot {
+  padding: 12px 20px;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+}
+
+.bkp-lang-modal-note {
+  margin: 0;
+  font-size: 11px;
+  color: #64748B;
+  line-height: 1.4;
+}
+
+.bkp-lang-modal-note code {
+  background: #E2E8F0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #060D81;
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+}
+
+/* Dark Mode Overrides for Language Components */
+html[data-theme='dark'] .bkp-lang-trigger-btn {
+  background: #1E293B;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+html[data-theme='dark'] .bkp-lang-trigger-btn:hover {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+html[data-theme='dark'] .bkp-drawer-lang-selector {
+  background: #111827;
+  border-bottom-color: #1F2937;
+}
+
+html[data-theme='dark'] .bkp-dlang-card {
+  background: #1E293B;
+  border-color: #334155;
+  color: #F1F5F9;
+}
+
+html[data-theme='dark'] .bkp-dlang-card.active {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+html[data-theme='dark'] .bkp-lang-modal {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+html[data-theme='dark'] .bkp-lang-modal-head,
+html[data-theme='dark'] .bkp-lang-modal-foot {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+html[data-theme='dark'] .bkp-lang-modal-title {
+  color: #F8FAFC;
+}
+
+html[data-theme='dark'] .bkp-lang-modal-grid {
+  background: #0F172A;
+}
+
+html[data-theme='dark'] .bkp-lang-option-card {
+  background: #1E293B;
+  border-color: #334155;
+}
+
+html[data-theme='dark'] .bkp-lang-card-native {
+  color: #F8FAFC;
+}
+
+html[data-theme='dark'] .bkp-lang-option-card.active {
+  background: #2563EB;
+  border-color: #3B82F6;
+  color: #FFFFFF;
 }
 
 /* 2. 메인 마스트헤드 */

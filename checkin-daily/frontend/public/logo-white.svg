@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 76" fill="none">
+  <!-- Brand Symbol / Emblem -->
+  <g id="brand-emblem">
+    <rect x="2" y="2" width="72" height="72" rx="8" fill="#1E3A8A" stroke="#3B82F6" stroke-width="1.5"/>
+    <circle cx="38" cy="38" r="26" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="2 3"/>
+    <path d="M38 15 L40.5 21 L38 27 L35.5 21 Z" fill="#EF4444"/>
+    <text x="36" y="52" font-family="Georgia, 'Times New Roman', serif" font-size="44" font-weight="900" fill="#FFFFFF" text-anchor="middle">C</text>
+    <circle cx="56" cy="22" r="3.5" fill="#EF4444"/>
+  </g>
+
+  <!-- Typography: CHECK-IN DAILY (White mode for dark footer) -->
+  <g id="brand-text">
+    <text x="92" y="44" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">CHECK-IN</text>
+    <text x="278" y="44" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="900" fill="#EF4444" letter-spacing="-0.5">DAILY</text>
+    <text x="94" y="63" font-family="'Courier New', Courier, monospace" font-size="9.5" font-weight="700" fill="#94A3B8" letter-spacing="2">THE WORLD’S WINDOW ON TRAVEL JOURNALISM</text>
+  </g>
+</svg>
+

@@ -13,8 +13,22 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: '체크인데일리 | Check-in Daily',
-      meta: [{ name: 'description', content: '여행의 다음 장면을 먼저 읽는 여행 전문 미디어' }],
+      title: '체크인데일리 | Check-in Daily — The World’s Window on Travel Journalism',
+      htmlAttrs: { lang: 'ko' },
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover' },
+        { name: 'description', content: '글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어' },
+        { name: 'theme-color', content: '#060D81' },
+        { property: 'og:site_name', content: 'Check-in Daily' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'canonical', href: 'https://travel-checkin-daily.dnjstjqppk.workers.dev' },
+      ],
     },
   },
 })

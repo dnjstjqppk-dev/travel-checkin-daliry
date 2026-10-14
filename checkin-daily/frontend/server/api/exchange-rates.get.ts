@@ -46,7 +46,14 @@ function formatRates(rates: Record<string, number>, updatedAt: string, stale: bo
     if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0) {
       throw createError({ statusCode: 502, statusMessage: `Exchange rate is unavailable for ${item.currency}` })
     }
-    return { ...item, per1000Krw: rate * 1000 }
+    const unit = (item.currency === 'JPY' || item.currency === 'VND') ? 100 : 1
+    const krwPrice = (1 / rate) * unit
+    return {
+      ...item,
+      unit,
+      krwPrice: Math.round(krwPrice * 100) / 100,
+      per1000Krw: rate * 1000,
+    }
   })
   return {
     base: 'KRW',
@@ -54,7 +61,7 @@ function formatRates(rates: Record<string, number>, updatedAt: string, stale: bo
     rates: currencies,
     updatedAt,
     stale,
-    source: 'ExchangeRate-API',
+    source: 'ExchangeRate-API (Live Market)',
     sourceUrl: 'https://www.exchangerate-api.com',
   }
 }
