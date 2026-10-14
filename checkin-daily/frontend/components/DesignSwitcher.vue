@@ -34,13 +34,17 @@ const designs: DesignOption[] = [
   },
 ]
 
-const currentDesign = useState<string>('current-design-concept', () => '1')
+const queryDesign = typeof route.query.design === 'string' && ['1', '2', '3'].includes(route.query.design)
+  ? route.query.design
+  : ''
+
+const currentDesign = useState<string>('current-design-concept', () => {
+  if (queryDesign) return queryDesign
+  return '1'
+})
 
 onMounted(() => {
-  const queryDesign = typeof route.query.design === 'string' ? route.query.design : ''
-  if (['1', '2', '3'].includes(queryDesign)) {
-    currentDesign.value = queryDesign
-  } else {
+  if (!queryDesign) {
     const saved = localStorage.getItem('checkin-design-concept')
     if (saved && ['1', '2', '3'].includes(saved)) {
       currentDesign.value = saved
@@ -54,7 +58,7 @@ watch(() => route.query.design, (newDesign) => {
     currentDesign.value = newDesign
     applyDesign(newDesign)
   }
-})
+}, { immediate: true })
 
 function applyDesign(id: string) {
   if (!import.meta.client) return
