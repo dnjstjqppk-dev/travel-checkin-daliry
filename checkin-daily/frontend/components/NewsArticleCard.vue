@@ -185,4 +185,64 @@ const categoryNames: Record<string, string> = {
 .bkp-card-save:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 640px) {
+  .bkp-news-card {
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .bkp-card-link {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 12px;
+    padding: 12px 14px 6px;
+    align-items: stretch;
+  }
+  .bkp-card-thumb {
+    width: 106px;
+    height: 78px;
+    min-width: 106px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .bkp-card-tag {
+    font-size: 9px;
+    padding: 2px 5px;
+    top: 5px;
+    left: 5px;
+  }
+  .bkp-card-info {
+    padding: 0;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .bkp-card-meta {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+  .bkp-card-headline {
+    font-size: 14px;
+    line-height: 1.35;
+    margin-bottom: 3px;
+  }
+  .bkp-card-desc {
+    font-size: 12px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 4px;
+    color: #6B7280;
+  }
+  .bkp-card-locations {
+    display: none;
+  }
+  .bkp-card-action {
+    padding: 0 14px 8px;
+  }
+}
 </style>

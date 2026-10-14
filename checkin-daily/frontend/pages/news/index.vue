@@ -634,6 +634,7 @@ function formatViews(views = 0) {
 @media (max-width: 900px) {
   .bkp-highlight-row {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
   .bkp-card-grid-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -641,12 +642,47 @@ function formatViews(views = 0) {
 }
 
 @media (max-width: 640px) {
-  .bkp-sublead-row,
-  .bkp-card-grid-3 {
-    grid-template-columns: 1fr;
+  .bkp-home-root {
+    padding: 12px 0 40px;
+  }
+  .bkp-highlight-row {
+    margin-top: 8px;
+    margin-bottom: 28px;
+  }
+  .bkp-hero-lead-card {
+    padding-bottom: 16px;
+    margin-bottom: 16px;
   }
   .bkp-hero-img-wrap {
-    height: 240px;
+    height: 200px;
+  }
+  .bkp-hero-headline {
+    font-size: 20px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .bkp-hero-summary {
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .bkp-sublead-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .bkp-card-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .bkp-sec-header {
+    margin-bottom: 14px;
+  }
+  .bkp-sec-header h2 {
+    font-size: 17px;
+  }
+  .bkp-category-section,
+  .bkp-search-view {
+    margin-bottom: 32px;
   }
 }
 </style>

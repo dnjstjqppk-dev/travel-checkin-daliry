@@ -4,7 +4,9 @@ const router = useRouter()
 const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const darkMode = useState('site-dark-mode', () => false)
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
-const isSearchOpen = ref(false)
+const isArticleRoute = computed(() => route.path.includes('/article/'))
+const isMobileDrawerOpen = ref(false)
+const isMobileSearchOpen = ref(false)
 
 // 방콕포스트 스타일 실시간 날짜 & 시간
 const currentDateTime = ref('')
@@ -46,8 +48,32 @@ watch(() => route.query.q, (query) => {
   search.value = typeof query === 'string' ? query : ''
 })
 
+watch(() => route.fullPath, () => {
+  isMobileDrawerOpen.value = false
+  isMobileSearchOpen.value = false
+})
+
+function toggleMobileDrawer() {
+  isMobileDrawerOpen.value = !isMobileDrawerOpen.value
+  if (isMobileDrawerOpen.value) {
+    isMobileSearchOpen.value = false
+  }
+}
+
+function closeMobileDrawer() {
+  isMobileDrawerOpen.value = false
+}
+
+function toggleMobileSearch() {
+  isMobileSearchOpen.value = !isMobileSearchOpen.value
+  if (isMobileSearchOpen.value) {
+    isMobileDrawerOpen.value = false
+  }
+}
+
 async function submitSearch() {
   const query = search.value.trim()
+  isMobileSearchOpen.value = false
   await router.push(query ? { path: '/news', query: { q: query } } : '/news')
 }
 </script>
@@ -77,9 +103,24 @@ async function submitSearch() {
         </div>
       </div>
 
-      <!-- 방콕포스트 메인 마스트헤드 (로고 + 검색창 + 스크랩북) -->
+      <!-- 방콕포스트 메인 마스트헤드 (데스크톱 & 모바일 반응형) -->
       <div class="bkp-masthead-bar">
         <div class="bkp-page-container bkp-masthead-inner">
+          <!-- 모바일 전용 햄버거 메뉴 버튼 -->
+          <button
+            class="bkp-mobile-btn bkp-hamburger-btn"
+            type="button"
+            aria-label="전체 메뉴 열기"
+            @click="toggleMobileDrawer"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+
+          <!-- 로고 영역 -->
           <div class="bkp-logo-unit">
             <NuxtLink to="/news" class="bkp-main-brand" title="Check-in Daily">
               <span class="bkp-brand-mark">C.</span>
@@ -90,7 +131,8 @@ async function submitSearch() {
             </NuxtLink>
           </div>
 
-          <div class="bkp-masthead-tools">
+          <!-- 데스크톱 검색 & 북마크 도구 -->
+          <div class="bkp-masthead-tools bkp-desktop-only">
             <form class="bkp-search-box" role="search" @submit.prevent="submitSearch">
               <input v-model="search" placeholder="Search news, airlines, hotels..." aria-label="뉴스 검색">
               <button type="submit" aria-label="검색">
@@ -102,10 +144,46 @@ async function submitSearch() {
               <span>★ SCRAPBOOK</span>
             </NuxtLink>
           </div>
+
+          <!-- 모바일 전용 상단 우측 액션 버튼들 -->
+          <div class="bkp-mobile-actions bkp-mobile-only">
+            <button
+              class="bkp-mobile-btn"
+              type="button"
+              :class="{ active: isMobileSearchOpen }"
+              aria-label="기사 검색창 토글"
+              @click="toggleMobileSearch"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <NuxtLink to="/saved" class="bkp-mobile-btn" aria-label="스크랩북 이동">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </NuxtLink>
+          </div>
+        </div>
+
+        <!-- 모바일 검색창 드롭다운 (토글 시 부드럽게 노출) -->
+        <div v-if="isMobileSearchOpen" class="bkp-mobile-search-bar">
+          <form class="bkp-mobile-search-form" @submit.prevent="submitSearch">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              v-model="search"
+              type="search"
+              placeholder="항공사, 호텔, 여행지 검색..."
+              aria-label="모바일 뉴스 검색"
+              autofocus
+            >
+            <button type="submit" class="bkp-mobile-search-submit">검색</button>
+          </form>
         </div>
       </div>
 
-      <!-- 방콕포스트 시그니처 딥 네이비(#060D81) 메인 메뉴 바 (divnav-menu) -->
+      <!-- 방콕포스트 시그니처 딥 네이비(#060D81) 메인 메뉴 바 (모바일 가로 스크롤 스와이프 지원) -->
       <nav class="bkp-nav-wrapper" aria-label="메인 카테고리 네비게이션">
         <div class="bkp-page-container bkp-nav-container">
           <ul class="bkp-menu-list">
@@ -122,6 +200,139 @@ async function submitSearch() {
       </nav>
     </header>
 
+    <!-- 모바일 오프캔버스 슬라이드 드로어 메뉴 -->
+    <Teleport to="body">
+      <div
+        v-if="isMobileDrawerOpen"
+        class="bkp-drawer-backdrop"
+        @click="closeMobileDrawer"
+      />
+      <aside
+        class="bkp-mobile-drawer"
+        :class="{ 'is-open': isMobileDrawerOpen }"
+        aria-label="모바일 전체 메뉴"
+      >
+        <div class="bkp-drawer-header">
+          <div class="bkp-drawer-brand">
+            <span class="bkp-brand-mark small">C.</span>
+            <div class="bkp-brand-headings">
+              <span class="bkp-brand-name">CHECK-IN <b>DAILY</b></span>
+            </div>
+          </div>
+          <button class="bkp-drawer-close-btn" type="button" aria-label="메뉴 닫기" @click="closeMobileDrawer">
+            ✕
+          </button>
+        </div>
+
+        <div class="bkp-drawer-time">
+          <span class="bkp-red-bullet" />
+          <span>{{ currentDateTime || '14 Oct 2026' }}</span>
+        </div>
+
+        <nav class="bkp-drawer-nav">
+          <div class="bkp-drawer-sec-label">SECTIONS</div>
+          <ul class="bkp-drawer-list">
+            <li>
+              <NuxtLink to="/news" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">📰</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">전체 뉴스 홈</span>
+                  <span class="name-en">ALL NEWS</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/major" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">⭐</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">주요 헤드라인</span>
+                  <span class="name-en">MAJOR STORIES</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/airline" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">✈️</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">항공 & 마일리지</span>
+                  <span class="name-en">AIRLINES & MILES</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/hotel" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">🏨</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">호텔 & 스테이</span>
+                  <span class="name-en">HOTELS & RESORTS</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/destination" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">🗺️</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">여행지 심층 탐색</span>
+                  <span class="name-en">DESTINATIONS</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/realtime" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">🔥</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">실시간 인기 뉴스</span>
+                  <span class="name-en">TOP STORIES</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/news/region" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">🌏</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">국가/도시별 뉴스</span>
+                  <span class="name-en">BY REGION</span>
+                </div>
+              </NuxtLink>
+            </li>
+          </ul>
+
+          <div class="bkp-drawer-sec-label">MY SERVICES</div>
+          <ul class="bkp-drawer-list">
+            <li>
+              <NuxtLink to="/saved" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">📌</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">나의 스크랩북</span>
+                  <span class="name-en">SAVED ARTICLES</span>
+                </div>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink to="/admin/login" @click="closeMobileDrawer">
+                <span class="bkp-drawer-icon">⚙️</span>
+                <div class="bkp-drawer-item-text">
+                  <span class="name-ko">편집국 관리자 로그인</span>
+                  <span class="name-en">EDITORIAL DESK</span>
+                </div>
+              </NuxtLink>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="bkp-drawer-footer">
+          <button
+            class="bkp-drawer-theme-toggle"
+            type="button"
+            @click="darkMode = !darkMode"
+          >
+            <span>{{ darkMode ? '☀ 밝은 화면 (LIGHT)' : '◐ 어두운 화면 (DARK)' }}</span>
+          </button>
+          <p class="bkp-drawer-copy">© 2026 Check-in Daily Media Group</p>
+        </div>
+      </aside>
+    </Teleport>
+
     <!-- 메인 컨텐츠 영역 -->
     <main v-if="!isAdminRoute" class="bkp-main-content">
       <NuxtLayout><NuxtPage /></NuxtLayout>
@@ -129,6 +340,35 @@ async function submitSearch() {
     <div v-else class="admin-route-root">
       <NuxtLayout><NuxtPage /></NuxtLayout>
     </div>
+
+    <!-- 모바일 하단 고정 탭 바 (일반 페이지에서 한 손 엄지 손가락 조작 최적화) -->
+    <!-- 기사 상세 페이지에서는 기사 전용 읽기 툴바가 대신 표시됨 -->
+    <nav
+      v-if="!isAdminRoute && !isArticleRoute"
+      class="bkp-mobile-bottom-nav"
+      aria-label="모바일 하단 내비게이션"
+    >
+      <NuxtLink to="/news" class="bkp-bnav-item" active-class="active" exact-active-class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>홈</span>
+      </NuxtLink>
+      <NuxtLink to="/news/airline" class="bkp-bnav-item" active-class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.8-.2-1.6.2-2 1-.3.8-.1 1.7.5 2.2l4.8 3.6-2.5 2.5-2.2-.5c-.5-.1-1.1.1-1.4.5-.4.4-.4 1.1 0 1.5l2.2 2.2 2.2 2.2c.4.4 1.1.4 1.5 0 .4-.3.6-.9.5-1.4l-.5-2.2 2.5-2.5 3.6 4.8c.5.6 1.4.8 2.2.5.8-.4 1.2-1.2 1-2z"/></svg>
+        <span>항공</span>
+      </NuxtLink>
+      <NuxtLink to="/news/hotel" class="bkp-bnav-item" active-class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+        <span>호텔</span>
+      </NuxtLink>
+      <NuxtLink to="/news/destination" class="bkp-bnav-item" active-class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
+        <span>여행지</span>
+      </NuxtLink>
+      <NuxtLink to="/saved" class="bkp-bnav-item" active-class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>스크랩</span>
+      </NuxtLink>
+    </nav>
 
     <!-- 방콕포스트 공식 3단 푸터 (divfooter) -->
     <footer v-if="!isAdminRoute" class="bkp-site-footer">
@@ -564,21 +804,354 @@ async function submitSearch() {
   gap: 10px;
 }
 
+/* Mobile / Desktop Display Helpers */
+.bkp-mobile-only {
+  display: none !important;
+}
+
+.bkp-desktop-only {
+  display: flex !important;
+}
+
+/* Mobile Header Buttons */
+.bkp-mobile-btn {
+  background: transparent;
+  border: 0;
+  color: #060D81;
+  padding: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+
+.bkp-mobile-btn:active {
+  background: #E5E7EB;
+}
+
+.bkp-mobile-btn.active {
+  background: #060D81;
+  color: #FFFFFF;
+}
+
+.bkp-mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Mobile Search Dropdown */
+.bkp-mobile-search-bar {
+  background: #F3F4F6;
+  border-top: 1px solid #E5E7EB;
+  padding: 10px 16px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bkp-mobile-search-form {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 0 10px;
+  gap: 8px;
+}
+
+.bkp-mobile-search-form input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  padding: 10px 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+.bkp-mobile-search-submit {
+  background: #060D81;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Off-Canvas Mobile Drawer */
+.bkp-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 998;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bkp-mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 82%;
+  max-width: 320px;
+  background: #FFFFFF;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+  transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+.bkp-mobile-drawer.is-open {
+  transform: translateX(0);
+}
+
+.bkp-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 2px solid #060D81;
+}
+
+.bkp-drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bkp-drawer-close-btn {
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  color: #6B7280;
+  cursor: pointer;
+  padding: 6px;
+  line-height: 1;
+}
+
+.bkp-drawer-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.bkp-drawer-nav {
+  flex: 1;
+  padding: 16px 0;
+}
+
+.bkp-drawer-sec-label {
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 800;
+  color: #94A3B8;
+  padding: 8px 20px 4px;
+  letter-spacing: 1px;
+}
+
+.bkp-drawer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bkp-drawer-list li a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #1E293B;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.15s, border-left-color 0.15s;
+}
+
+.bkp-drawer-list li a:active,
+.bkp-drawer-list li a.router-link-active {
+  background: #EFF6FF;
+  border-left-color: #060D81;
+  color: #060D81;
+}
+
+.bkp-drawer-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.bkp-drawer-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.bkp-drawer-item-text .name-ko {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.bkp-drawer-item-text .name-en {
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  color: #64748B;
+  margin-top: 1px;
+}
+
+.bkp-drawer-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+
+.bkp-drawer-theme-toggle {
+  width: 100%;
+  padding: 10px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 12px;
+}
+
+.bkp-drawer-copy {
+  margin: 0;
+  font-size: 10px;
+  color: #94A3B8;
+  text-align: center;
+  font-family: 'DM Mono', monospace;
+}
+
+/* Mobile Fixed Bottom Navigation Bar (Thumb Zone) */
+.bkp-mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 990;
+  padding: 6px 8px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
+  justify-content: space-around;
+  align-items: center;
+}
+
+.bkp-bnav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  padding: 4px 0;
+  color: #64748B;
+  text-decoration: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  transition: color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bkp-bnav-item svg {
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bkp-bnav-item:active {
+  transform: scale(0.92);
+}
+
+.bkp-bnav-item.active {
+  color: #060D81;
+}
+
+.bkp-bnav-item.active svg {
+  stroke: #060D81;
+  transform: translateY(-2px);
+}
+
 @media (max-width: 900px) {
   .bkp-footer-grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .bkp-mobile-only {
+    display: flex !important;
+  }
+  .bkp-desktop-only {
+    display: none !important;
+  }
+  .bkp-mobile-bottom-nav {
+    display: flex;
+  }
+  .bkp-main-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 8px));
+  }
+  .bkp-utility-bar {
+    display: none;
+  }
+  .bkp-masthead-bar {
+    padding: 10px 0;
+  }
   .bkp-masthead-inner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
-  .bkp-search-box input {
-    width: 160px;
+  .bkp-brand-mark {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
   }
+  .bkp-brand-name {
+    font-size: 20px;
+  }
+  .bkp-brand-motto {
+    display: none;
+  }
+  .bkp-menu-list a {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  .bkp-site-footer {
+    padding-bottom: 70px;
+  }
+}
+
+@media (max-width: 640px) {
   .bkp-tagline-text {
     display: none;
   }

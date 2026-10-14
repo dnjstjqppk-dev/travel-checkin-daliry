@@ -15,7 +15,23 @@ try {
   throw createError({ statusCode: 404, statusMessage: 'News article not found' })
 }
 
-const html = DOMPurify.sanitize(await marked.parse(article.content || ''))
+// 안전한 마크다운 파싱 (Cloudflare Workers SSR 호환)
+function renderMarkdown(raw: string): string {
+  try {
+    const parsed = marked.parse(raw || '', { async: false }) as string
+    const sanitizeFn = (DOMPurify as any)?.sanitize || (DOMPurify as any)?.default?.sanitize
+    if (typeof sanitizeFn === 'function') {
+      return sanitizeFn(parsed)
+    }
+    return parsed
+  } catch {
+    return raw || ''
+  }
+}
+
+const html = computed(() => renderMarkdown(article.content || ''))
+
+const router = useRouter()
 const { data: recommendedData } = await useAsyncData(
   `article-recommended-${article.id}`,
   () => $fetch<Article[]>('/api/articles', { query: { category, limit: 5, sort: 'views' } }),
@@ -53,10 +69,24 @@ function formatDate(date: string | null) {
   return `${datePart.toUpperCase()} AT ${timePart}`
 }
 
+// 모바일 읽기 편의: 글자 크기 조절 (보통 / 크게 / 아주크게)
+const fontSize = ref<'normal' | 'large' | 'xlarge'>('normal')
+function toggleFontSize() {
+  if (fontSize.value === 'normal') fontSize.value = 'large'
+  else if (fontSize.value === 'large') fontSize.value = 'xlarge'
+  else fontSize.value = 'normal'
+}
+
+const copySuccess = ref(false)
 function copyUrl() {
   if (!import.meta.client) return
   navigator.clipboard.writeText(window.location.href)
-  alert('기사 주소가 클립보드에 복사되었습니다.')
+  copySuccess.value = true
+  setTimeout(() => { copySuccess.value = false }, 2500)
+}
+
+function goBack() {
+  router.back()
 }
 </script>
 
@@ -125,7 +155,7 @@ function copyUrl() {
         <AdSlot placement-id="article_top" />
 
         <!-- 기사 본문 텍스트 (신문사 타이포그래피) -->
-        <div class="bkp-article-content-html" v-html="html" />
+        <div class="bkp-article-content-html" :class="`font-${fontSize}`" v-html="html" />
 
         <AdSlot placement-id="article_bottom" />
 
@@ -173,6 +203,32 @@ function copyUrl() {
         </div>
       </aside>
     </div>
+
+    <!-- 모바일 전용 플로팅 읽기 바 (화면 하단 고정) -->
+    <nav class="bkp-mobile-reading-bar" aria-label="기사 읽기 컨트롤">
+      <button class="mbar-btn" type="button" aria-label="이전 화면으로 돌아가기" @click="goBack">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>뒤로</span>
+      </button>
+      <button class="mbar-btn" type="button" aria-label="글자 크기 변경" @click="toggleFontSize">
+        <span class="mbar-font-indicator">A<sup>+</sup></span>
+        <span>{{ fontSize === 'normal' ? '기본글꼴' : fontSize === 'large' ? '크게' : '아주크게' }}</span>
+      </button>
+      <button class="mbar-btn" type="button" aria-label="기사 링크 복사" @click="copyUrl">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>{{ copySuccess ? '복사완료!' : '공유' }}</span>
+      </button>
+      <button
+        class="mbar-btn"
+        :class="{ active: savedStore.has(article.slug) }"
+        type="button"
+        aria-label="기사 스크랩 저장"
+        @click="savedStore.toggle(article.slug)"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" :fill="savedStore.has(article.slug) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>{{ savedStore.has(article.slug) ? '저장됨' : '스크랩' }}</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -510,6 +566,25 @@ function copyUrl() {
   gap: 24px;
 }
 
+.bkp-article-content-html.font-normal {
+  font-size: 17px;
+  line-height: 1.85;
+}
+
+.bkp-article-content-html.font-large {
+  font-size: 19.5px;
+  line-height: 1.95;
+}
+
+.bkp-article-content-html.font-xlarge {
+  font-size: 22px;
+  line-height: 2.05;
+}
+
+.bkp-mobile-reading-bar {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .bkp-highlight-row {
     grid-template-columns: 1fr;
@@ -519,9 +594,63 @@ function copyUrl() {
   }
 }
 
+@media (max-width: 768px) {
+  .bkp-article-page {
+    padding-bottom: 90px;
+  }
+  .bkp-mobile-reading-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .mbar-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: 0;
+    color: #4B5563;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 64px;
+    height: 100%;
+    padding: 0;
+    transition: color 0.15s, transform 0.15s;
+  }
+  .mbar-btn:active {
+    transform: scale(0.92);
+  }
+  .mbar-btn.active {
+    color: #D0021B;
+  }
+  .mbar-font-indicator {
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    font-family: 'DM Mono', monospace;
+  }
+}
+
 @media (max-width: 640px) {
   .bkp-card-grid-3 {
     grid-template-columns: 1fr;
+  }
+  .bkp-article-headline {
+    font-size: 24px;
+    line-height: 1.3;
   }
 }
 </style>

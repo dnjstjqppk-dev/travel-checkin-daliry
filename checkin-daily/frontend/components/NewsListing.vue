@@ -393,12 +393,30 @@ function formatViews(views = 0) {
 @media (max-width: 900px) {
   .bkp-highlight-row {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
 
 @media (max-width: 640px) {
+  .bkp-listing-root {
+    padding: 12px 0 40px;
+  }
+  .bkp-list-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .bkp-list-page-title {
+    font-size: 20px;
+  }
   .bkp-card-grid-2 {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .bkp-load-more-btn {
+    width: 100%;
+    padding: 12px 0;
   }
 }
 </style>

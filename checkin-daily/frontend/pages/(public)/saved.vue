@@ -1,17 +1,178 @@
 <script setup lang="ts">
+import NewsArticleCard from '~/components/NewsArticleCard.vue'
+
 const store = useArticlesStore()
 const savedStore = useSavedStore()
-await useAsyncData('saved-articles', () => store.load())
+await useAsyncData('saved-articles', () => store.load({ limit: 100 }))
 const savedArticles = computed(() => store.articles.filter((article) => savedStore.has(article.slug)))
 </script>
 
 <template>
-  <div class="page-wrap">
-    <section class="hero"><div><p class="eyebrow">YOUR READING LIST</p><h1>다시 읽을 여행의<br><em>메모.</em></h1><p class="hero-copy">스크랩한 기사를 이 브라우저에 저장합니다.</p></div></section>
-    <div class="section-heading"><h2>스크랩한 기사</h2><span class="meta">{{ savedArticles.length.toString().padStart(2, '0') }} SAVED</span></div>
+  <div class="bkp-page-container bkp-saved-root">
+    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
+      <NuxtLink to="/news" class="bkp-bc-link">HOME</NuxtLink>
+      <span class="bkp-bc-sep">›</span>
+      <span class="bkp-bc-current">SAVED SCRAPBOOK</span>
+    </nav>
+
+    <div class="bkp-list-header-bar">
+      <div class="bkp-list-title-group">
+        <span class="bkp-color-bar default" />
+        <h1 class="bkp-list-page-title">MY SCRAPBOOK (나의 스크랩북)</h1>
+      </div>
+      <div class="bkp-list-count">
+        총 {{ savedArticles.length }}개의 저장된 기사
+      </div>
+    </div>
+
     <ClientOnly>
-      <section v-if="savedArticles.length" class="article-grid"><article v-for="article in savedArticles" :key="article.id" class="article-card"><NuxtLink :to="`/articles/${article.slug}`"><div class="article-art"><span class="art-label">{{ article.category.toUpperCase() }}</span></div><span class="meta">{{ article.author }}</span><h3>{{ article.title }}</h3><p>{{ article.summary }}</p></NuxtLink><button class="save-button" type="button" @click="savedStore.toggle(article.slug)">스크랩 해제</button></article></section>
-      <p v-else class="empty-state">저장한 기사가 없습니다.</p>
+      <div v-if="savedArticles.length" class="bkp-card-grid-3">
+        <NewsArticleCard v-for="article in savedArticles" :key="article.id" :article="article" />
+      </div>
+      <div v-else class="bkp-saved-empty">
+        <div class="bkp-empty-icon">📌</div>
+        <h3>스크랩한 기사가 없습니다</h3>
+        <p>관심 있는 기사의 [☆ 스크랩] 버튼을 누르면 언제든지 이곳에서 다시 읽으실 수 있습니다.</p>
+        <NuxtLink to="/news" class="bkp-btn-explore">최신 뉴스 둘러보기 →</NuxtLink>
+      </div>
     </ClientOnly>
   </div>
 </template>
+
+<style scoped>
+.bkp-saved-root {
+  padding: 20px 0 60px;
+}
+
+.bkp-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 16px;
+  color: #6B7280;
+}
+
+.bkp-bc-link {
+  color: #6B7280;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.bkp-bc-sep {
+  color: #9CA3AF;
+}
+
+.bkp-bc-current {
+  color: #060D81;
+  font-weight: 700;
+}
+
+.bkp-list-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #060D81;
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.bkp-list-title-group {
+  display: flex;
+  align-items: center;
+}
+
+.bkp-color-bar.default {
+  width: 5px;
+  height: 22px;
+  background: #D0021B;
+  margin-right: 12px;
+  display: inline-block;
+}
+
+.bkp-list-page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.5px;
+}
+
+.bkp-list-count {
+  font-size: 12px;
+  color: #6B7280;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.bkp-saved-empty {
+  padding: 80px 20px;
+  text-align: center;
+  background: #F9FAFB;
+  border: 1px dashed #D1D5DB;
+  border-radius: 6px;
+  max-width: 560px;
+  margin: 40px auto;
+}
+
+.bkp-empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.bkp-saved-empty h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.bkp-saved-empty p {
+  font-size: 14px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.bkp-btn-explore {
+  display: inline-block;
+  background: #060D81;
+  color: #FFFFFF;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .bkp-card-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .bkp-saved-root {
+    padding: 12px 0 40px;
+  }
+  .bkp-list-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .bkp-list-page-title {
+    font-size: 20px;
+  }
+  .bkp-card-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+</style>
