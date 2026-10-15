@@ -206,3 +206,4 @@ CREATE INDEX IF NOT EXISTS idx_fact_checks_article ON article_fact_checks(articl
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON bookmarks(user_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_status ON contributor_submissions(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
+

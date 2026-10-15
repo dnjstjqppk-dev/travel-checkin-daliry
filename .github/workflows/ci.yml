@@ -64,3 +64,4 @@ jobs:
             test -s "$file" || exit 1
           done
           echo "All migrations verified."
+
