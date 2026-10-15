@@ -48,7 +48,7 @@ Admin Deployment: ACTIVE (Role-Based Admin CMS & Audit Console)
 Partner Deployment: ACTIVE (Tourism Board, Airline PR, Hotel Press Portal)
 API Deployment: ACTIVE (RESTful D1 Gateway & Go Microservices)
 
-Database Status: NORMAL (56 Articles, 280 Authentic Full-length Translations across 5 Languages)
+Database Status: NORMAL (66 Articles, 330 Authentic Full-length Translations across 5 Languages)
 R2 Status: READY (CDN Media & Press Releases Asset Storage)
 CI/CD Status: ACTIVE (GitHub Actions 자동 검증 및 워커 자동 배포 트리거)
 ```
@@ -58,7 +58,7 @@ CI/CD Status: ACTIVE (GitHub Actions 자동 검증 및 워커 자동 배포 트�
 ## D. 뉴스 및 저널리즘 CMS 시스템
 
 ```text
-Total Articles: 56건 (Remote Cloudflare D1 정규 시딩 및 검증 완료)
+Total Articles: 66건 (Remote Cloudflare D1 정규 시딩 및 검증 완료, 태국 특화 10건 포함)
 Total Categories: 5개 (주요뉴스 major, 항공 airline, 호텔 hotel, 여행지 destination, 실시간 realtime)
 Total Languages: 6개 (한국어 ko, 영어 en, 중국어 zh, 태국어 th, 베트남어 vi, 스페인어 es)
 Active News Sources: 4개 (AOT Press, TAT Newsroom, Phuket Hotels Association, SRT Railway)
@@ -68,7 +68,7 @@ Contributor Portal: READY (/partner 보도자료 투고, 저작권 증빙, 데�
 Search: ACTIVE (본문, 제목, 요약, 기자명 실시간 Full-text LIKE 검색 API)
 Rankings: ACTIVE (조회수 view_count 기반 실시간 트렌딩 탑 10 랭킹)
 Bookmarks: ACTIVE (독자 스크랩북 및 로컬/DB 동기화)
-Translation: 100% COMPLETE (56개 전체 기사 280개 5개국어 정규 번역 실서빙)
+Translation: 100% COMPLETE (66개 전체 기사 330개 5개국어 정규 번역 실서빙)
 Fact Check: ENFORCED (기사 원문 출처, 라이선스, 언론사 공식 발표 표기 의무화)
 SEO: OPTIMIZED (NewsArticle JSON-LD, sitemap.xml, Google News Sitemap, robots.txt 완비)
 ```
