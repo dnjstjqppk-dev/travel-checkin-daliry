@@ -72,6 +72,27 @@ const categoryNames = computed(() => ({
 
 const categoryDisplayName = computed(() => getCategoryName(category))
 
+const displayAuthor = computed(() => {
+  if (locale.value === 'ko') return article.author || '체크인데일리 편집국'
+  if (locale.value === 'en') return 'Check-in Daily Editorial Desk'
+  if (locale.value === 'zh') return 'Check-in Daily 编辑部'
+  if (locale.value === 'th') return 'กองบรรณาธิการ Check-in Daily'
+  if (locale.value === 'vi') return 'Ban Biên tập Check-in Daily'
+  if (locale.value === 'es') return 'Redacción de Check-in Daily'
+  return article.author || 'Check-in Daily Editorial Desk'
+})
+
+const photoCaptionPrefix = computed(() => {
+  switch (locale.value) {
+    case 'en': return '[Photo: Unsplash Editorial License / Reference image]'
+    case 'zh': return '[图片来源：Unsplash 编辑版权 / 新闻报道参考]'
+    case 'th': return '[ภาพถ่าย: ลิขสิทธิ์ Unsplash Editorial / ภาพประกอบข่าว]'
+    case 'vi': return '[Hình ảnh: Bản quyền Biên tập Unsplash / Ảnh minh họa]'
+    case 'es': return '[Foto: Licencia Editorial Unsplash / Imagen de referencia]'
+    default: return '[자료 사진: Unsplash 에디토리얼 라이선스 / 기사 보도 참고용]'
+  }
+})
+
 const articleCanonicalUrl = `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}`
 
 useSeoMeta({
@@ -190,7 +211,7 @@ function goBack() {
             <div class="bkp-byline-left">
               <span>PUBLISHED : {{ formatDate(article.publishedAt) }}</span>
               <span class="bkp-pipe">|</span>
-              <span>WRITER: <strong>{{ (article.author || 'CHECK-IN DAILY EDITORIAL DESK').toUpperCase() }}</strong></span>
+              <span>WRITER: <strong>{{ displayAuthor.toUpperCase() }}</strong></span>
               <span v-if="article.viewCount" class="bkp-pipe">|</span>
               <span v-if="article.viewCount">{{ article.viewCount.toLocaleString('ko-KR') }} VIEWS</span>
             </div>
@@ -213,7 +234,7 @@ function goBack() {
         <figure v-if="hasCoverImage(article.coverImage)" class="bkp-article-featured-image">
           <img :src="article.coverImage" :alt="article.title" fetchpriority="high">
           <figcaption class="bkp-image-caption">
-            <span>{{ locale === 'en' ? `[Photo: Unsplash Editorial License / Reference image] ${article.title}` : `[자료 사진: Unsplash 에디토리얼 라이선스 / 기사 보도 참고용] ${article.title}` }}</span>
+            <span>{{ `${photoCaptionPrefix} ${article.title}` }}</span>
           </figcaption>
         </figure>
 
@@ -225,7 +246,7 @@ function goBack() {
             :to="locUrl(`/news/${category}/${city.countryCode}/${city.id}`)"
             class="bkp-article-tag-chip"
           >
-            # {{ locale === 'en' ? (city.country?.nameEn || city.countryCode) : (city.country?.nameKo || city.countryCode) }} · {{ locale === 'en' ? city.nameEn : city.nameKo }}
+            # {{ locale === 'ko' ? (city.country?.nameKo || city.countryCode) : (city.country?.nameEn || city.countryCode) }} · {{ locale === 'ko' ? city.nameKo : city.nameEn }}
           </NuxtLink>
         </div>
 
@@ -285,7 +306,7 @@ function goBack() {
     <nav class="bkp-mobile-reading-bar" aria-label="기사 읽기 컨트롤">
       <button class="mbar-btn" type="button" aria-label="이전 화면으로 돌아가기" @click="goBack">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        <span>{{ locale === 'en' ? 'Back' : '뒤로' }}</span>
+        <span>{{ t('back') }}</span>
       </button>
       <button class="mbar-btn" type="button" aria-label="글자 크기 변경" @click="toggleFontSize">
         <span class="mbar-font-indicator">A<sup>+</sup></span>
@@ -293,7 +314,7 @@ function goBack() {
       </button>
       <button class="mbar-btn" type="button" aria-label="기사 링크 복사" @click="copyUrl">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>{{ copySuccess ? (locale === 'en' ? 'Copied!' : '복사완료!') : (locale === 'en' ? 'Share' : '공유') }}</span>
+        <span>{{ copySuccess ? (locale === 'en' ? 'Copied!' : '복사완료!') : t('share') }}</span>
       </button>
       <button
         class="mbar-btn"
