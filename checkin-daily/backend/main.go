@@ -201,6 +201,8 @@ func newRouter(auth *adminAuth) *gin.Engine {
 	adminWrite.POST("/articles", createArticle)
 	adminWrite.PUT("/articles/:id", updateArticle)
 	adminWrite.DELETE("/articles/:id", deleteArticle)
+
+	registerEnterpriseRoutes(router, adminWrite)
 	return router
 }
 
