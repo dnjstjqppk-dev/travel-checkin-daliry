@@ -367,9 +367,9 @@ async function listArticles(database: D1Database, url: URL, admin: boolean): Pro
      LEFT JOIN cities c ON c.id = ac.city_id
      LEFT JOIN countries co ON co.code = c.country_code
      ORDER BY ${sort}`,
-    lang,
     ...values,
     ...paginationValues,
+    lang,
   )
   return groupArticles(rows)
 }
