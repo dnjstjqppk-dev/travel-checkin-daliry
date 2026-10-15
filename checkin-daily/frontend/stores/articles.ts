@@ -47,6 +47,7 @@ export interface ArticleFilters {
   limit?: number
   offset?: number
   sort?: 'recent' | 'views'
+  lang?: string
 }
 
 export interface AdPlacement {
@@ -84,6 +85,7 @@ export const useArticlesStore = defineStore('articles', () => {
           ...(filters.search ? { q: filters.search } : {}),
           ...(filters.limit ? { limit: filters.limit, offset: filters.offset || 0 } : {}),
           ...(filters.sort ? { sort: filters.sort } : {}),
+          ...(filters.lang ? { lang: filters.lang } : {}),
         },
       })
       articles.value = append ? [...articles.value, ...loaded] : loaded
@@ -97,13 +99,17 @@ export const useArticlesStore = defineStore('articles', () => {
     }
   }
 
-  async function loadOne(slug: string) {
-    current.value = await apiRequest<Article>(`${apiBase}/api/articles/${encodeURIComponent(slug)}`)
+  async function loadOne(slug: string, lang?: string) {
+    current.value = await apiRequest<Article>(`${apiBase}/api/articles/${encodeURIComponent(slug)}`, {
+      query: { ...(lang ? { lang } : {}) },
+    })
     return current.value
   }
 
-  async function loadById(id: string | number, category: string) {
-    current.value = await apiRequest<Article>(`${apiBase}/api/articles/id/${id}`, { query: { category } })
+  async function loadById(id: string | number, category: string, lang?: string) {
+    current.value = await apiRequest<Article>(`${apiBase}/api/articles/id/${id}`, {
+      query: { category, ...(lang ? { lang } : {}) },
+    })
     return current.value
   }
 

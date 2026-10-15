@@ -10,14 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useArticlesStore()
 const requestFetch = useRequestFetch()
-const { locale, t } = useI18n()
-
-function locUrl(path: string) {
-  if (locale.value === 'en') {
-    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
-  }
-  return path.replace(/^\/en/, '') || '/news'
-}
+const { locale, t, locUrl } = useI18n()
 
 const activeCountry = ref<string>(props.initialCountryCode || '')
 const activeCity = ref<string>(props.initialCityId || '')
@@ -46,6 +39,7 @@ async function loadData() {
     country: activeCountry.value || undefined,
     city: activeCity.value || undefined,
     limit: pageSize,
+    lang: locale.value,
   })
 }
 
@@ -53,7 +47,7 @@ await useAsyncData(`region-hub-articles-${route.fullPath}`, loadData)
 
 const { data: popularArticles } = await useAsyncData<Article[]>(
   `region-popular-${locale.value}`,
-  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }),
+  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
   { default: () => [] },
 )
 
@@ -92,6 +86,7 @@ async function loadMore() {
     city: activeCity.value || undefined,
     limit: pageSize,
     offset: store.articles.length,
+    lang: locale.value,
   }, false, true)
 }
 

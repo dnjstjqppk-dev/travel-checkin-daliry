@@ -6,19 +6,12 @@ import type { Article } from '~/stores/articles'
 const route = useRoute()
 const store = useArticlesStore()
 const savedStore = useSavedStore()
-const { locale, t } = useI18n()
+const { locale, t, locUrl } = useI18n()
 const category = String(route.params.category)
-
-function locUrl(path: string) {
-  if (locale.value === 'en') {
-    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
-  }
-  return path.replace(/^\/en/, '') || '/news'
-}
 
 let article: Article
 try {
-  article = await store.loadById(String(route.params.id), category)
+  article = await store.loadById(String(route.params.id), category, locale.value)
 } catch {
   throw createError({ statusCode: 404, statusMessage: 'News article not found' })
 }
@@ -44,14 +37,14 @@ const apiFetch = useRequestFetch()
 
 const { data: recommendedData } = await useAsyncData(
   `article-recommended-${article.id}-${locale.value}`,
-  () => apiFetch<Article[]>('/api/articles', { query: { category, limit: 5, sort: 'views' } }).catch(() => []),
+  () => apiFetch<Article[]>('/api/articles', { query: { category, limit: 5, sort: 'views', lang: locale.value } }).catch(() => []),
   { default: () => [] },
 )
 const recommendedArticles = computed(() => (recommendedData.value || []).filter((item) => item.id !== article.id).slice(0, 3))
 
 const { data: popularData } = await useAsyncData<Article[]>(
   `article-popular-rail-${locale.value}`,
-  () => apiFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }).catch(() => []),
+  () => apiFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }).catch(() => []),
   { default: () => [] },
 )
 const popularArticles = computed(() => popularData.value || [])
@@ -82,10 +75,10 @@ const categoryDisplayName = computed(() => getCategoryName(category))
 const articleCanonicalUrl = `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}`
 
 useSeoMeta({
-  title: `${article.title} | Check-in Daily`,
-  ogTitle: article.title,
-  description: article.summary,
-  ogDescription: article.summary,
+  title: computed(() => `${article.title} | Check-in Daily`),
+  ogTitle: computed(() => article.title),
+  description: computed(() => article.summary),
+  ogDescription: computed(() => article.summary),
   ogImage: article.coverImage || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80',
   twitterImage: article.coverImage || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80',
   ogType: 'article',
@@ -232,7 +225,7 @@ function goBack() {
             :to="locUrl(`/news/${category}/${city.countryCode}/${city.id}`)"
             class="bkp-article-tag-chip"
           >
-            # {{ city.country?.nameKo || city.countryCode }} · {{ city.nameKo }}
+            # {{ locale === 'en' ? (city.country?.nameEn || city.countryCode) : (city.country?.nameKo || city.countryCode) }} · {{ locale === 'en' ? city.nameEn : city.nameKo }}
           </NuxtLink>
         </div>
 

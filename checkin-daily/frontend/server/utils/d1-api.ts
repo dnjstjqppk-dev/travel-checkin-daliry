@@ -245,6 +245,7 @@ async function handleResource(event: H3Event, database: D1Database, parts: strin
 async function handleArticles(event: H3Event, database: D1Database, path: string[], admin: boolean) {
   const url = getRequestURL(event)
   const method = event.method
+  const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   if (method === 'GET' && path.length === 0) {
     return respond(event, await listArticles(database, url, admin))
   }
@@ -255,7 +256,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const condition = category ? 'a.id = ? AND a.status = ? AND a.category = ?' : 'a.id = ? AND a.status = ?'
     const values: Array<string | number> = category ? [id, 'published', category] : [id, 'published']
     await incrementArticleView(database, id, category || undefined)
-    const article = await getArticle(database, condition, ...values)
+    const article = await getArticle(database, condition, lang, ...values)
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
   if (method === 'GET' && path.length === 1 && !admin) {
@@ -271,6 +272,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const article = await getArticle(
       database,
       'a.slug = ? AND a.status = ?',
+      lang,
       slug,
       'published',
     )
@@ -283,6 +285,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
 }
 
 async function listArticles(database: D1Database, url: URL, admin: boolean): Promise<unknown[]> {
+  const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   const clauses: string[] = []
   const values: Array<string | number> = []
   let pagination = ''
@@ -347,18 +350,24 @@ async function listArticles(database: D1Database, url: URL, admin: boolean): Pro
       SELECT a.id FROM articles a ${where}
       ORDER BY ${sort}${pagination}
      )
-     SELECT a.*,
-      c.id AS city_id, c.country_code AS city_country_code, c.name_ko AS city_name_ko,
-      c.name_en AS city_name_en, c.created_at AS city_created_at,
-      co.name_ko AS country_name_ko, co.name_en AS country_name_en,
-      co.continent AS country_continent, co.sort_order AS country_sort_order,
-      co.created_at AS country_created_at
+     SELECT a.id, a.slug, a.category, a.author, a.cover_image, a.status,
+            a.published_at, a.created_at, a.updated_at, a.view_count,
+            COALESCE(t.title, a.title) AS title,
+            COALESCE(t.summary, a.summary) AS summary,
+            COALESCE(t.content, a.content) AS content,
+            c.id AS city_id, c.country_code AS city_country_code, c.name_ko AS city_name_ko,
+            c.name_en AS city_name_en, c.created_at AS city_created_at,
+            co.name_ko AS country_name_ko, co.name_en AS country_name_en,
+            co.continent AS country_continent, co.sort_order AS country_sort_order,
+            co.created_at AS country_created_at
      FROM articles a
      JOIN paged_articles page ON page.id = a.id
+     LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
      LEFT JOIN article_cities ac ON ac.article_id = a.id
      LEFT JOIN cities c ON c.id = ac.city_id
      LEFT JOIN countries co ON co.code = c.country_code
      ORDER BY ${sort}`,
+    lang,
     ...values,
     ...paginationValues,
   )
@@ -368,22 +377,30 @@ async function listArticles(database: D1Database, url: URL, admin: boolean): Pro
 async function getArticle(
   database: D1Database,
   condition: string,
+  lang: string = 'ko',
   ...values: Array<string | number>
 ): Promise<unknown | null> {
+  const normLang = (lang || 'ko').trim().toLowerCase()
   const rows = await d1All<ArticleJoinRow>(
     database,
-    `SELECT a.*,
+    `SELECT a.id, a.slug, a.category, a.author, a.cover_image, a.status,
+       a.published_at, a.created_at, a.updated_at, a.view_count,
+       COALESCE(t.title, a.title) AS title,
+       COALESCE(t.summary, a.summary) AS summary,
+       COALESCE(t.content, a.content) AS content,
        c.id AS city_id, c.country_code AS city_country_code, c.name_ko AS city_name_ko,
        c.name_en AS city_name_en, c.created_at AS city_created_at,
        co.name_ko AS country_name_ko, co.name_en AS country_name_en,
        co.continent AS country_continent, co.sort_order AS country_sort_order,
        co.created_at AS country_created_at
      FROM articles a
+     LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
      LEFT JOIN article_cities ac ON ac.article_id = a.id
      LEFT JOIN cities c ON c.id = ac.city_id
      LEFT JOIN countries co ON co.code = c.country_code
      WHERE ${condition}
      ORDER BY a.published_at DESC, a.created_at DESC`,
+    normLang,
     ...values,
   )
   return groupArticles(rows)[0] ?? null

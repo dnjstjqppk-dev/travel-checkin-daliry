@@ -11,18 +11,20 @@ function hasCoverImage(article: Article) {
   return Boolean(article.coverImage && /^https:\/\//i.test(article.coverImage))
 }
 
-const categoryNames: Record<string, string> = {
-  major: '주요뉴스',
-  airline: '항공',
-  hotel: '호텔',
-  destination: '여행지',
-  realtime: '실시간',
-  flights: '항공',
-  hotels: '호텔',
-  industry: '업계',
+const { locale, t } = useI18n()
+
+function getCategoryLabel(cat: string) {
+  const map: Record<string, string> = {
+    major: t('major'),
+    airline: t('airline'),
+    hotel: t('hotel'),
+    destination: t('destination'),
+    realtime: t('realtime'),
+    region: t('region'),
+  }
+  return map[cat] || t(cat) || cat
 }
 
-const { locale } = useI18n()
 function locUrl(path: string) {
   if (locale.value === 'en') {
     return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
@@ -35,10 +37,10 @@ function locUrl(path: string) {
   <article class="news-card bkp-news-card">
     <NuxtLink :to="locUrl(`/news/${article.category}/article/${article.id}`)" class="bkp-card-link">
       <div class="bkp-card-thumb" :class="`category-art-${article.category}`">
-        <span v-if="rank" class="bkp-card-rank-badge" :class="{ 'top-three': rank <= 3 }">{{ rank }}위</span>
+        <span v-if="rank" class="bkp-card-rank-badge" :class="{ 'top-three': rank <= 3 }">{{ locale === 'en' ? `#${rank}` : `${rank}위` }}</span>
         <img v-if="hasCoverImage(article)" :src="article.coverImage" :alt="article.title" loading="lazy">
         <div v-else class="bkp-card-placeholder" />
-        <span class="bkp-card-tag">{{ categoryNames[article.category] || article.category }}</span>
+        <span class="bkp-card-tag">{{ getCategoryLabel(article.category) }}</span>
       </div>
       <div class="bkp-card-info">
         <div class="bkp-card-meta">
@@ -49,7 +51,7 @@ function locUrl(path: string) {
         <p class="bkp-card-desc">{{ article.summary }}</p>
         <div v-if="article.cities?.length" class="bkp-card-locations">
           <span v-for="city in article.cities" :key="city.id" class="bkp-loc-chip">
-            {{ city.countryCode }} · {{ city.nameKo }}
+            {{ city.countryCode }} · {{ locale === 'en' ? city.nameEn : city.nameKo }}
           </span>
         </div>
       </div>

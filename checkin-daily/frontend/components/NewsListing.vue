@@ -12,13 +12,7 @@ const store = useArticlesStore()
 const requestFetch = useRequestFetch()
 const pageSize = 12
 
-const { locale, t } = useI18n()
-function locUrl(path: string) {
-  if (locale.value === 'en') {
-    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
-  }
-  return path.replace(/^\/en/, '') || '/news'
-}
+const { locale, t, locUrl } = useI18n()
 
 const categoryNames: Record<string, string> = {
   major: locale.value === 'en' ? 'Major' : '주요뉴스',
@@ -45,14 +39,15 @@ async function loadFirstPage() {
     ...filters.value,
     limit: pageSize,
     ...(isRealtime.value ? { sort: 'views' as const } : {}),
+    lang: locale.value,
   })
 }
 
 await useAsyncData(`news-list-${route.fullPath}`, loadFirstPage)
 
 const { data: popularArticles } = await useAsyncData<Article[]>(
-  'news-listing-popular',
-  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }),
+  `news-listing-popular-${locale.value}`,
+  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
   { default: () => [] },
 )
 
@@ -105,6 +100,7 @@ async function loadMore() {
     limit: pageSize,
     offset: store.articles.length,
     ...(isRealtime.value ? { sort: 'views' as const } : {}),
+    lang: locale.value,
   }, false, true)
 }
 

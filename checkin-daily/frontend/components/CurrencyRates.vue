@@ -18,6 +18,8 @@ interface ExchangeRates {
   sourceUrl: string
 }
 
+const { locale, t } = useI18n()
+
 const { data, error, pending, refresh } = await useFetch<ExchangeRates>('/api/exchange-rates', {
   key: 'travel-currency-rates',
 })
@@ -39,6 +41,21 @@ const symbols: Record<string, string> = {
   VND: '₫',
   SGD: 'S$',
   GBP: '£',
+}
+
+const localizedCountries: Record<string, Record<string, string>> = {
+  US: { ko: '미국', en: 'United States', zh: '美国', th: 'สหรัฐฯ', vi: 'Mỹ', es: 'EE.UU.' },
+  JP: { ko: '일본', en: 'Japan', zh: '日本', th: 'ญี่ปุ่น', vi: 'Nhật Bản', es: 'Japón' },
+  TH: { ko: '태국', en: 'Thailand', zh: '泰国', th: 'ไทย', vi: 'Thái Lan', es: 'Tailandia' },
+  FR: { ko: '프랑스', en: 'France', zh: '法国', th: 'ฝรั่งเศส', vi: 'Pháp', es: 'Francia' },
+  VN: { ko: '베트남', en: 'Vietnam', zh: '越南', th: 'เวียดนาม', vi: 'Việt Nam', es: 'Vietnam' },
+  SG: { ko: '싱가포르', en: 'Singapore', zh: '新加坡', th: 'สิงคโปร์', vi: 'Singapore', es: 'Singapur' },
+  GB: { ko: '영국', en: 'United Kingdom', zh: '英国', th: 'สหราชอาณาจักร', vi: 'Anh', es: 'Reino Unido' },
+  AU: { ko: '호주', en: 'Australia', zh: '澳大利亚', th: 'ออสเตรเลีย', vi: 'Úc', es: 'Australia' },
+}
+
+function getCountryName(code: string, fallback: string) {
+  return localizedCountries[code]?.[locale.value] || fallback
 }
 
 function formatKrw(rate: CurrencyRate) {
@@ -71,12 +88,21 @@ async function triggerRefresh() {
 const updatedLabel = computed(() => {
   if (!data.value?.updatedAt) return 'LIVE'
   const date = new Date(data.value.updatedAt)
-  return new Intl.DateTimeFormat('ko-KR', {
+  const locMap: Record<string, string> = {
+    ko: 'ko-KR',
+    en: 'en-US',
+    zh: 'zh-CN',
+    th: 'th-TH',
+    vi: 'vi-VN',
+    es: 'es-ES',
+  }
+  return new Intl.DateTimeFormat(locMap[locale.value] || 'en-US', {
     timeZone: 'Asia/Seoul',
-    month: 'numeric',
+    month: locale.value === 'ko' ? 'numeric' : 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: locale.value === 'en',
   }).format(date)
 })
 </script>
@@ -86,26 +112,26 @@ const updatedLabel = computed(() => {
     <div class="bkp-box-title">
       <div class="bkp-fx-title-wrap">
         <span class="bkp-title-indicator" />
-        <h3 id="currency-heading" itemprop="name">TRAVEL FX (실시간 환율)</h3>
+        <h3 id="currency-heading" itemprop="name">{{ t('exchange_rates') }}</h3>
       </div>
       <button
         class="bkp-fx-refresh-btn"
         :class="{ 'is-spinning': isRefreshing || pending }"
         type="button"
-        title="실시간 환율 새로고침"
-        aria-label="환율 새로고침"
+        :title="locale === 'en' ? 'Refresh Rates' : '실시간 환율 새로고침'"
+        :aria-label="locale === 'en' ? 'Refresh Rates' : '환율 새로고침'"
         @click="triggerRefresh"
       >
         ↻
       </button>
     </div>
 
-    <p v-if="pending" class="bkp-fx-msg">환율 정보를 불러오는 중...</p>
-    <p v-else-if="error" class="bkp-fx-msg error">환율 정보를 잠시 불러올 수 없습니다.</p>
+    <p v-if="pending" class="bkp-fx-msg">{{ locale === 'en' ? 'Loading exchange rates...' : '환율 정보를 불러오는 중...' }}</p>
+    <p v-else-if="error" class="bkp-fx-msg error">{{ locale === 'en' ? 'Unable to load rates.' : '환율 정보를 잠시 불러올 수 없습니다.' }}</p>
     <template v-else-if="data">
       <div class="bkp-fx-subbar">
-        <span>외화 1단위당 원화(KRW) 가치</span>
-        <span class="bkp-fx-live-pill">실시간</span>
+        <span>{{ locale === 'en' ? 'KRW per Foreign Currency Unit' : '외화 1단위당 원화(KRW) 가치' }}</span>
+        <span class="bkp-fx-live-pill">{{ locale === 'en' ? 'LIVE' : '실시간' }}</span>
       </div>
       <ul class="bkp-fx-list">
         <li v-for="rate in displayRates" :key="rate.code" class="bkp-fx-row">
@@ -113,16 +139,16 @@ const updatedLabel = computed(() => {
             <span class="bkp-fx-symbol">{{ symbols[rate.currency] || '' }}</span>
             <span class="bkp-fx-code">{{ rate.currency }}</span>
             <span class="bkp-fx-unit" v-if="rate.unit && rate.unit > 1">({{ rate.unit }})</span>
-            <span class="bkp-fx-country">{{ rate.country }}</span>
+            <span class="bkp-fx-country">{{ getCountryName(rate.code, rate.country) }}</span>
           </div>
           <div class="bkp-fx-val-wrap">
             <strong class="bkp-fx-val">{{ formatKrw(rate) }}</strong>
-            <span class="bkp-fx-won">원</span>
+            <span class="bkp-fx-won">{{ locale === 'en' ? 'KRW' : '원' }}</span>
           </div>
         </li>
       </ul>
       <div class="bkp-fx-footer">
-        <span>기준: {{ updatedLabel }} KST <span v-if="data.stale" class="bkp-fx-stale-tag">(참고용)</span></span>
+        <span>{{ locale === 'en' ? 'As of' : '기준' }}: {{ updatedLabel }} KST <span v-if="data.stale" class="bkp-fx-stale-tag">({{ locale === 'en' ? 'Indicative' : '참고용' }})</span></span>
         <a :href="data.sourceUrl" target="_blank" rel="noopener noreferrer">{{ data.source }} ↗</a>
       </div>
     </template>

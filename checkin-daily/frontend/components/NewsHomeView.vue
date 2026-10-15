@@ -23,15 +23,15 @@ const categoryNames: Record<string, string> = {
 
 const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
 
-await useAsyncData(`news-home-${locale.value}`, () => store.load({ limit: 24, search: searchQuery.value }))
+await useAsyncData(`news-home-${locale.value}`, () => store.load({ limit: 24, search: searchQuery.value, lang: locale.value }))
 const { data: popularArticles, error: popularLoadError } = await useAsyncData<Article[]>(
   `news-home-popular-${locale.value}`,
-  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views' } }),
+  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
   { default: () => [] },
 )
 
 watch(searchQuery, async (search) => {
-  await store.load({ limit: 24, search })
+  await store.load({ limit: 24, search, lang: locale.value })
 })
 
 const featuredArticle = computed(() => store.articles[0])
