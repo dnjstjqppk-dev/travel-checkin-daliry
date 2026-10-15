@@ -28,10 +28,7 @@ async function handleSelectLocale(code: import('./composables/useI18n').Locale) 
   await switchLocale(code)
 }
 
-// 방콕포스트 스타일 실시간 날짜 & 시간
-const currentDateTime = ref('')
-
-function updateClock() {
+function getSeoulDateTimeString() {
   const now = new Date()
   const dateStr = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
@@ -46,7 +43,14 @@ function updateClock() {
     hour12: false,
     timeZone: 'Asia/Seoul',
   }).format(now)
-  currentDateTime.value = `${dateStr} | ${timeStr} KST`
+  return `${dateStr} | ${timeStr} KST`
+}
+
+// 실시간 날짜 & 시간 (Asia/Seoul 기준 동적 렌더링)
+const currentDateTime = ref(getSeoulDateTimeString())
+
+function updateClock() {
+  currentDateTime.value = getSeoulDateTimeString()
 }
 
 onMounted(() => {
@@ -107,7 +111,7 @@ async function submitSearch() {
         <div class="bkp-page-container bkp-utility-inner">
           <div class="bkp-datetime-label">
             <span class="bkp-red-bullet" />
-            <span>{{ currentDateTime || '14 Oct 2026 | SEOUL' }}</span>
+            <span>{{ currentDateTime }}</span>
           </div>
           <div class="bkp-utility-links">
             <span class="bkp-tagline-text">THE WORLD’S WINDOW ON TRAVEL JOURNALISM</span>
@@ -276,7 +280,7 @@ async function submitSearch() {
 
         <div class="bkp-drawer-time">
           <span class="bkp-red-bullet" />
-          <span>{{ currentDateTime || '14 Oct 2026' }}</span>
+          <span>{{ currentDateTime }}</span>
         </div>
 
         <!-- 모바일 6개국어 언어 그리드 선택기 -->
@@ -538,8 +542,8 @@ async function submitSearch() {
 
       <div class="bkp-footer-bottom">
         <div class="bkp-page-container bkp-footer-legal-row">
-          <span>© 2026 CHECK-IN DAILY MEDIA GROUP. BANGKOK POST STYLE ARCHITECTURE. ALL RIGHTS RESERVED.</span>
-          <span>본 사이트는 글로벌 여행 저널리즘 미디어 플랫폼으로 모든 기사는 저작권법의 보호를 받습니다. 무단 전재 및 배포를 금합니다.</span>
+          <span>© 2026 CHECK-IN DAILY MEDIA GROUP. ALL RIGHTS RESERVED.</span>
+          <span>체크인데일리 | 등록번호: 서울 아-52914 | 대표전화: 02-738-2026 | 문의: desk@checkin-daily.com | 모든 기사는 저작권법의 보호를 받습니다.</span>
         </div>
       </div>
     </footer>

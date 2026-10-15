@@ -31,9 +31,11 @@ const categoryNames: Record<string, string> = {
 const country = ref<{ code: string; nameKo: string } | null>(null)
 const city = ref<{ id: string; nameKo: string } | null>(null)
 const lastPageCount = ref(pageSize)
+const isRealtime = computed(() => props.category === 'realtime')
 
 const filters = computed(() => ({
-  category: props.category,
+  // When category is realtime, query all categories sorted by views
+  category: isRealtime.value ? undefined : props.category,
   country: props.countryCode,
   city: props.cityId,
 }))
@@ -42,7 +44,7 @@ async function loadFirstPage() {
   lastPageCount.value = await store.load({
     ...filters.value,
     limit: pageSize,
-    ...(props.category === 'realtime' ? { sort: 'views' as const } : {}),
+    ...(isRealtime.value ? { sort: 'views' as const } : {}),
   })
 }
 
@@ -74,7 +76,22 @@ watch(() => [props.countryCode, props.cityId], async ([countryCode, cityId]) => 
 }, { immediate: true })
 
 const canLoadMore = computed(() => lastPageCount.value === pageSize)
-const title = computed(() => categoryNames[props.category || ''] || '전체 뉴스')
+
+const title = computed(() => {
+  if (city.value) return `${city.value.nameKo} 여행 뉴스`
+  if (country.value) return `${country.value.nameKo} 여행 뉴스`
+  if (isRealtime.value) return locale.value === 'en' ? 'Top Stories (Realtime)' : '실시간 인기 뉴스 (TOP STORIES)'
+  if (props.category === 'major') return locale.value === 'en' ? 'Major Stories' : '주요 뉴스 (MAJOR STORIES)'
+  return categoryNames[props.category || ''] || (locale.value === 'en' ? 'All News' : '전체 뉴스')
+})
+
+useSeoMeta({
+  title: computed(() => `${title.value} | 체크인데일리 (Check-in Daily)`),
+  ogTitle: computed(() => `${title.value} | Check-in Daily`),
+  description: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드. 글로벌 항공, 호텔, 여행지 트렌드를 실시간으로 전해드립니다.`),
+  ogDescription: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드.`),
+})
+
 const breadcrumbs = computed(() => [
   { label: 'HOME', to: locUrl('/news') },
   ...(props.category ? [{ label: (categoryNames[props.category] || props.category).toUpperCase(), to: locUrl(`/news/${props.category}`) }] : []),
@@ -87,7 +104,7 @@ async function loadMore() {
     ...filters.value,
     limit: pageSize,
     offset: store.articles.length,
-    ...(props.category === 'realtime' ? { sort: 'views' as const } : {}),
+    ...(isRealtime.value ? { sort: 'views' as const } : {}),
   }, false, true)
 }
 
@@ -109,10 +126,15 @@ function formatViews(views = 0) {
     <!-- 섹션 헤더 바 -->
     <div class="bkp-list-header-bar">
       <div class="bkp-list-title-group">
-        <span class="bkp-color-bar default" />
-        <h1 class="bkp-list-page-title">
-          {{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span>
-        </h1>
+        <span class="bkp-color-bar default" :class="{ realtime: isRealtime }" />
+        <div>
+          <h1 class="bkp-list-page-title">
+            {{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span>
+          </h1>
+          <p v-if="isRealtime" class="bkp-realtime-sublabel">
+            ⚡ 독자 실시간 최다 조회순 및 트렌딩 랭킹 (조회수 기준 자동 집계)
+          </p>
+        </div>
       </div>
       <div class="bkp-list-count">
         총 {{ store.articles.length }}개의 보도 기사
@@ -127,7 +149,12 @@ function formatViews(views = 0) {
           등록된 뉴스가 없습니다.
         </div>
         <div v-else class="bkp-card-grid-2">
-          <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+          <NewsArticleCard
+            v-for="(article, idx) in store.articles"
+            :key="article.id"
+            :article="article"
+            :rank="isRealtime ? idx + 1 : undefined"
+          />
         </div>
 
         <!-- 더보기 버튼 -->
@@ -219,6 +246,14 @@ function formatViews(views = 0) {
   font-weight: 800;
   color: #111827;
   letter-spacing: -0.5px;
+}
+
+.bkp-realtime-sublabel {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #D0021B;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
 }
 
 .bkp-list-count {

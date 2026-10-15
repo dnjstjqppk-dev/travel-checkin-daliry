@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { Article } from '~/stores/articles'
 
-defineProps<{ article: Article }>()
+defineProps<{
+  article: Article
+  rank?: number
+}>()
 const savedStore = useSavedStore()
 
 function hasCoverImage(article: Article) {
@@ -32,6 +35,7 @@ function locUrl(path: string) {
   <article class="news-card bkp-news-card">
     <NuxtLink :to="locUrl(`/news/${article.category}/article/${article.id}`)" class="bkp-card-link">
       <div class="bkp-card-thumb" :class="`category-art-${article.category}`">
+        <span v-if="rank" class="bkp-card-rank-badge" :class="{ 'top-three': rank <= 3 }">{{ rank }}위</span>
         <img v-if="hasCoverImage(article)" :src="article.coverImage" :alt="article.title" loading="lazy">
         <div v-else class="bkp-card-placeholder" />
         <span class="bkp-card-tag">{{ categoryNames[article.category] || article.category }}</span>
@@ -88,6 +92,28 @@ function locUrl(path: string) {
   position: relative;
   overflow: hidden;
   background: #060D81;
+}
+
+.bkp-card-rank-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #FFFFFF;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  letter-spacing: 0.5px;
+}
+
+.bkp-card-rank-badge.top-three {
+  background: #D0021B;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(208, 2, 27, 0.4);
 }
 
 .bkp-card-thumb img {

@@ -220,7 +220,7 @@ function goBack() {
         <figure v-if="hasCoverImage(article.coverImage)" class="bkp-article-featured-image">
           <img :src="article.coverImage" :alt="article.title" fetchpriority="high">
           <figcaption class="bkp-image-caption">
-            <span>[Photo: Check-in Daily / Reference news photo] {{ article.title }}</span>
+            <span>{{ locale === 'en' ? `[Photo: Unsplash Editorial License / Reference image] ${article.title}` : `[자료 사진: Unsplash 에디토리얼 라이선스 / 기사 보도 참고용] ${article.title}` }}</span>
           </figcaption>
         </figure>
 

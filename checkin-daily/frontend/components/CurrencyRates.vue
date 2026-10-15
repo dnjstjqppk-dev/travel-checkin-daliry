@@ -53,6 +53,21 @@ function formatKrw(rate: CurrencyRate) {
   return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(rate.per1000Krw)
 }
 
+const isRefreshing = ref(false)
+
+async function triggerRefresh() {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    const res = await $fetch<ExchangeRates>(`/api/exchange-rates?refresh=true&_t=${Date.now()}`)
+    data.value = res
+  } catch {
+    await refresh()
+  } finally {
+    isRefreshing.value = false
+  }
+}
+
 const updatedLabel = computed(() => {
   if (!data.value?.updatedAt) return 'LIVE'
   const date = new Date(data.value.updatedAt)
@@ -73,7 +88,14 @@ const updatedLabel = computed(() => {
         <span class="bkp-title-indicator" />
         <h3 id="currency-heading" itemprop="name">TRAVEL FX (실시간 환율)</h3>
       </div>
-      <button class="bkp-fx-refresh-btn" type="button" title="환율 새로고침" @click="() => refresh()">
+      <button
+        class="bkp-fx-refresh-btn"
+        :class="{ 'is-spinning': isRefreshing || pending }"
+        type="button"
+        title="실시간 환율 새로고침"
+        aria-label="환율 새로고침"
+        @click="triggerRefresh"
+      >
         ↻
       </button>
     </div>
@@ -100,7 +122,7 @@ const updatedLabel = computed(() => {
         </li>
       </ul>
       <div class="bkp-fx-footer">
-        <span>{{ updatedLabel }} KST 기준</span>
+        <span>기준: {{ updatedLabel }} KST <span v-if="data.stale" class="bkp-fx-stale-tag">(참고용)</span></span>
         <a :href="data.sourceUrl" target="_blank" rel="noopener noreferrer">{{ data.source }} ↗</a>
       </div>
     </template>
@@ -160,6 +182,25 @@ const updatedLabel = computed(() => {
 .bkp-fx-refresh-btn:hover {
   background: #F3F4F6;
   color: #060D81;
+}
+
+.bkp-fx-refresh-btn.is-spinning {
+  display: inline-block;
+  animation: fxSpin 0.75s linear infinite;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+@keyframes fxSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.bkp-fx-stale-tag {
+  color: #DC2626;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-left: 4px;
 }
 
 .bkp-fx-subbar {

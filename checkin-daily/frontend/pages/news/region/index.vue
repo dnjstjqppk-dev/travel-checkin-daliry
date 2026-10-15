@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import NewsListing from '~/components/NewsListing.vue'
+import RegionHubView from '~/components/RegionHubView.vue'
+
+const route = useRoute()
 </script>
 
-<template><NewsListing /></template>
+<template>
+  <RegionHubView
+    :initial-country-code="route.query.country ? String(route.query.country).toUpperCase() : undefined"
+    :initial-city-id="route.query.city ? String(route.query.city) : undefined"
+  />
+</template>

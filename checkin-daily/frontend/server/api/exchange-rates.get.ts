@@ -1,4 +1,4 @@
-import { createError, defineEventHandler, setResponseHeader } from 'h3'
+import { createError, defineEventHandler, getQuery, setResponseHeader } from 'h3'
 import { d1First, d1Run, getD1Database, type D1Database } from '../utils/d1'
 
 const providerUrl = 'https://open.er-api.com/v6/latest/KRW'
@@ -90,13 +90,22 @@ async function getProviderRates(): Promise<ProviderResponse> {
 }
 
 export default defineEventHandler(async (event) => {
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=86400')
+  const query = getQuery(event)
+  const forceRefresh = query.refresh === 'true'
+
+  if (forceRefresh) {
+    setResponseHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate')
+  } else {
+    setResponseHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=3600')
+  }
   setResponseHeader(event, 'X-Content-Type-Options', 'nosniff')
+
   const database = getD1Database(event)
   const cached = database ? await readCachedRates(database) : null
   const now = Math.floor(Date.now() / 1000)
 
-  if (cached && cached.expires_at > now) {
+  // Use cached data only if forceRefresh is false and cache is not expired
+  if (!forceRefresh && cached && cached.expires_at > now) {
     return formatRates(JSON.parse(cached.rates_json) as Record<string, number>, cached.provider_updated_at, false)
   }
 
@@ -115,7 +124,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const expiry = Math.max(now + 6 * 60 * 60, latest.time_next_update_unix)
+  // TTL: 1 hour (3600 seconds) for real-time market updates
+  const expiry = now + 3600
   if (database) {
     await d1Run(
       database,
