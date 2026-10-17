@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  calculateBodyTextLength,
+  extractBodyImages,
+  validateArticleForPublish,
+  ARTICLE_RULES,
+} from '~/utils/article-validator'
+
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
@@ -32,19 +39,57 @@ const saving = ref(false)
 const error = ref('')
 const saveSuccess = ref(false)
 
-const charCount = computed(() => form.content ? form.content.length : 0)
-const isLengthValid = computed(() => charCount.value >= 300 && charCount.value <= 1000)
+// Real-time validation computed properties
+const bodyCharCount = computed(() => calculateBodyTextLength(form.content || ''))
+const isTextLengthValid = computed(
+  () =>
+    bodyCharCount.value >= ARTICLE_RULES.MIN_BODY_CHARS &&
+    bodyCharCount.value <= ARTICLE_RULES.MAX_BODY_CHARS
+)
 
-async function submit() {
+const bodyImages = computed(() => extractBodyImages(form.content || '', form.coverImage))
+const bodyImageCount = computed(() => bodyImages.value.length)
+const isImageCountValid = computed(
+  () =>
+    bodyImageCount.value >= ARTICLE_RULES.MIN_BODY_IMAGES &&
+    bodyImageCount.value <= ARTICLE_RULES.MAX_BODY_IMAGES
+)
+
+const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
+
+async function submit(targetStatus?: 'draft' | 'published') {
+  if (targetStatus) {
+    form.status = targetStatus
+  }
+
   saving.value = true
   error.value = ''
   saveSuccess.value = false
+
+  // 공개 발행 시 유효성 검사 필수 적용 (초안은 검증 통과 여부와 무관하게 저장 가능)
+  if (form.status === 'published') {
+    const validation = validateArticleForPublish({
+      content: form.content,
+      coverImage: form.coverImage,
+    })
+    if (!validation.valid) {
+      error.value = `[발행 불가] ${validation.errors.join(' / ')}`
+      saving.value = false
+      return
+    }
+  }
+
   try {
     await store.save({ ...form }, id)
     saveSuccess.value = true
-    setTimeout(() => { saveSuccess.value = false }, 2500)
-  } catch (err: unknown) {
-    error.value = '저장하지 못했습니다. 입력 값을 다시 확인해 주세요.'
+    setTimeout(() => {
+      saveSuccess.value = false
+    }, 2500)
+  } catch (err: any) {
+    error.value =
+      err?.data?.message ||
+      err?.data?.statusMessage ||
+      '저장하지 못했습니다. 입력 값과 발행 조건을 다시 확인해 주세요.'
   } finally {
     saving.value = false
   }
@@ -76,7 +121,7 @@ function formatDate(val: string | null | undefined) {
     <div class="admin-top">
       <div>
         <p class="eyebrow">EDITORIAL ROOM / ARTICLE WORKBENCH #{{ id }}</p>
-        <h1>기사 편집 및 사실 검증 워크벤치</h1>
+        <h1>기사 편집 및 발행 관리 워크벤치</h1>
       </div>
       <div class="top-actions">
         <a :href="`/news/${item.category}/article/${id}`" target="_blank" class="button">공개 화면 보기 ↗</a>
@@ -91,7 +136,9 @@ function formatDate(val: string | null | undefined) {
     <div class="editorial-status-banner">
       <div class="status-item">
         <span class="label">발행 상태:</span>
-        <span class="val">{{ form.status === 'published' ? '공개 중' : '초안' }}</span>
+        <span class="val font-bold" :class="form.status === 'published' ? 'text-success' : 'text-muted'">
+          {{ form.status === 'published' ? '공개 중 (Published)' : '초안 (Draft)' }}
+        </span>
       </div>
       <div class="status-item">
         <span class="label">검토 상태:</span>
@@ -108,13 +155,29 @@ function formatDate(val: string | null | undefined) {
       </div>
       <div class="status-item">
         <span class="label">본문 글자 수:</span>
-        <span class="val" :class="isLengthValid ? 'text-success' : 'text-warning'">
-          {{ charCount }}자 ({{ isLengthValid ? '300~1,000자 규격 적합' : '규격 주의' }})
+        <span class="val" :class="isTextLengthValid ? 'text-success' : 'text-danger'">
+          {{ bodyCharCount }} / {{ ARTICLE_RULES.MIN_BODY_CHARS }}~{{ ARTICLE_RULES.MAX_BODY_CHARS }}자
+          <small v-if="bodyCharCount < ARTICLE_RULES.MIN_BODY_CHARS">({{ ARTICLE_RULES.MIN_BODY_CHARS - bodyCharCount }}자 부족)</small>
+          <small v-else-if="bodyCharCount > ARTICLE_RULES.MAX_BODY_CHARS">({{ bodyCharCount - ARTICLE_RULES.MAX_BODY_CHARS }}자 초과)</small>
+        </span>
+      </div>
+      <div class="status-item">
+        <span class="label">본문 이미지 수:</span>
+        <span class="val" :class="isImageCountValid ? 'text-success' : 'text-danger'">
+          {{ bodyImageCount }} / {{ ARTICLE_RULES.MIN_BODY_IMAGES }}~{{ ARTICLE_RULES.MAX_BODY_IMAGES }}장
+          <small v-if="bodyImageCount < ARTICLE_RULES.MIN_BODY_IMAGES">({{ ARTICLE_RULES.MIN_BODY_IMAGES - bodyImageCount }}장 부족)</small>
+          <small v-else-if="bodyImageCount > ARTICLE_RULES.MAX_BODY_IMAGES">({{ bodyImageCount - ARTICLE_RULES.MAX_BODY_IMAGES }}장 초과)</small>
+        </span>
+      </div>
+      <div class="status-item">
+        <span class="label">발행 적합도:</span>
+        <span class="val font-bold" :class="canPublish ? 'text-success' : 'text-warning'">
+          {{ canPublish ? '✓ 발행 가능' : '⚠️ 규격 미달 (초안 가능)' }}
         </span>
       </div>
     </div>
 
-    <form class="editor-form" @submit.prevent="submit">
+    <form class="editor-form" @submit.prevent="submit()">
       <div class="form-row">
         <label class="field full">
           기사 제목 (헤드라인) *
@@ -148,10 +211,14 @@ function formatDate(val: string | null | undefined) {
           <input v-model="form.author">
         </label>
         <label class="field">
-          발행 상태
+          대표 커버 이미지 URL (헤더 및 카드용)
+          <input v-model="form.coverImage" placeholder="https://... 또는 /api/media/...">
+        </label>
+        <label class="field">
+          발행 상태 선택
           <select v-model="form.status">
-            <option value="draft">초안 (Draft)</option>
-            <option value="published">공개 발행 (Published)</option>
+            <option value="draft">초안 (Draft - 규격 무관 저장)</option>
+            <option value="published">공개 발행 (Published - 규격 검증 필수)</option>
           </select>
         </label>
       </div>
@@ -184,9 +251,15 @@ function formatDate(val: string | null | undefined) {
       </div>
 
       <label class="field full">
-        기사 본문 (Markdown 지원, 300~1,000자 권장)
-        <textarea v-model="form.content" rows="14"></textarea>
+        기사 본문 (Markdown 지원, 800~2,000자 필수)
+        <textarea v-model="form.content" rows="14" placeholder="# 소제목&#10;&#10;기사 본문을 작성하세요."></textarea>
       </label>
+
+      <!-- 본문 이미지 관리 도구 컴포넌트 -->
+      <ArticleImageManager
+        v-model="form.content"
+        :cover-image="form.coverImage"
+      />
 
       <div class="form-actions-bar">
         <div class="left-actions">
@@ -201,8 +274,22 @@ function formatDate(val: string | null | undefined) {
         </div>
         <div class="right-actions">
           <button class="button" type="button" @click="router.push('/admin/articles')">취소</button>
-          <button class="button button-primary" :disabled="saving">
-            {{ saving ? '저장 중...' : '변경 사항 저장' }}
+          <button
+            class="button btn-draft"
+            type="button"
+            :disabled="saving"
+            @click="submit('draft')"
+          >
+            {{ saving ? '저장 중...' : '💾 초안으로 저장' }}
+          </button>
+          <button
+            class="button button-primary btn-publish"
+            type="button"
+            :disabled="saving || (form.status === 'published' && !canPublish)"
+            :title="form.status === 'published' && !canPublish ? '발행 조건(800~2,000자, 이미지 4~10장)을 충족해야 합니다.' : ''"
+            @click="submit('published')"
+          >
+            {{ saving ? '저장 중...' : '🚀 발행 상태로 저장' }}
           </button>
         </div>
       </div>
@@ -229,10 +316,11 @@ function formatDate(val: string | null | undefined) {
   padding: 12px 16px;
   border-radius: 4px;
   margin-bottom: 20px;
+  font-weight: 700;
 }
 .editorial-status-banner {
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #CBD5E1;
   border-radius: 6px;
   padding: 16px 20px;
   display: flex;
@@ -248,61 +336,102 @@ function formatDate(val: string | null | undefined) {
   font-size: 11px;
   font-weight: 700;
   color: #6B7280;
-  font-family: 'DM Mono', monospace;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .status-item .val {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
   color: #111827;
 }
+.status-item .val small {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 4px;
+}
 .text-mono {
-  font-family: 'DM Mono', monospace;
+  font-family: monospace;
 }
 .text-success { color: #16A34A; }
 .text-warning { color: #D97706; }
+.text-danger { color: #DC2626; }
+.text-muted { color: #64748B; }
+.font-bold { font-weight: 800; }
 
+.editor-form {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 24px;
+}
 .form-row {
   display: flex;
   gap: 16px;
   margin-bottom: 16px;
 }
-.form-row .field {
-  flex: 1;
-}
-.form-row .field.full {
-  flex: 1 1 100%;
-}
 .form-row-box {
   background: #F9FAFB;
   border: 1px solid #E5E7EB;
   border-radius: 6px;
-  padding: 16px 20px;
+  padding: 16px;
   margin-bottom: 16px;
 }
 .form-row-box h3 {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
+  color: #111827;
   margin: 0 0 12px;
+}
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
   color: #374151;
-  font-family: 'DM Mono', monospace;
+}
+.field.full {
+  flex: 100%;
+}
+.field input, .field select, .field textarea {
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #111827;
+}
+.field textarea {
+  font-family: monospace;
+  line-height: 1.5;
 }
 .form-actions-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 24px;
-  padding-top: 18px;
+  padding-top: 20px;
   border-top: 1px solid #E5E7EB;
-}
-.btn-retract {
-  background: #FFFBEB;
-  border: 1px solid #FCD34D;
-  color: #D97706;
-  font-weight: 800;
+  margin-top: 20px;
 }
 .right-actions {
   display: flex;
   gap: 10px;
+}
+.btn-retract {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+}
+.btn-retract:hover {
+  background: #FEE2E2;
+}
+.btn-draft {
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+  font-weight: 700;
+}
+.btn-publish:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

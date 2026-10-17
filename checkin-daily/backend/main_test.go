@@ -108,7 +108,9 @@ func TestLocationFilteredArticlesAndCityTags(t *testing.T) {
 	router.GET("/api/countries", listCountries)
 	router.GET("/api/countries/:code/cities", listCities)
 
-	payload := `{"title":"Tokyo routes","slug":"tokyo-routes","category":"airline","status":"published","cityIds":["tyo","par"]}`
+	validBody := strings.Repeat("도쿄 하네다 및 나리타 공항을 연결하는 신규 직항 노선이 대거 증편되어 여행객들의 이동 편의성이 획기적으로 개선됩니다. ", 20) +
+		"\n\n![img1](https://example.com/1.jpg)\n![img2](https://example.com/2.jpg)\n![img3](https://example.com/3.jpg)\n![img4](https://example.com/4.jpg)"
+	payload := fmt.Sprintf(`{"title":"Tokyo routes","slug":"tokyo-routes","content":%q,"category":"airline","status":"published","cityIds":["tyo","par"]}`, validBody)
 	createRequest := httptest.NewRequest(http.MethodPost, "/api/admin/articles", strings.NewReader(payload))
 	createRequest.Header.Set("Content-Type", "application/json")
 	createResponse := httptest.NewRecorder()

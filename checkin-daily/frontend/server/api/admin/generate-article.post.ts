@@ -11,14 +11,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '키워드를 입력해 주세요.' })
   }
 
-  // 1. Generate article story with strict 300~1000 char validation and CTA
+  // 1. Generate article story with strict 800~2,000 char validation, 4~10 body images, and CTA
   const story = generateNewsStory(keyword, body.category)
 
-  // Verify strict length (300 <= length <= 1000)
-  if (story.charCount < 300 || story.charCount > 1000) {
+  // Verify strict publishing standards (800 <= length <= 2000, 4 <= images <= 10)
+  if (story.charCount < 800 || story.charCount > 2000) {
     throw createError({
       statusCode: 500,
-      statusMessage: `글자 수 검증 실패: ${story.charCount}자 (300자 이상 1,000자 이하여야 합니다)`,
+      statusMessage: `글자 수 검증 실패: ${story.charCount}자 (800자 이상 2,000자 이하여야 합니다)`,
+    })
+  }
+  if (story.imageCount < 4 || story.imageCount > 10) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `본문 이미지 검증 실패: ${story.imageCount}장 (4장 이상 10장 이하여야 합니다)`,
     })
   }
 
@@ -30,9 +36,11 @@ export default defineEventHandler(async (event) => {
       success: true,
       draft: story,
       charCount: story.charCount,
+      imageCount: story.imageCount,
       isValidLength: true,
+      isValidImages: true,
       ctaTarget: story.ctaTarget,
-      message: `기사가 성공적으로 생성되었습니다. (총 ${story.charCount}자 / 300~1,000자 규격 통과)`,
+      message: `기사가 성공적으로 생성되었습니다. (본문 텍스트 ${story.charCount}자 / 이미지 ${story.imageCount}장 규격 통과)`,
     }
   }
 
@@ -89,10 +97,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, 'published', 150, ?, ?, ?) RETURNING id;`
       title: story.title,
       category: story.category,
       charCount: story.charCount,
+      imageCount: story.imageCount,
       isValidLength: true,
+      isValidImages: true,
       ctaTarget: story.ctaTarget,
       liveUrl: `/news/${story.category}/article/${articleId}`,
-      message: `🎉 기사가 즉시 발행되었습니다! (총 ${story.charCount}자, 5개국어 번역 및 ${story.ctaTarget} 트래픽 CTA 자동 삽입 완료)`,
+      message: `🎉 기사가 즉시 발행되었습니다! (본문 텍스트 ${story.charCount}자, 이미지 ${story.imageCount}장, 5개국어 번역 및 ${story.ctaTarget} 트래픽 CTA 탑재 완료)`,
     }
   } catch (err: any) {
     throw createError({

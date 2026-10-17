@@ -8,7 +8,7 @@ defineProps<{
 const savedStore = useSavedStore()
 
 function hasCoverImage(article: Article) {
-  return Boolean(article.coverImage && /^https:\/\//i.test(article.coverImage))
+  return Boolean(article.coverImage && (/^https?:\/\//i.test(article.coverImage) || article.coverImage.startsWith('/')))
 }
 
 const { locale, t } = useI18n()

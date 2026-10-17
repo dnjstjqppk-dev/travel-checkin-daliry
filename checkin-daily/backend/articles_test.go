@@ -58,11 +58,27 @@ func TestPublishedArticlesAreVisibleInPublicNewsEndpoints(t *testing.T) {
 
 	createArticle := func(slug, status string) {
 		t.Helper()
-		body := fmt.Sprintf(
-			`{"title":"%s article","slug":"%s","summary":"summary","content":"body","category":"airline","author":"editor","status":"%s","cityIds":[]}`,
-			slug, slug, status,
-		)
-		request := httptest.NewRequest(http.MethodPost, "/api/admin/articles", strings.NewReader(body))
+		validContent := strings.Repeat("대한항공 방콕 노선 운항 증편 및 글로벌 여행 수요 급증에 따른 항공권 조기 마감 소식입니다. ", 20) +
+			"\n\n![img1](https://example.com/1.jpg)\n![img2](https://example.com/2.jpg)\n![img3](https://example.com/3.jpg)\n![img4](https://example.com/4.jpg)"
+		contentPayload := "draft body"
+		if status == "published" {
+			contentPayload = validContent
+		}
+		payloadMap := map[string]interface{}{
+			"title":    fmt.Sprintf("%s article", slug),
+			"slug":     slug,
+			"summary":  "summary",
+			"content":  contentPayload,
+			"category": "airline",
+			"author":   "editor",
+			"status":   status,
+			"cityIds":  []string{},
+		}
+		bodyBytes, err := json.Marshal(payloadMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request := httptest.NewRequest(http.MethodPost, "/api/admin/articles", strings.NewReader(string(bodyBytes)))
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Origin", "https://news.example.com")
 		request.AddCookie(&http.Cookie{Name: adminCookieName, Value: token})
@@ -71,6 +87,18 @@ func TestPublishedArticlesAreVisibleInPublicNewsEndpoints(t *testing.T) {
 		if response.Code != http.StatusCreated {
 			t.Fatalf("expected admin article creation to return 201, got %d: %s", response.Code, response.Body.String())
 		}
+	}
+
+	// Verify that invalid published article is blocked with 400
+	invalidBody := `{"title":"Short article","slug":"short-article","summary":"summary","content":"too short","category":"airline","author":"editor","status":"published","cityIds":[]}`
+	invReq := httptest.NewRequest(http.MethodPost, "/api/admin/articles", strings.NewReader(invalidBody))
+	invReq.Header.Set("Content-Type", "application/json")
+	invReq.Header.Set("Origin", "https://news.example.com")
+	invReq.AddCookie(&http.Cookie{Name: adminCookieName, Value: token})
+	invResp := httptest.NewRecorder()
+	router.ServeHTTP(invResp, invReq)
+	if invResp.Code != http.StatusBadRequest {
+		t.Fatalf("expected invalid published article to return 400, got %d: %s", invResp.Code, invResp.Body.String())
 	}
 
 	createArticle("published-story", "published")

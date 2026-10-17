@@ -374,6 +374,22 @@ func createArticle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "one or more selected cities do not exist"})
 		return
 	}
+
+	// Server-side validation for public publishing (drafts bypass these rules)
+	if input.Status == "published" {
+		valid, textLen, imgCount, errs := validateArticleForPublish(input.Content, input.CoverImage)
+		if !valid {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":      "validation_failed",
+				"message":    "기사 발행 조건(본문 텍스트 800~2,000자, 본문 이미지 4~10장)을 충족하지 못했습니다.",
+				"textLength": textLen,
+				"imageCount": imgCount,
+				"errors":     errs,
+			})
+			return
+		}
+	}
+
 	article := articleFromInput(input)
 	if article.Slug == "" || article.Title == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "article title and slug must not be blank"})
@@ -420,6 +436,22 @@ func updateArticle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "one or more selected cities do not exist"})
 		return
 	}
+
+	// Server-side validation for public publishing (drafts bypass these rules)
+	if input.Status == "published" {
+		valid, textLen, imgCount, errs := validateArticleForPublish(input.Content, input.CoverImage)
+		if !valid {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":      "validation_failed",
+				"message":    "기사 발행 조건(본문 텍스트 800~2,000자, 본문 이미지 4~10장)을 충족하지 못했습니다.",
+				"textLength": textLen,
+				"imageCount": imgCount,
+				"errors":     errs,
+			})
+			return
+		}
+	}
+
 	updated := articleFromInput(input)
 	if updated.Slug == "" || updated.Title == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "article title and slug must not be blank"})
@@ -427,6 +459,9 @@ func updateArticle(c *gin.Context) {
 	}
 	updated.ID = article.ID
 	updated.CreatedAt = article.CreatedAt
+	if article.PublishedAt != nil && input.Status == "published" {
+		updated.PublishedAt = article.PublishedAt
+	}
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&article).Select("Title", "Slug", "Summary", "Content", "Category", "Author", "CoverImage", "Status", "PublishedAt").Updates(updated).Error; err != nil {
 			return err
@@ -983,6 +1018,109 @@ func articleFromInput(input ArticleInput) Article {
 		article.PublishedAt = &publishedAt
 	}
 	return article
+}
+
+var (
+	reCodeBlock = regexp.MustCompile("(?s)```.*?```")
+	reMdImg     = regexp.MustCompile(`!\[([^\]]*)\]\(\s*([^\s)]+)(?:\s+["'][^"']*["'])?\s*\)`)
+	reHtmlImg   = regexp.MustCompile(`(?i)<img\b[^>]*>`)
+	reMdLink    = regexp.MustCompile(`\[([^\]]+)\]\([^)]*\)`)
+	reHtmlTag   = regexp.MustCompile(`(?i)</?[^>]+(>|$)`)
+	reHeadings  = regexp.MustCompile(`(?m)^#{1,6}\s+`)
+	reQuotes    = regexp.MustCompile(`(?m)^>\s*`)
+	reList      = regexp.MustCompile(`(?m)^[\t ]*([-*+]|\d+\.)\s+`)
+	reHr        = regexp.MustCompile(`(?m)^[\t ]*[-*_]{3,}[\t ]*$`)
+	reEmphasis  = regexp.MustCompile(`\*\*|__|\*|_|~~`)
+	reCodeTicks = regexp.MustCompile("`([^`]+)`")
+	reFootnotes = regexp.MustCompile(`\[\^[^\]]+\]`)
+	reSpaces    = regexp.MustCompile(`\s+`)
+	reSrcAttr   = regexp.MustCompile(`(?i)\bsrc=["']([^"']+)["']`)
+)
+
+func extractBodyPlainText(content string) string {
+	text := reCodeBlock.ReplaceAllString(content, "")
+	text = reMdImg.ReplaceAllString(text, "")
+	text = reHtmlImg.ReplaceAllString(text, "")
+	text = reMdLink.ReplaceAllString(text, "$1")
+	text = reHtmlTag.ReplaceAllString(text, "")
+	text = reHeadings.ReplaceAllString(text, "")
+	text = reQuotes.ReplaceAllString(text, "")
+	text = reList.ReplaceAllString(text, "")
+	text = reHr.ReplaceAllString(text, "")
+	text = reEmphasis.ReplaceAllString(text, "")
+	text = reCodeTicks.ReplaceAllString(text, "$1")
+	text = reFootnotes.ReplaceAllString(text, "")
+	text = reSpaces.ReplaceAllString(text, " ")
+	return strings.TrimSpace(text)
+}
+
+func calculateBodyTextLength(content string) int {
+	plain := extractBodyPlainText(content)
+	return len([]rune(plain))
+}
+
+func extractBodyImages(content string, coverImage string) []string {
+	seen := make(map[string]bool)
+	var images []string
+	normCover := strings.TrimSpace(strings.ToLower(coverImage))
+
+	// Markdown images
+	for _, match := range reMdImg.FindAllStringSubmatch(content, -1) {
+		if len(match) >= 3 {
+			url := strings.TrimSpace(match[2])
+			lower := strings.ToLower(url)
+			if isValidImgUrl(lower, normCover) && !seen[lower] {
+				seen[lower] = true
+				images = append(images, url)
+			}
+		}
+	}
+
+	// HTML images
+	for _, tag := range reHtmlImg.FindAllString(content, -1) {
+		srcMatch := reSrcAttr.FindStringSubmatch(tag)
+		if len(srcMatch) >= 2 {
+			url := strings.TrimSpace(srcMatch[1])
+			lower := strings.ToLower(url)
+			if isValidImgUrl(lower, normCover) && !seen[lower] {
+				seen[lower] = true
+				images = append(images, url)
+			}
+		}
+	}
+	return images
+}
+
+func isValidImgUrl(url, normCover string) bool {
+	if len(url) < 5 || strings.HasPrefix(url, "blob:") || strings.HasPrefix(url, "javascript:") || strings.HasPrefix(url, "data:") {
+		return false
+	}
+	if normCover != "" && url == normCover {
+		return false
+	}
+	return strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "/api/media/") || strings.HasPrefix(url, "/images/") || strings.HasPrefix(url, "/assets/")
+}
+
+func validateArticleForPublish(content string, coverImage string) (bool, int, int, []string) {
+	textLen := calculateBodyTextLength(content)
+	imgs := extractBodyImages(content, coverImage)
+	imgCount := len(imgs)
+	var errors []string
+
+	if textLen < 800 {
+		errors = append(errors, fmt.Sprintf("본문 텍스트가 부족합니다. 최소 800자 이상이어야 합니다. (현재 %d자, %d자 부족)", textLen, 800-textLen))
+	} else if textLen > 2000 {
+		errors = append(errors, fmt.Sprintf("본문 텍스트가 초과되었습니다. 최대 2,000자 이하여야 합니다. (현재 %d자, %d자 초과)", textLen, textLen-2000))
+	}
+
+	if imgCount < 4 {
+		errors = append(errors, fmt.Sprintf("본문 이미지가 부족합니다. 최소 4장 이상이어야 합니다. (현재 %d장, %d장 부족)", imgCount, 4-imgCount))
+	} else if imgCount > 10 {
+		errors = append(errors, fmt.Sprintf("본문 이미지가 초과되었습니다. 최대 10장까지 허용됩니다. (현재 %d장, %d장 초과)", imgCount, imgCount-10))
+	}
+
+	valid := len(errors) == 0
+	return valid, textLen, imgCount, errors
 }
 
 func seedArticles() error {

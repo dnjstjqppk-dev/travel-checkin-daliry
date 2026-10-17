@@ -6,7 +6,8 @@
     "dev": "nuxt dev --host 0.0.0.0",
     "build": "nuxt build",
     "typecheck": "nuxt typecheck",
-    "preview": "nuxt preview --host 0.0.0.0"
+    "preview": "nuxt preview --host 0.0.0.0",
+    "test": "node --test --experimental-strip-types tests/article-validator.test.ts"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.5.1",

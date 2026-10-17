@@ -16,10 +16,17 @@ try {
   throw createError({ statusCode: 404, statusMessage: 'News article not found' })
 }
 
-// 안전한 마크다운 파싱 (Cloudflare Workers SSR 호환)
+// 안전한 마크다운 파싱 (Cloudflare Workers SSR 호환 & 이미지 지연 로딩 캡션 렌더링)
 function renderMarkdown(raw: string): string {
   try {
-    const parsed = marked.parse(raw || '', { async: false }) as string
+    const renderer = new marked.Renderer()
+    renderer.image = function ({ href, title, text }: { href: string; title?: string | null; text: string }) {
+      const cleanHref = href || ''
+      const cleanAlt = text || '기사 보도 사진'
+      const cleanTitle = title ? `<figcaption class="article-body-caption">${title}</figcaption>` : ''
+      return `<figure class="article-body-figure"><img src="${cleanHref}" alt="${cleanAlt}" loading="lazy" class="article-body-img" />${cleanTitle}</figure>`
+    }
+    const parsed = marked.parse(raw || '', { renderer, async: false }) as string
     const sanitizeFn = (DOMPurify as any)?.sanitize || (DOMPurify as any)?.default?.sanitize
     if (typeof sanitizeFn === 'function') {
       return sanitizeFn(parsed)
@@ -153,8 +160,8 @@ useHead({
   ],
 })
 
-function hasCoverImage(value: string) {
-  return /^https:\/\//i.test(value)
+function hasCoverImage(value: string | null | undefined) {
+  return Boolean(value && (/^https?:\/\//i.test(value) || value.startsWith('/')))
 }
 
 function formatDate(date: string | null) {
@@ -637,6 +644,28 @@ function goBack() {
 
 .bkp-article-content-html :deep(li) {
   margin-bottom: 8px;
+}
+
+.bkp-article-content-html :deep(.article-body-figure) {
+  margin: 32px 0;
+  text-align: center;
+}
+
+.bkp-article-content-html :deep(.article-body-img) {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  display: block;
+}
+
+.bkp-article-content-html :deep(.article-body-caption) {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6B7280;
+  font-style: italic;
+  text-align: center;
 }
 
 .bkp-related-section {

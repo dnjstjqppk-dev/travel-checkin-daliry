@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  calculateBodyTextLength,
+  extractBodyImages,
+  validateArticleForPublish,
+  ARTICLE_RULES,
+} from '~/utils/article-validator'
+
 definePageMeta({ layout: 'admin' })
 
 const store = useArticlesStore()
@@ -32,9 +39,31 @@ const form = reactive({
 const saving = ref(false)
 const manualError = ref('')
 
+// Real-time validation computed properties
+const bodyCharCount = computed(() => calculateBodyTextLength(form.content || ''))
+const isTextLengthValid = computed(
+  () =>
+    bodyCharCount.value >= ARTICLE_RULES.MIN_BODY_CHARS &&
+    bodyCharCount.value <= ARTICLE_RULES.MAX_BODY_CHARS
+)
+
+const bodyImages = computed(() => extractBodyImages(form.content || '', form.coverImage))
+const bodyImageCount = computed(() => bodyImages.value.length)
+const isImageCountValid = computed(
+  () =>
+    bodyImageCount.value >= ARTICLE_RULES.MIN_BODY_IMAGES &&
+    bodyImageCount.value <= ARTICLE_RULES.MAX_BODY_IMAGES
+)
+
+const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
+
 function slugify() {
   if (!form.slug) {
-    form.slug = form.title.trim().toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '')
+    form.slug = form.title
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, '-')
+      .replace(/^-|-$/g, '')
   }
 }
 
@@ -109,16 +138,36 @@ function loadAiResultToForm() {
   activeTab.value = 'manual'
 }
 
-// 4. 수동 폼 저장
-async function submitManual() {
-  saving.value = true
+// 4. 수동 폼 저장 (Draft or Publish)
+async function submitManual(targetStatus?: 'draft' | 'published') {
+  if (targetStatus) {
+    form.status = targetStatus
+  }
+
   manualError.value = ''
+
+  // 공개 발행 시 유효성 검사 필수 적용 (초안은 검증 통과 여부와 무관하게 저장 가능)
+  if (form.status === 'published') {
+    const validation = validateArticleForPublish({
+      content: form.content,
+      coverImage: form.coverImage,
+    })
+    if (!validation.valid) {
+      manualError.value = `[발행 불가] ${validation.errors.join(' / ')}`
+      return
+    }
+  }
+
+  saving.value = true
   try {
     const article = await store.save({ ...form })
     await router.push('/admin/dashboard')
     return article
-  } catch {
-    manualError.value = '저장하지 못했습니다. 제목과 고유한 슬러그를 확인해 주세요.'
+  } catch (err: any) {
+    manualError.value =
+      err?.data?.message ||
+      err?.data?.statusMessage ||
+      '저장하지 못했습니다. 제목, 고유한 슬러그 및 필수 조건을 확인해 주세요.'
   } finally {
     saving.value = false
   }
@@ -143,7 +192,7 @@ async function submitManual() {
         type="button"
         @click="activeTab = 'ai'"
       >
-        ⚡ AI 키워드 원클릭 자동 생성기 (300~1,000자 규격 & CTA 탑재)
+        ⚡ AI 키워드 원클릭 자동 생성기 (800~2,000자 & 이미지 4~10장 규격 자동화)
       </button>
       <button
         class="tab-btn"
@@ -160,12 +209,13 @@ async function submitManual() {
       <div class="ai-card">
         <div class="ai-card-header">
           <h2>키워드 기반 원클릭 뉴스 기사 생성 파이프라인</h2>
-          <span class="spec-badge">상용 분량 제한: 공백포함 300자 ~ 1,000자 엄격 검증</span>
+          <span class="spec-badge">상용 발행 규격: 본문 텍스트 800~2,000자 & 본문 이미지 4~10장 엄격 검증</span>
         </div>
         <p class="ai-desc">
-          핵심 키워드를 입력하면 메이저 언론사 문체의 기사 본문과 헤드라인, 
+          핵심 키워드를 입력하면 메이저 언론사 문체의 800~2,000자 심층 보도 기사, 
+          <strong>엄선된 에디토리얼 이미지 4장</strong>, 
           <strong>TripScanner</strong> / <strong>GetForTrip</strong> 문맥 맞춤형 트래픽 유도 CTA, 
-          그리고 5개 국어(영어·중국어·태국어·베트남어·스페인어) 번역이 1초 만에 완전 자동 완성됩니다.
+          그리고 5개 국어(영어·중국어·태국어·베트남어·스페인어) 번역이 완전 자동으로 완성됩니다.
         </p>
 
         <div class="ai-input-grid">
@@ -212,9 +262,12 @@ async function submitManual() {
       <!-- AI 생성 결과 미리보기 카드 -->
       <div v-if="aiResult" class="ai-preview-card">
         <div class="preview-header">
-          <div>
-            <span class="char-count-badge" :class="{ valid: aiResult.charCount >= 300 && aiResult.charCount <= 1000 }">
-              ✓ 본문 분량: {{ aiResult.charCount }}자 (300~1,000자 규격 충족)
+          <div class="badges-row">
+            <span class="char-count-badge" :class="{ valid: aiResult.charCount >= 800 && aiResult.charCount <= 2000 }">
+              ✓ 본문 텍스트: {{ aiResult.charCount }}자 (800~2,000자 규격 충족)
+            </span>
+            <span class="image-count-badge" :class="{ valid: aiResult.imageCount >= 4 && aiResult.imageCount <= 10 }">
+              ✓ 본문 이미지: {{ aiResult.imageCount }}장 (4~10장 규격 충족)
             </span>
             <span class="cta-badge">연동 타겟 CTA: {{ aiResult.ctaTarget }}</span>
           </div>
@@ -232,34 +285,129 @@ async function submitManual() {
     </div>
 
     <!-- 2. 수동 에디터 탭 -->
-    <form v-else class="editor-form" @submit.prevent="submitManual">
-      <label class="field full">제목<input v-model="form.title" required maxlength="180" @blur="slugify"></label>
-      <label class="field">슬러그<input v-model="form.slug" required></label>
-      <label class="field">
-        카테고리
-        <select v-model="form.category" required>
-          <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }}</option>
-        </select>
-      </label>
-      <label class="field full">요약 (Summary)<input v-model="form.summary" maxlength="500"></label>
-      <label class="field">작성자<input v-model="form.author"></label>
-      <label class="field">
-        발행 상태
-        <select v-model="form.status">
-          <option value="published">발행 (즉시 공개)</option>
-          <option value="draft">초안 (비공개)</option>
-        </select>
-      </label>
-      <div class="field full"><LocationMultiSelect v-model="form.cityIds" /></div>
+    <form v-else class="editor-form" @submit.prevent="submitManual()">
+      <!-- 실시간 발행 규격 검증 바 -->
+      <div class="editorial-status-banner">
+        <div class="status-col">
+          <span class="status-label">본문 글자 수 (순수 텍스트 기준)</span>
+          <div class="status-val-wrap">
+            <strong :class="isTextLengthValid ? 'text-success' : 'text-danger'">
+              {{ bodyCharCount }} / {{ ARTICLE_RULES.MIN_BODY_CHARS }}~{{ ARTICLE_RULES.MAX_BODY_CHARS }}자
+            </strong>
+            <span v-if="bodyCharCount < ARTICLE_RULES.MIN_BODY_CHARS" class="diff-tag text-warning">
+              ({{ ARTICLE_RULES.MIN_BODY_CHARS - bodyCharCount }}자 부족)
+            </span>
+            <span v-else-if="bodyCharCount > ARTICLE_RULES.MAX_BODY_CHARS" class="diff-tag text-danger">
+              ({{ bodyCharCount - ARTICLE_RULES.MAX_BODY_CHARS }}자 초과)
+            </span>
+            <span v-else class="diff-tag text-success">
+              ✓ 적합
+            </span>
+          </div>
+          <small class="status-hint">서식 기호, 이미지 문법, 링크 URL, HTML 태그는 글자 수에서 자동 제외됩니다.</small>
+        </div>
+
+        <div class="status-col">
+          <span class="status-label">본문 이미지 수 (대표 이미지 제외)</span>
+          <div class="status-val-wrap">
+            <strong :class="isImageCountValid ? 'text-success' : 'text-danger'">
+              {{ bodyImageCount }} / {{ ARTICLE_RULES.MIN_BODY_IMAGES }}~{{ ARTICLE_RULES.MAX_BODY_IMAGES }}장
+            </strong>
+            <span v-if="bodyImageCount < ARTICLE_RULES.MIN_BODY_IMAGES" class="diff-tag text-warning">
+              ({{ ARTICLE_RULES.MIN_BODY_IMAGES - bodyImageCount }}장 부족)
+            </span>
+            <span v-else-if="bodyImageCount > ARTICLE_RULES.MAX_BODY_IMAGES" class="diff-tag text-danger">
+              ({{ bodyImageCount - ARTICLE_RULES.MAX_BODY_IMAGES }}장 초과)
+            </span>
+            <span v-else class="diff-tag text-success">
+              ✓ 적합
+            </span>
+          </div>
+          <small class="status-hint">대표 이미지를 제외한 본문 내 고유한 이미지 기준입니다.</small>
+        </div>
+
+        <div class="status-col status-action-summary">
+          <span class="status-label">발행 가부 상태</span>
+          <div v-if="canPublish" class="publish-ready-badge ready">
+            ✓ 즉시 공개 발행 가능
+          </div>
+          <div v-else class="publish-ready-badge not-ready">
+            ⚠️ 발행 불가 (초안 저장 가능)
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label class="field full">
+          기사 제목 (헤드라인) *
+          <input v-model="form.title" required maxlength="180" @blur="slugify">
+        </label>
+        <label class="field">
+          슬러그 (URL 경로 식별자) *
+          <input v-model="form.slug" required>
+        </label>
+        <label class="field">
+          카테고리 *
+          <select v-model="form.category" required>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }}</option>
+          </select>
+        </label>
+        <label class="field full">
+          요약 (Lead Summary)
+          <input v-model="form.summary" maxlength="500">
+        </label>
+        <label class="field">
+          작성자 바이라인
+          <input v-model="form.author">
+        </label>
+        <label class="field">
+          대표 커버 이미지 URL (헤더 및 카드용)
+          <input v-model="form.coverImage" placeholder="https://... 또는 /api/media/...">
+        </label>
+      </div>
+
+      <div class="field full">
+        <LocationMultiSelect v-model="form.cityIds" />
+      </div>
+
       <label class="field full">
-        본문 (Markdown, 공백포함 300자 ~ 1,000자 권장)
-        <span class="live-counter">현재 글자 수: {{ form.content.length }}자</span>
-        <textarea v-model="form.content" rows="12" placeholder="# 소제목&#10;&#10;기사 본문을 작성하세요."></textarea>
+        기사 본문 (Markdown 지원, 800자 ~ 2,000자 필수)
+        <textarea
+          v-model="form.content"
+          rows="14"
+          placeholder="# 소제목&#10;&#10;기사 본문을 작성하세요. 이미지는 아래 이미지 관리기에서 업로드하거나 URL로 추가할 수 있습니다."
+        />
       </label>
-      <p v-if="manualError" class="alert alert-error">{{ manualError }}</p>
-      <div class="form-actions">
+
+      <!-- 본문 이미지 관리 도구 컴포넌트 -->
+      <ArticleImageManager
+        v-model="form.content"
+        :cover-image="form.coverImage"
+      />
+
+      <div v-if="manualError" class="alert alert-error">{{ manualError }}</div>
+
+      <div class="form-actions-bar">
         <button class="button" type="button" @click="router.push('/admin/dashboard')">취소</button>
-        <button class="button button-primary" :disabled="saving">{{ saving ? '저장 중...' : '기사 저장' }}</button>
+        <div class="right-buttons">
+          <button
+            class="button btn-draft"
+            type="button"
+            :disabled="saving"
+            @click="submitManual('draft')"
+          >
+            {{ saving ? '저장 중...' : '💾 임시 저장 (초안)' }}
+          </button>
+          <button
+            class="button button-primary btn-publish"
+            type="button"
+            :disabled="saving || !canPublish"
+            :title="!canPublish ? '발행 조건(800~2,000자, 이미지 4~10장)을 충족해야 발행할 수 있습니다.' : ''"
+            @click="submitManual('published')"
+          >
+            {{ saving ? '저장 중...' : '🚀 공개 발행 (Published)' }}
+          </button>
+        </div>
       </div>
     </form>
   </section>
@@ -304,144 +452,176 @@ async function submitManual() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.ai-card-header h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: #0f172a;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .spec-badge {
-  background: #f1f5f9;
-  color: #475569;
+  background: #FEF3C7;
+  color: #92400E;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 4px 10px;
   border-radius: 20px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #FCD34D;
 }
 
-.ai-desc {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 20px;
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.ai-input-grid {
+.char-count-badge, .image-count-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.char-count-badge.valid, .image-count-badge.valid {
+  background: #DCFCE7;
+  color: #166534;
+}
+
+.editorial-status-banner {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 16px 20px;
   display: grid;
-  grid-template-columns: 2.5fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
+  grid-template-columns: 1fr 1fr 200px;
+  gap: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.ai-actions {
+@media (max-width: 900px) {
+  .editorial-status-banner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748B;
+}
+
+.status-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-val-wrap strong {
+  font-size: 16px;
+}
+
+.diff-tag {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-hint {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.text-success { color: #16A34A; }
+.text-warning { color: #D97706; }
+.text-danger { color: #DC2626; }
+
+.publish-ready-badge {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.publish-ready-badge.ready {
+  background: #DCFCE7;
+  color: #166534;
+  border: 1px solid #86EFAC;
+}
+
+.publish-ready-badge.not-ready {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.field input, .field select, .field textarea {
+  padding: 10px 14px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #E2E8F0;
+  margin-top: 24px;
+}
+
+.right-buttons {
   display: flex;
   gap: 12px;
 }
 
-.action-btn-large {
-  padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.action-btn-secondary {
-  padding: 14px 24px;
-  font-size: 15px;
+.btn-draft {
+  background: #F1F5F9;
+  color: #334155;
+  border: 1px solid #CBD5E1;
   font-weight: 700;
 }
 
-.alert {
-  padding: 12px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  margin-bottom: 16px;
+.btn-draft:hover {
+  background: #E2E8F0;
 }
 
-.alert-error {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-}
-
-.alert-success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-}
-
-.ai-preview-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #cbd5e1;
-}
-
-.preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.char-count-badge {
-  font-size: 12px;
+.btn-publish {
+  background: #060D81;
+  color: #FFFFFF;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #f8fafc;
-  color: #64748b;
 }
 
-.char-count-badge.valid {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.cta-badge {
-  font-size: 12px;
-  font-weight: 700;
-  background: #e0f2fe;
-  color: #0369a1;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-left: 8px;
-}
-
-.preview-title {
-  font-size: 18px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: #0f172a;
-}
-
-.preview-lead {
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.content-preview {
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  font-family: inherit;
-  border: 1px solid #e2e8f0;
-}
-
-.live-counter {
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 600;
-  margin-left: 8px;
+.btn-publish:disabled {
+  background: #94A3B8;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>

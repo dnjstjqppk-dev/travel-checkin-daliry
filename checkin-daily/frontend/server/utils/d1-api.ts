@@ -22,6 +22,7 @@ import {
   verifyPassword,
 } from './d1-auth'
 import { d1All, d1First, d1Run, getWorkerEnvironment, type D1Database } from './d1'
+import { validateArticleForPublish } from './article-validator'
 
 const maxRequestBytes = 2 * 1024 * 1024
 const dummyPasswordHash = 'pbkdf2-sha256$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -890,11 +891,34 @@ async function createArticle(event: H3Event, database: D1Database) {
     return respond(event, { error: 'one or more selected cities do not exist' }, 400)
   }
 
-  const publishedAt = input.status === 'published' ? new Date().toISOString() : null
+  // Strict validation for public publishing (drafts bypass these rules)
+  if (input.status === 'published') {
+    const validation = validateArticleForPublish({
+      content: input.content,
+      coverImage: input.coverImage,
+    })
+    if (!validation.valid) {
+      return respond(
+        event,
+        {
+          error: 'validation_failed',
+          message: '기사 발행 조건(본문 텍스트 800~2,000자, 본문 이미지 4~10장)을 충족하지 못했습니다.',
+          textLength: validation.textLength,
+          imageCount: validation.imageCount,
+          errors: validation.errors,
+          details: validation.details,
+        },
+        400,
+      )
+    }
+  }
+
+  const now = new Date().toISOString()
+  const publishedAt = input.status === 'published' ? now : null
   const created = await database.prepare(
     `INSERT INTO articles
-      (title, slug, summary, content, category, author, cover_image, status, published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (title, slug, summary, content, category, author, cover_image, status, published_at, first_published_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      RETURNING id`,
   ).bind(
     input.title,
@@ -905,6 +929,7 @@ async function createArticle(event: H3Event, database: D1Database) {
     input.author,
     input.coverImage,
     input.status,
+    publishedAt,
     publishedAt,
   ).first<{ id: number }>()
   if (!created) throw createError({ statusCode: 500, statusMessage: 'Article could not be created' })
@@ -929,6 +954,28 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
     return respond(event, { error: 'one or more selected cities do not exist' }, 400)
   }
 
+  // Strict validation for public publishing (drafts bypass these rules)
+  if (input.status === 'published') {
+    const validation = validateArticleForPublish({
+      content: input.content,
+      coverImage: input.coverImage,
+    })
+    if (!validation.valid) {
+      return respond(
+        event,
+        {
+          error: 'validation_failed',
+          message: '기사 발행 조건(본문 텍스트 800~2,000자, 본문 이미지 4~10장)을 충족하지 못했습니다.',
+          textLength: validation.textLength,
+          imageCount: validation.imageCount,
+          errors: validation.errors,
+          details: validation.details,
+        },
+        400,
+      )
+    }
+  }
+
   const duplicate = await d1First<{ id: number }>(
     database,
     'SELECT id FROM articles WHERE slug = ? AND id <> ?',
@@ -938,11 +985,20 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
   if (duplicate) {
     return respond(event, { error: 'article could not be updated; check that the slug is unique' }, 409)
   }
+
+  const now = new Date().toISOString()
+  const publishedAt = input.status === 'published'
+    ? (existing.published_at || now)
+    : null
+  const firstPublishedAt = input.status === 'published'
+    ? (existing.first_published_at || existing.published_at || now)
+    : existing.first_published_at
+
   await d1Run(
     database,
     `UPDATE articles
      SET title = ?, slug = ?, summary = ?, content = ?, category = ?, author = ?,
-         cover_image = ?, status = ?, published_at = ?, updated_at = ?
+         cover_image = ?, status = ?, published_at = ?, first_published_at = ?, updated_at = ?
      WHERE id = ?`,
     input.title,
     input.slug,
@@ -952,8 +1008,9 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
     input.author,
     input.coverImage,
     input.status,
-    input.status === 'published' ? new Date().toISOString() : null,
-    new Date().toISOString(),
+    publishedAt,
+    firstPublishedAt,
+    now,
     id,
   )
 
