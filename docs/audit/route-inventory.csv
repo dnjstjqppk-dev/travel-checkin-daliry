@@ -1,0 +1,48 @@
+Route,Type,Method,Auth,Status,Code_File,Notes
+/news,Public,GET,None,VERIFIED,pages/news/index.vue,Main news feed with breaking ticker and trending tags
+/news/major,Public,GET,None,VERIFIED,pages/news/[category]/index.vue,Category major top stories feed
+/news/airline,Public,GET,None,VERIFIED,pages/news/[category]/index.vue,Category airline aviation news feed
+/news/hotel,Public,GET,None,VERIFIED,pages/news/[category]/index.vue,Category hotel & resort news feed
+/news/destination,Public,GET,None,VERIFIED,pages/news/[category]/index.vue,Category destination tourism news feed
+/news/region,Public,GET,None,VERIFIED,pages/news/region/index.vue,Global country & city regional news hub
+/news/region/:countryCode,Public,GET,None,VERIFIED,pages/news/region/[countryCode]/index.vue,Country specific news listing
+/news/region/:countryCode/:cityId,Public,GET,None,VERIFIED,pages/news/region/[countryCode]/[cityId].vue,City specific localized news
+/news/realtime,Public,GET,None,VERIFIED,pages/news/[category]/index.vue,Realtime ranked trending stories
+/saved,Public,GET,None,VERIFIED,pages/(public)/saved.vue,Local scrapbook bookmark reader
+/news/:category/article/:id,Public,GET,None,VERIFIED,pages/news/[category]/article/[id].vue,Full article detail view with verified source card
+/about,Public,GET,None,VERIFIED,pages/about.vue,Media group introduction and registration info
+/policy,Public,GET,None,VERIFIED,pages/policy.vue,Editorial code of ethics and fact-checking policy
+/corrections,Public,GET,None,VERIFIED,pages/corrections.vue,Reader fact correction request center
+/en/news,Public,GET,None,VERIFIED,pages/[lang]/news/index.vue,English localized news hub
+/zh/news,Public,GET,None,VERIFIED,pages/[lang]/news/index.vue,Simplified Chinese localized news hub
+/th/news,Public,GET,None,VERIFIED,pages/[lang]/news/index.vue,Thai localized news hub
+/vi/news,Public,GET,None,VERIFIED,pages/[lang]/news/index.vue,Vietnamese localized news hub
+/es/news,Public,GET,None,VERIFIED,pages/[lang]/news/index.vue,Spanish localized news hub
+/sitemap.xml,Public,GET,None,VERIFIED,server/routes/sitemap.xml.ts,Google News XML sitemap
+/rss.xml,Public,GET,None,VERIFIED,server/routes/rss.xml.ts,RSS 2.0 full syndication feed
+/robots.txt,Public,GET,None,VERIFIED,server/routes/robots.txt.ts,Robots crawl directives
+/api/articles,API,GET,None,VERIFIED,server/utils/d1-api.ts,Paginated public articles API
+/api/articles/id/:id,API,GET,None,VERIFIED,server/utils/d1-api.ts,Article detail with citations & fact checks
+/api/exchange-rates,API,GET,None,VERIFIED,server/api/exchange-rates.get.ts,Cached official market exchange rates
+/api/analytics/track,API,POST,None,VERIFIED,server/api/analytics/track.post.ts,Human vs bot event tracker
+/api/corrections/request,API,POST,None,VERIFIED,server/api/corrections/request.post.ts,Reader correction request API
+/admin/login,Admin,GET/POST,None,VERIFIED,pages/admin/login.vue,PBKDF2 admin login & session issue
+/admin/dashboard,Admin,GET,AdminSession,VERIFIED,pages/admin/dashboard.vue,Newsroom command center with live D1 stats
+/admin/articles,Admin,GET,AdminSession,VERIFIED,pages/admin/articles/index.vue,Article management with status & retraction
+/admin/articles/new,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/articles/new.vue,AI keyword auto generator & manual editor
+/admin/articles/:id,Admin,GET/PUT,AdminSession,VERIFIED,pages/admin/articles/[id].vue,Editorial workbench with 300-1000 char check
+/admin/review,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/review.vue,Human editorial review queue for high-risk topics
+/admin/sources,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/sources.vue,Official RSS/API news sources manager
+/admin/automation,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/automation.vue,Killswitch & automation policy settings
+/admin/schedules,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/schedules.vue,Scheduled publishing jobs queue
+/admin/categories,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/categories.vue,News taxonomy category management
+/admin/locations,Admin,GET/POST,AdminSession,VERIFIED,pages/admin/locations.vue,Country and city geolocation manager
+/admin/translations,Admin,GET,AdminSession,VERIFIED,pages/admin/translations.vue,Multilingual translation coverage matrix
+/admin/media,Admin,GET,AdminSession,VERIFIED,pages/admin/media.vue,Image licensing & editorial copyright validator
+/admin/analytics,Admin,GET,AdminSession,VERIFIED,pages/admin/analytics.vue,Bot-filtered traffic & affiliate conversion stats
+/admin/seo,Admin,GET,AdminSession,VERIFIED,pages/admin/seo.vue,SEO meta & Schema.org NewsArticle validator
+/admin/affiliate,Admin,GET,AdminSession,VERIFIED,pages/admin/affiliate.vue,TripScanner & GetForTrip CTA configuration
+/admin/users,Admin,GET,AdminSession,VERIFIED,pages/admin/users.vue,Role-Based Access Control (RBAC) matrix
+/admin/settings,Admin,GET,AdminSession,VERIFIED,pages/admin/settings.vue,Media group & publisher settings
+/admin/logs,Admin,GET,AdminSession,VERIFIED,pages/admin/logs.vue,Editorial and ingestion audit logs
+/api/cron/crawl,Cron,POST,CronToken,VERIFIED,server/api/cron/crawl.post.ts,Legal RSS ingestion & AI drafting engine
