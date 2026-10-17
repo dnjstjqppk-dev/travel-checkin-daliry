@@ -46,3 +46,4 @@ Route,Type,Method,Auth,Status,Code_File,Notes
 /admin/settings,Admin,GET,AdminSession,VERIFIED,pages/admin/settings.vue,Media group & publisher settings
 /admin/logs,Admin,GET,AdminSession,VERIFIED,pages/admin/logs.vue,Editorial and ingestion audit logs
 /api/cron/crawl,Cron,POST,CronToken,VERIFIED,server/api/cron/crawl.post.ts,Legal RSS ingestion & AI drafting engine
+

@@ -44,3 +44,4 @@ graph LR
 ## 5. 멀티 도메인 확장성 (Clone-Ready Base Architecture)
 본 아키텍처는 향후 금융(`coin`, `stock`) 등의 뉴스 사이트로 즉시 파생될 수 있도록 모듈화되어 있습니다.
 - `site.config.ts` 파일의 `affiliates` 배열만 `CoinScanner`, `StockScanner`로 교체하면 기사 생성 프롬프트, 인라인 CTA 컴포넌트, 분석 대시보드가 자동으로 해당 버티컬에 맞춰 재구성됩니다.
+

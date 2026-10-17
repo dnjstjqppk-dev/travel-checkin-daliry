@@ -45,3 +45,4 @@ Check-in Daily는 무단 웹 크롤링이나 유료 월(Paywall) 우회를 엄�
 
 ## 5. 수집 이력 및 장애 추적
 모든 수집 시도는 `ingestion_runs` 테이블에 고유 `run_id`와 함께 시작 시각, 완료 시각, 수집 건수, 중복 건수, 오류 메시지가 불변 기록으로 기록되며, `/admin/dashboard` 및 `/admin/sources`에서 실시간 모니터링됩니다.
+

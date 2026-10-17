@@ -49,3 +49,4 @@ CREATE TABLE article_fact_checks (
 1. `article_corrections` 테이블에 즉시 기록됩니다.
 2. 해당 기사의 상태가 `review_status = 'correction_required'`로 전환되어 편집국 관리자 대시보드에 긴급 알림이 표시됩니다.
 3. 편집국 데스크가 24시간 이내에 증빙을 재대조하고, 승인 시 본문 수정과 함께 '⚠️ 기사 정정 고지' 배너가 공개 페이지에 영구 표시됩니다.
+

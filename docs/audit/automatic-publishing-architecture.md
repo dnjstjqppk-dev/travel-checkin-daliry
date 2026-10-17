@@ -50,3 +50,4 @@ flowchart TD
 1. 공개 URL 응답 코드 (HTTP 200)
 2. OpenGraph 및 NewsArticle Schema.org JSON-LD의 제목/일자 정합성
 3. `sitemap.xml` 및 `rss.xml` 내 신규 URL 자동 포함 여부
+
