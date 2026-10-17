@@ -118,7 +118,7 @@ const updatedLabel = computed(() => {
         class="bkp-fx-refresh-btn"
         :class="{ 'is-spinning': isRefreshing || pending }"
         type="button"
-        :title="locale === 'en' ? 'Refresh Rates' : '실시간 환율 새로고침'"
+        :title="locale === 'en' ? 'Refresh Rates' : '환율 데이터 새로고침'"
         :aria-label="locale === 'en' ? 'Refresh Rates' : '환율 새로고침'"
         @click="triggerRefresh"
       >
@@ -131,7 +131,7 @@ const updatedLabel = computed(() => {
     <template v-else-if="data">
       <div class="bkp-fx-subbar">
         <span>{{ locale === 'en' ? 'KRW per Foreign Currency Unit' : '외화 1단위당 원화(KRW) 가치' }}</span>
-        <span class="bkp-fx-live-pill">{{ locale === 'en' ? 'LIVE' : '실시간' }}</span>
+        <span class="bkp-fx-live-pill" :title="`기준시각: ${updatedLabel} (공식 고시 환율, 1시간 주기 갱신)`">{{ locale === 'en' ? 'MARKET' : '공식 고시' }}</span>
       </div>
       <ul class="bkp-fx-list">
         <li v-for="rate in displayRates" :key="rate.code" class="bkp-fx-row">

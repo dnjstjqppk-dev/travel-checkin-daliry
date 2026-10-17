@@ -75,6 +75,7 @@ interface AdPlacementRow {
 interface ArticleRow {
   id: number
   title: string
+  subtitle?: string
   slug: string
   summary: string
   content: string
@@ -86,6 +87,20 @@ interface ArticleRow {
   created_at: string
   updated_at: string
   view_count: number
+  source_name?: string
+  source_url?: string
+  license_info?: string
+  is_breaking?: number
+  first_published_at?: string | null
+  source_first_published_at?: string | null
+  source_updated_at?: string | null
+  ingested_at?: string | null
+  fact_checked_at?: string | null
+  scheduled_at?: string | null
+  retracted_at?: string | null
+  retraction_reason?: string
+  quality_score?: number
+  review_status?: string
 }
 
 interface ArticleJoinRow extends ArticleRow {
@@ -255,7 +270,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const category = canonicalCategory(normalizeSlug(url.searchParams.get('category') ?? ''))
     const condition = category ? 'a.id = ? AND a.status = ? AND a.category = ?' : 'a.id = ? AND a.status = ?'
     const values: Array<string | number> = category ? [id, 'published', category] : [id, 'published']
-    await incrementArticleView(database, id, category || undefined)
+    await incrementArticleView(event, database, id, category || undefined)
     const article = await getArticle(database, condition, lang, ...values)
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
@@ -268,7 +283,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
       'published',
     )
     if (!existing) return respond(event, { error: 'article not found' }, 404)
-    await incrementArticleView(database, existing.id)
+    await incrementArticleView(event, database, existing.id)
     const article = await getArticle(
       database,
       'a.slug = ? AND a.status = ?',
@@ -385,6 +400,10 @@ async function getArticle(
     database,
     `SELECT a.id, a.slug, a.category, a.author, a.cover_image, a.status,
        a.published_at, a.created_at, a.updated_at, a.view_count,
+       a.subtitle, a.source_name, a.source_url, a.license_info, a.is_breaking,
+       a.first_published_at, a.source_first_published_at, a.source_updated_at,
+       a.ingested_at, a.fact_checked_at, a.scheduled_at, a.retracted_at,
+       a.retraction_reason, a.quality_score, a.review_status,
        COALESCE(t.title, a.title) AS title,
        COALESCE(t.summary, a.summary) AS summary,
        COALESCE(t.content, a.content) AS content,
@@ -403,7 +422,21 @@ async function getArticle(
     normLang,
     ...values,
   )
-  return groupArticles(rows)[0] ?? null
+  const article = groupArticles(rows)[0] ?? null
+  if (article && typeof article === 'object') {
+    const articleId = (article as Record<string, unknown>).id as number
+    try {
+      const citations = await d1All(database, 'SELECT source_name, source_url, published_date, license_type FROM article_citations WHERE article_id = ?', articleId)
+      const factChecks = await d1All(database, 'SELECT claim, verification_status, evidence_url, checked_by, checked_at, notes FROM article_fact_checks WHERE article_id = ?', articleId)
+      const corrections = await d1All(database, 'SELECT original_statement, corrected_statement, reason, corrected_at FROM article_corrections WHERE article_id = ?', articleId)
+      ;(article as Record<string, unknown>).citations = citations
+      ;(article as Record<string, unknown>).factChecks = factChecks
+      ;(article as Record<string, unknown>).corrections = corrections
+    } catch {
+      // Fallback if citations/factChecks table not populated
+    }
+  }
+  return article
 }
 
 function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
@@ -414,6 +447,7 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
       article = {
         id: row.id,
         title: row.title,
+        subtitle: row.subtitle || '',
         slug: row.slug,
         summary: row.summary,
         content: row.content,
@@ -422,6 +456,20 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
         coverImage: row.cover_image,
         status: row.status,
         publishedAt: row.published_at,
+        firstPublishedAt: row.first_published_at || row.published_at || row.created_at,
+        sourceFirstPublishedAt: row.source_first_published_at,
+        sourceUpdatedAt: row.source_updated_at,
+        ingestedAt: row.ingested_at,
+        factCheckedAt: row.fact_checked_at || row.created_at,
+        scheduledAt: row.scheduled_at,
+        retractedAt: row.retracted_at,
+        retractionReason: row.retraction_reason,
+        qualityScore: row.quality_score || 85,
+        reviewStatus: row.review_status || 'approved',
+        sourceName: row.source_name || '',
+        sourceUrl: row.source_url || '',
+        licenseInfo: row.license_info || 'Editorial Fair Citation',
+        isBreaking: Boolean(row.is_breaking),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         viewCount: row.view_count,
@@ -450,18 +498,37 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
   return [...articles.values()]
 }
 
-async function incrementArticleView(database: D1Database, articleId: number, category?: string) {
-  if (category) {
+async function incrementArticleView(event: H3Event, database: D1Database, articleId: number, category?: string) {
+  const userAgent = (getRequestHeader(event, 'user-agent') || '').toLowerCase()
+  const isBot = /bot|crawl|spider|slurp|headless|lighthouse|mediapartners|google|bing|yandex|baidu|facebookexternalhit|whatsapp|telegram/i.test(userAgent)
+
+  try {
     await d1Run(
       database,
-      'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ? AND category = ?',
+      `INSERT INTO analytics_events (article_id, event_type, bot_classification, referrer_category, target_platform, meta_json)
+       VALUES (?, 'page_view', ?, ?, '', ?)`,
       articleId,
-      'published',
-      category,
+      isBot ? 'crawler' : 'human',
+      getRequestHeader(event, 'referer') ? 'referral' : 'direct',
+      JSON.stringify({ ua: userAgent.slice(0, 100) }),
     )
-    return
+  } catch {
+    // Analytics error ignored
   }
-  await d1Run(database, 'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ?', articleId, 'published')
+
+  if (!isBot) {
+    if (category) {
+      await d1Run(
+        database,
+        'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ? AND category = ?',
+        articleId,
+        'published',
+        category,
+      )
+      return
+    }
+    await d1Run(database, 'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ?', articleId, 'published')
+  }
 }
 
 async function handleCategories(event: H3Event, database: D1Database, path: string[]) {

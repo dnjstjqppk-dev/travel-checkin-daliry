@@ -195,3 +195,5 @@ export function generateNewsStory(keyword: string, preferredCategory?: string): 
   }
 }
 
+export const generateAiArticle = generateNewsStory
+

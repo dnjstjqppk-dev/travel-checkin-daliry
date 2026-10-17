@@ -130,8 +130,8 @@ useHead({
         headline: article.title,
         description: article.summary,
         image: article.coverImage ? [article.coverImage] : [],
-        datePublished: article.publishedAt,
-        dateModified: article.publishedAt,
+        datePublished: article.firstPublishedAt || article.publishedAt,
+        dateModified: article.updatedAt || article.publishedAt,
         author: {
           '@type': 'Person',
           name: article.author || 'Check-in Daily Reporter',
@@ -245,7 +245,15 @@ function goBack() {
           <!-- 방콕포스트 공식 바이라인 & 게시일 -->
           <div class="bkp-article-byline-bar">
             <div class="bkp-byline-left">
-              <span>PUBLISHED : {{ formatDate(article.publishedAt) }}</span>
+              <span>PUBLISHED : {{ formatDate(article.firstPublishedAt || article.publishedAt) }}</span>
+              <template v-if="article.updatedAt && article.updatedAt !== (article.firstPublishedAt || article.publishedAt)">
+                <span class="bkp-pipe">|</span>
+                <span>UPDATED : {{ formatDate(article.updatedAt) }}</span>
+              </template>
+              <template v-if="article.factCheckedAt">
+                <span class="bkp-pipe">|</span>
+                <span>FACT-CHECKED : {{ formatDate(article.factCheckedAt) }}</span>
+              </template>
               <span class="bkp-pipe">|</span>
               <span>WRITER: <strong>{{ displayAuthor.toUpperCase() }}</strong></span>
               <span v-if="article.viewCount" class="bkp-pipe">|</span>
@@ -265,6 +273,37 @@ function goBack() {
               >
                 {{ savedStore.has(article.slug) ? '★ SAVED' : '☆ SAVE' }}
               </button>
+            </div>
+          </div>
+
+          <!-- 사실 검증 및 1차 출처 인증 박스 (Fact-Check & Citation Box) -->
+          <div v-if="article.sourceName || (article.factChecks && article.factChecks.length)" class="bkp-factcheck-card">
+            <div class="bkp-fc-header">
+              <span class="bkp-fc-badge">✓ FACT CHECKED</span>
+              <span class="bkp-fc-desk">CHECK-IN DAILY EDITORIAL INTEGRITY DESK</span>
+            </div>
+            <div class="bkp-fc-body">
+              <p v-if="article.sourceName" class="bkp-fc-source">
+                <strong>1차 공식 출처:</strong>
+                <a v-if="article.sourceUrl" :href="article.sourceUrl" target="_blank" rel="noopener noreferrer nofollow" class="bkp-fc-link">{{ article.sourceName }} ↗</a>
+                <span v-else>{{ article.sourceName }}</span>
+                <span class="bkp-fc-lic">({{ article.licenseInfo || 'Official PR / Fair Citation' }})</span>
+              </p>
+              <div v-if="article.factChecks && article.factChecks.length" class="bkp-fc-claims">
+                <div v-for="(fc, idx) in article.factChecks" :key="idx" class="bkp-fc-item">
+                  <span class="bkp-fc-check-icon">✓</span>
+                  <span class="bkp-fc-claim-text">{{ fc.claim }} — <em class="bkp-fc-verdict">{{ (fc.verification_status || 'VERIFIED').toUpperCase() }}</em></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 기사 정정 고지 (Editorial Correction Notice) -->
+          <div v-if="article.corrections && article.corrections.length" class="bkp-correction-notice" role="alert">
+            <div class="bkp-cn-title">⚠️ 기사 정정 고지 (EDITORIAL CORRECTION)</div>
+            <div v-for="(c, idx) in article.corrections" :key="idx" class="bkp-cn-item">
+              <p><strong>정정 사유:</strong> {{ c.reason }} (정정 일시: {{ formatDate(c.corrected_at) }})</p>
+              <p><del>{{ c.original_statement }}</del> → <strong>{{ c.corrected_statement }}</strong></p>
             </div>
           </div>
         </header>
@@ -870,6 +909,115 @@ function goBack() {
 .font-toggle {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
+}
+
+.bkp-factcheck-card {
+  margin-top: 16px;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-left: 4px solid #16A34A;
+  border-radius: 4px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #166534;
+}
+
+.bkp-fc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.bkp-fc-badge {
+  background: #16A34A;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+.bkp-fc-desk {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #15803D;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-fc-source {
+  margin: 0 0 6px;
+  color: #1F2937;
+  font-size: 13px;
+}
+
+.bkp-fc-link {
+  color: #166534;
+  font-weight: 700;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.bkp-fc-lic {
+  font-size: 11px;
+  color: #6B7280;
+  margin-left: 6px;
+}
+
+.bkp-fc-claims {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #DCFCE7;
+}
+
+.bkp-fc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.bkp-fc-check-icon {
+  color: #16A34A;
+  font-weight: 900;
+}
+
+.bkp-fc-verdict {
+  font-weight: 800;
+  color: #15803D;
+  font-style: normal;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-correction-notice {
+  margin-top: 16px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-left: 4px solid #D97706;
+  border-radius: 4px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #92400E;
+}
+
+.bkp-cn-title {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  font-family: 'DM Mono', monospace;
+}
+
+.bkp-cn-item p {
+  margin: 4px 0;
+  font-size: 12px;
 }
 </style>
 
