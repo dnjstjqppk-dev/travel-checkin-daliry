@@ -103,3 +103,4 @@ try {
   console.error('Failed to execute on remote D1:', err);
   process.exit(1);
 }
+

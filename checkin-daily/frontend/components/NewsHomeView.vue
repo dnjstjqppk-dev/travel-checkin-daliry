@@ -62,6 +62,20 @@ function formatViews(views = 0) {
 
 <template>
   <div class="bkp-page-container bkp-home-root">
+    <!-- 0. 실시간 브레이킹 뉴스 티커 (Breaking News Ticker) -->
+    <BreakingNewsTicker />
+
+    <!-- 실시간 인기 토픽 클라우드 바 -->
+    <div class="bkp-topic-cloud-bar">
+      <span class="topic-label">TRENDING TOPICS:</span>
+      <NuxtLink :to="locUrl('/news?q=방콕')" class="topic-chip">#방콕 수완나품</NuxtLink>
+      <NuxtLink :to="locUrl('/news?q=항공')" class="topic-chip">#항공권 특가</NuxtLink>
+      <NuxtLink :to="locUrl('/news?q=비자')" class="topic-chip">#DTV 디지털노마드</NuxtLink>
+      <NuxtLink :to="locUrl('/news?q=호텔')" class="topic-chip">#럭셔리 풀빌라</NuxtLink>
+      <NuxtLink :to="locUrl('/news?q=축제')" class="topic-chip">#러이끄라통</NuxtLink>
+      <NuxtLink :to="locUrl('/news?q=철도')" class="topic-chip">#로열 블라섬</NuxtLink>
+    </div>
+
     <!-- 검색 모드 -->
     <section v-if="searchQuery" class="bkp-search-view">
       <div class="bkp-sec-header">
@@ -165,6 +179,9 @@ function formatViews(views = 0) {
           </div>
         </aside>
       </section>
+
+      <!-- 전략적 트래픽 유도 제휴 CTA 카드 (TripScanner / GetForTrip) -->
+      <ArticleAffiliateCTA variant="card" />
 
       <AdSlot placement-id="main_mid" />
 
@@ -692,6 +709,41 @@ function formatViews(views = 0) {
   .bkp-search-view {
     margin-bottom: 32px;
   }
+}
+
+.bkp-topic-cloud-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.topic-label {
+  font-weight: 800;
+  color: #176B52;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.topic-chip {
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border-radius: 16px;
+  color: #334155;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.topic-chip:hover {
+  background: #176B52;
+  color: #ffffff;
 }
 </style>
 

@@ -173,12 +173,43 @@ function toggleFontSize() {
   else fontSize.value = 'normal'
 }
 
+const readingProgress = ref(0)
+function updateReadingProgress() {
+  if (!import.meta.client) return
+  const scrollTop = window.scrollY || document.documentElement.scrollTop
+  const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight
+  readingProgress.value = docHeight > 0 ? Math.min(100, Math.round((scrollTop / docHeight) * 100)) : 0
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', updateReadingProgress, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', updateReadingProgress)
+})
+
 const copySuccess = ref(false)
 function copyUrl() {
   if (!import.meta.client) return
   navigator.clipboard.writeText(window.location.href)
   copySuccess.value = true
   setTimeout(() => { copySuccess.value = false }, 2500)
+}
+
+async function shareArticle() {
+  if (!import.meta.client) return
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: article.title,
+        text: article.summary,
+        url: window.location.href,
+      })
+      return
+    } catch {}
+  }
+  copyUrl()
 }
 
 function goBack() {
@@ -188,6 +219,11 @@ function goBack() {
 
 <template>
   <div class="bkp-page-container bkp-article-page">
+    <!-- 읽기 진행률 게이지 바 (Reading Progress Bar) -->
+    <div class="reading-progress-track" aria-hidden="true">
+      <div class="reading-progress-fill" :style="{ width: `${readingProgress}%` }" />
+    </div>
+
     <!-- 상단 브레드크럼 -->
     <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
       <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
@@ -216,8 +252,11 @@ function goBack() {
               <span v-if="article.viewCount">{{ article.viewCount.toLocaleString('ko-KR') }} VIEWS</span>
             </div>
             <div class="bkp-share-tools">
-              <button class="bkp-share-btn" type="button" @click="copyUrl">
-                {{ copySuccess ? 'COPIED!' : 'COPY LINK' }}
+              <button class="bkp-share-btn font-toggle" type="button" @click="toggleFontSize">
+                A<sup>+</sup> {{ fontSize.toUpperCase() }}
+              </button>
+              <button class="bkp-share-btn" type="button" @click="shareArticle">
+                {{ copySuccess ? 'COPIED!' : 'SHARE' }}
               </button>
               <button
                 class="bkp-share-btn save"
@@ -254,6 +293,9 @@ function goBack() {
 
         <!-- 기사 본문 텍스트 (신문사 타이포그래피) -->
         <div class="bkp-article-content-html" :class="`font-${fontSize}`" v-html="html" />
+
+        <!-- 전략적 제휴 트래픽 전환 CTA (TripScanner / GetForTrip) -->
+        <ArticleAffiliateCTA :category="category" :title="article.title" variant="card" />
 
         <AdSlot placement-id="article_bottom" />
 
@@ -807,6 +849,27 @@ function goBack() {
     font-size: 24px;
     line-height: 1.3;
   }
+}
+
+.reading-progress-track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  z-index: 99999;
+}
+
+.reading-progress-fill {
+  height: 100%;
+  background: #176B52;
+  transition: width 0.1s linear;
+}
+
+.font-toggle {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
 }
 </style>
 
