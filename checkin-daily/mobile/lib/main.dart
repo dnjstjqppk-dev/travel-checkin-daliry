@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:8080',
+  defaultValue: 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
 );
 
 final dioProvider = Provider<Dio>((ref) => Dio(BaseOptions(
@@ -278,7 +278,29 @@ class NewsFeedScreen extends ConsumerWidget {
             articlesAsync.when(
               loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
               error: (err, _) => SliverFillRemaining(
-                child: Center(child: Text('기사를 불러오지 못했습니다: $err')),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        const Text(
+                          '뉴스 기사를 불러오는 중 일시적인 네트워크 지연이 발생했습니다.\n인터넷 연결 상태를 확인 후 다시 시도해 주세요.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () => ref.refresh(articlesProvider.future),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
               data: (items) {
                 if (items.isEmpty) {
@@ -330,6 +352,19 @@ class ArticleCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (article.coverImage.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  article.coverImage,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -382,6 +417,76 @@ class ArticleDetailScreen extends ConsumerStatefulWidget {
 class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
   double _fontSize = 15.0;
 
+  List<Widget> _buildContentWidgets(String content, double fontSize) {
+    if (content.isEmpty) return [];
+
+    final widgets = <Widget>[];
+    final lines = content.split('\n');
+    final imgRegex = RegExp(r'!\[(.*?)\]\((.*?)\)');
+
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) continue;
+
+      final match = imgRegex.firstMatch(line);
+      if (match != null) {
+        final alt = match.group(1) ?? '';
+        final url = match.group(2) ?? '';
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    url,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+                if (alt.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    alt,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      } else if (line.startsWith('# ')) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 8),
+          child: Text(line.substring(2), style: TextStyle(fontSize: fontSize + 5, fontWeight: FontWeight.bold, height: 1.3)),
+        ));
+      } else if (line.startsWith('## ')) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 6),
+          child: Text(line.substring(3), style: TextStyle(fontSize: fontSize + 3, fontWeight: FontWeight.bold, height: 1.3)),
+        ));
+      } else if (line.startsWith('### ')) {
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Text(line.substring(4), style: TextStyle(fontSize: fontSize + 1, fontWeight: FontWeight.bold, height: 1.3)),
+        ));
+      } else {
+        widgets.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6.0),
+          child: Text(
+            line,
+            style: TextStyle(fontSize: fontSize, height: 1.75, letterSpacing: -0.2),
+          ),
+        ));
+      }
+    }
+
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
     final bookmarks = ref.watch(bookmarkedArticlesProvider);
@@ -389,6 +494,10 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.maybePop(context),
+        ),
         title: Text(widget.article.category.toUpperCase(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
@@ -421,9 +530,22 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                 Text('발행일: ${widget.article.publishedAt}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
-            const Divider(height: 32),
+            const Divider(height: 28),
+            if (widget.article.coverImage.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.network(
+                  widget.article.coverImage,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
@@ -431,9 +553,9 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
               child: Text(widget.article.summary, style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w500, height: 1.5)),
             ),
             const SizedBox(height: 20),
-            Text(
+            ..._buildContentWidgets(
               widget.article.content.isNotEmpty ? widget.article.content : widget.article.summary,
-              style: TextStyle(fontSize: _fontSize, height: 1.8),
+              _fontSize,
             ),
             const SizedBox(height: 40),
             const Divider(),
@@ -490,7 +612,28 @@ class _SearchNewsScreenState extends ConsumerState<SearchNewsScreen> {
           Expanded(
             child: articlesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('검색 실패: $err')),
+              error: (err, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.search_off, size: 40, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '검색 데이터를 불러오지 못했습니다.\n잠시 후 다시 시도해 주세요.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => ref.refresh(articlesProvider.future),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('새로고침'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               data: (items) {
                 final filtered = _query.isEmpty
                     ? items
@@ -523,7 +666,28 @@ class BookmarksScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('내 스크랩북', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
       body: articlesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('오류: $err')),
+        error: (err, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 40, color: Colors.grey),
+                const SizedBox(height: 8),
+                const Text(
+                  '스크랩 목록을 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해 주세요.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () => ref.refresh(articlesProvider.future),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('다시 시도'),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (items) {
           final saved = items.where((a) => bookmarks.contains(a.slug)).toList();
           if (saved.isEmpty) {

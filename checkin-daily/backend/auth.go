@@ -55,6 +55,7 @@ type adminAuth struct {
 	config   authConfig
 	mu       sync.Mutex
 	attempts map[string]loginAttempt
+	revoked  map[string]time.Time
 }
 
 type loginInput struct {
@@ -148,7 +149,37 @@ func bootstrapAdminAccount(config authConfig) error {
 }
 
 func newAdminAuth(config authConfig) *adminAuth {
-	return &adminAuth{config: config, attempts: make(map[string]loginAttempt)}
+	return &adminAuth{
+		config:   config,
+		attempts: make(map[string]loginAttempt),
+		revoked:  make(map[string]time.Time),
+	}
+}
+
+func (auth *adminAuth) revokeToken(token string) {
+	auth.mu.Lock()
+	defer auth.mu.Unlock()
+	now := time.Now().UTC()
+	for k, exp := range auth.revoked {
+		if now.After(exp) {
+			delete(auth.revoked, k)
+		}
+	}
+	auth.revoked[token] = now.Add(adminSessionTTL)
+}
+
+func (auth *adminAuth) isTokenRevoked(token string) bool {
+	auth.mu.Lock()
+	defer auth.mu.Unlock()
+	exp, ok := auth.revoked[token]
+	if !ok {
+		return false
+	}
+	if time.Now().UTC().After(exp) {
+		delete(auth.revoked, token)
+		return false
+	}
+	return true
 }
 
 func (auth *adminAuth) login(c *gin.Context) {
@@ -204,6 +235,11 @@ func (auth *adminAuth) requireAdmin(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
 		return
 	}
+	if auth.isTokenRevoked(cookie.Value) {
+		http.SetCookie(c.Writer, auth.sessionCookie("", -1))
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
+	}
 	claims, err := auth.parseSession(cookie.Value, time.Now())
 	if err != nil || claims.Role != "admin" {
 		http.SetCookie(c.Writer, auth.sessionCookie("", -1))
@@ -228,6 +264,7 @@ func (auth *adminAuth) requireAdmin(c *gin.Context) {
 	}
 	c.Set("admin_username", account.Username)
 	c.Set("admin_role", account.Role)
+	c.Set("admin_expires_at", claims.ExpiresAt)
 	c.Next()
 }
 
@@ -246,10 +283,26 @@ func (auth *adminAuth) requireSameOrigin(c *gin.Context) {
 func (auth *adminAuth) session(c *gin.Context) {
 	username, _ := c.Get("admin_username")
 	role, _ := c.Get("admin_role")
-	c.JSON(http.StatusOK, gin.H{"username": username, "role": role, "expiresIn": int(adminSessionTTL.Seconds())})
+	expiresAt, exists := c.Get("admin_expires_at")
+	remaining := int(adminSessionTTL.Seconds())
+	if exists {
+		if exp, ok := expiresAt.(int64); ok {
+			rem := exp - time.Now().UTC().Unix()
+			if rem > 0 {
+				remaining = int(rem)
+			} else {
+				remaining = 0
+			}
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"username": username, "role": role, "expiresIn": remaining})
 }
 
 func (auth *adminAuth) logout(c *gin.Context) {
+	cookie, err := c.Cookie(adminCookieName)
+	if err == nil && cookie != "" {
+		auth.revokeToken(cookie)
+	}
 	http.SetCookie(c.Writer, auth.sessionCookie("", -1))
 	c.Status(http.StatusNoContent)
 }

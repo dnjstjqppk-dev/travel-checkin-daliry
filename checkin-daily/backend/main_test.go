@@ -414,3 +414,87 @@ func TestAdPlacementPreservesUnderscores(t *testing.T) {
 	}
 }
 
+func TestArticleValidationTextAndImageBoundaries(t *testing.T) {
+	fourImages := `
+![img1](https://example.com/img1.jpg)
+![img2](https://example.com/img2.jpg)
+![img3](https://example.com/img3.jpg)
+![img4](https://example.com/img4.jpg)
+`
+
+	// 1. Text length boundaries: 799, 800, 2000, 2001 runes
+	body799 := strings.Repeat("가", 799) + fourImages
+	valid, textLen, _, errs := validateArticleForPublish(body799, "https://example.com/cover.jpg")
+	if valid || textLen != 799 || len(errs) == 0 {
+		t.Fatalf("expected 799 characters to fail validation, got valid=%v, len=%d, errs=%v", valid, textLen, errs)
+	}
+
+	body800 := strings.Repeat("가", 800) + fourImages
+	valid, textLen, _, errs = validateArticleForPublish(body800, "https://example.com/cover.jpg")
+	if !valid || textLen != 800 || len(errs) != 0 {
+		t.Fatalf("expected 800 characters to pass validation, got valid=%v, len=%d, errs=%v", valid, textLen, errs)
+	}
+
+	body2000 := strings.Repeat("가", 2000) + fourImages
+	valid, textLen, _, errs = validateArticleForPublish(body2000, "https://example.com/cover.jpg")
+	if !valid || textLen != 2000 || len(errs) != 0 {
+		t.Fatalf("expected 2,000 characters to pass validation, got valid=%v, len=%d, errs=%v", valid, textLen, errs)
+	}
+
+	body2001 := strings.Repeat("가", 2001) + fourImages
+	valid, textLen, _, errs = validateArticleForPublish(body2001, "https://example.com/cover.jpg")
+	if valid || textLen != 2001 || len(errs) == 0 {
+		t.Fatalf("expected 2,001 characters to fail validation, got valid=%v, len=%d, errs=%v", valid, textLen, errs)
+	}
+
+	// 2. Image count boundaries: 3, 4, 10, 11 images
+	validText := strings.Repeat("가", 1000)
+
+	body3Img := validText + "\n![1](https://example.com/1.jpg)\n![2](https://example.com/2.jpg)\n![3](https://example.com/3.jpg)"
+	valid, _, imgCount, errs := validateArticleForPublish(body3Img, "https://example.com/cover.jpg")
+	if valid || imgCount != 3 || len(errs) == 0 {
+		t.Fatalf("expected 3 images to fail validation, got valid=%v, count=%d, errs=%v", valid, imgCount, errs)
+	}
+
+	body4Img := validText + fourImages
+	valid, _, imgCount, errs = validateArticleForPublish(body4Img, "https://example.com/cover.jpg")
+	if !valid || imgCount != 4 || len(errs) != 0 {
+		t.Fatalf("expected 4 images to pass validation, got valid=%v, count=%d, errs=%v", valid, imgCount, errs)
+	}
+
+	var tenImgs strings.Builder
+	tenImgs.WriteString(validText + "\n")
+	for i := 1; i <= 10; i++ {
+		tenImgs.WriteString(fmt.Sprintf("![img%d](https://example.com/pic%d.jpg)\n", i, i))
+	}
+	valid, _, imgCount, errs = validateArticleForPublish(tenImgs.String(), "https://example.com/cover.jpg")
+	if !valid || imgCount != 10 || len(errs) != 0 {
+		t.Fatalf("expected 10 images to pass validation, got valid=%v, count=%d, errs=%v", valid, imgCount, errs)
+	}
+
+	var elevenImgs strings.Builder
+	elevenImgs.WriteString(validText + "\n")
+	for i := 1; i <= 11; i++ {
+		elevenImgs.WriteString(fmt.Sprintf("![img%d](https://example.com/pic%d.jpg)\n", i, i))
+	}
+	valid, _, imgCount, errs = validateArticleForPublish(elevenImgs.String(), "https://example.com/cover.jpg")
+	if valid || imgCount != 11 || len(errs) == 0 {
+		t.Fatalf("expected 11 images to fail validation, got valid=%v, count=%d, errs=%v", valid, imgCount, errs)
+	}
+
+	// 3. Cover image exclusion
+	bodyWithCover := validText + fourImages + "\n![cover](https://example.com/cover.jpg)"
+	_, _, countWithCover, _ := validateArticleForPublish(bodyWithCover, "https://example.com/cover.jpg")
+	if countWithCover != 4 {
+		t.Fatalf("expected cover image to be excluded from body count, got count=%d", countWithCover)
+	}
+
+	// 4. Duplicate image deduplication
+	bodyWithDuplicate := validText + fourImages + "\n![duplicate](https://example.com/img1.jpg)"
+	_, _, countWithDup, _ := validateArticleForPublish(bodyWithDuplicate, "https://example.com/cover.jpg")
+	if countWithDup != 4 {
+		t.Fatalf("expected duplicate image URL to be deduplicated, got count=%d", countWithDup)
+	}
+}
+
+

@@ -38,6 +38,7 @@ const form = reactive({
 })
 const saving = ref(false)
 const manualError = ref('')
+const isSubmittedSuccessfully = ref(false)
 
 // Real-time validation computed properties
 const bodyCharCount = computed(() => calculateBodyTextLength(form.content || ''))
@@ -56,6 +57,45 @@ const isImageCountValid = computed(
 )
 
 const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
+
+// Dirty state tracking for navigation protection
+const isDirty = computed(() => {
+  if (isSubmittedSuccessfully.value || saving.value || publishing.value) return false
+  if (activeTab.value === 'ai') {
+    return !!aiKeyword.value.trim()
+  }
+  return !!(form.title.trim() || form.content.trim() || form.summary.trim())
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDirty.value) {
+    const confirmed = window.confirm('작성 중인 기사 내용이 저장되지 않았습니다. 페이지를 벗어나시겠습니까?')
+    if (!confirmed) {
+      next(false)
+      return
+    }
+  }
+  next()
+})
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  if (import.meta.client) {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  }
+})
 
 function slugify() {
   if (!form.slug) {
@@ -113,6 +153,7 @@ async function generateAndPublishNow() {
       },
     })
     aiMessage.value = res.message
+    isSubmittedSuccessfully.value = true
     setTimeout(() => {
       router.push('/admin/dashboard')
     }, 1500)
@@ -161,6 +202,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   saving.value = true
   try {
     const article = await store.save({ ...form })
+    isSubmittedSuccessfully.value = true
     await router.push('/admin/dashboard')
     return article
   } catch (err: any) {

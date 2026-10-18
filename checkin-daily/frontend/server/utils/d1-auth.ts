@@ -125,7 +125,7 @@ export async function createAdminSession(
 export async function authenticateAdmin(
   event: H3Event,
   database: D1Database,
-): Promise<{ identity: AdminIdentity | null; invalidSession: boolean }> {
+): Promise<{ identity: AdminIdentity | null; expiresAt?: number; invalidSession: boolean }> {
   const token = getCookie(event, adminCookieName)
   if (!token) return { identity: null, invalidSession: false }
 
@@ -133,9 +133,10 @@ export async function authenticateAdmin(
     id: number
     username: string
     role: string
+    expires_at: number
   }>(
     database,
-    `SELECT a.id, a.username, a.role
+    `SELECT a.id, a.username, a.role, s.expires_at
      FROM admin_sessions s
      JOIN admin_accounts a ON a.id = s.account_id
      WHERE s.token_hash = ? AND s.expires_at > ? AND a.role = 'admin' AND a.is_active = 1`,
@@ -153,6 +154,7 @@ export async function authenticateAdmin(
   }
   return {
     identity: { id: session.id, username: session.username, role: 'admin' },
+    expiresAt: session.expires_at,
     invalidSession: false,
   }
 }

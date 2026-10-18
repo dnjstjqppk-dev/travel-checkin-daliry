@@ -66,6 +66,7 @@ const contactPhone = computed(() => settings.value?.contact_phone || '02-738-202
             <li><NuxtLink :to="locUrl('/policy#privacy')">개인정보처리방침</NuxtLink></li>
             <li><NuxtLink :to="locUrl('/about')">편집 규약 및 윤리 강령</NuxtLink></li>
             <li><NuxtLink :to="locUrl('/corrections')">정정보도 청구 센터</NuxtLink></li>
+            <li><NuxtLink :to="locUrl('/contact')">제휴 및 취재 문의</NuxtLink></li>
           </ul>
         </div>
       </div>

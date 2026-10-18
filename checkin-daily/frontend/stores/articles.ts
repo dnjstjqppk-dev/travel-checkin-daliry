@@ -109,7 +109,7 @@ export const useArticlesStore = defineStore('articles', () => {
       }
       return 0
     } catch {
-      error.value = '기사를 불러오지 못했습니다. API 서버가 실행 중인지 확인해 주세요.'
+      error.value = '일시적인 네트워크 지연으로 기사를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
       if (!append) articles.value = []
       return 0
     } finally {

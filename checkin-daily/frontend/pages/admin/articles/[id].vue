@@ -64,6 +64,69 @@ const isImageCountValid = computed(
 
 const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
 
+// Dirty state tracking for navigation protection
+const initialSnapshot = JSON.stringify({
+  title: form.title,
+  subtitle: form.subtitle,
+  slug: form.slug,
+  summary: form.summary,
+  content: form.content,
+  category: form.category,
+  author: form.author,
+  coverImage: form.coverImage,
+  status: form.status,
+  cityIds: form.cityIds,
+})
+let savedSnapshot = initialSnapshot
+
+const isDirty = computed(() => {
+  if (saving.value) return false
+  return (
+    JSON.stringify({
+      title: form.title,
+      subtitle: form.subtitle,
+      slug: form.slug,
+      summary: form.summary,
+      content: form.content,
+      category: form.category,
+      author: form.author,
+      coverImage: form.coverImage,
+      status: form.status,
+      cityIds: form.cityIds,
+    }) !== savedSnapshot
+  )
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isDirty.value) {
+    const confirmed = window.confirm('수정 중인 내용이 아직 저장되지 않았습니다. 변경사항을 취소하고 나가시겠습니까?')
+    if (!confirmed) {
+      next(false)
+      return
+    }
+  }
+  next()
+})
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isDirty.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  if (import.meta.client) {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+  }
+})
+
 async function submit(targetStatus?: 'draft' | 'published') {
   if (targetStatus) {
     form.status = targetStatus
@@ -88,6 +151,18 @@ async function submit(targetStatus?: 'draft' | 'published') {
 
   try {
     await store.save({ ...form }, id)
+    savedSnapshot = JSON.stringify({
+      title: form.title,
+      subtitle: form.subtitle,
+      slug: form.slug,
+      summary: form.summary,
+      content: form.content,
+      category: form.category,
+      author: form.author,
+      coverImage: form.coverImage,
+      status: form.status,
+      cityIds: form.cityIds,
+    })
     saveSuccess.value = true
     setTimeout(() => {
       saveSuccess.value = false

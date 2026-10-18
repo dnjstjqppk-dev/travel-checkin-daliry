@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -174,7 +175,25 @@ func main() {
 func newRouter(auth *adminAuth) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery(), securityHeaders(), cors(auth.config.allowedOrigins), limitRequestBody())
-	router.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
+	router.GET("/health", func(c *gin.Context) {
+		dbStatus := "connected"
+		sqlDB, err := db.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "disconnected"
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":    "ok",
+			"liveness":  true,
+			"readiness": dbStatus == "connected",
+			"database":  dbStatus,
+			"timestamp": time.Now().UTC().Format(time.RFC3339),
+			"build": gin.H{
+				"version": "1.0.0",
+				"runtime": "go",
+				"arch":    runtime.GOARCH,
+			},
+		})
+	})
 	router.POST("/api/auth/login", auth.login)
 	router.GET("/api/auth/session", auth.requireAdmin, auth.session)
 	router.POST("/api/auth/logout", auth.requireAdmin, auth.requireSameOrigin, auth.logout)
@@ -257,15 +276,27 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		query := db.Model(&Article{}).Preload("Cities.Country")
 		if !includeDrafts && c.Query("sort") == "views" {
-			query = query.Order("view_count desc, published_at desc, created_at desc")
+			query = query.Order("view_count desc, published_at desc, id desc")
 		} else {
-			query = query.Order("published_at desc, created_at desc")
+			query = query.Order("published_at desc, id desc")
 		}
 		if !includeDrafts {
 			query = query.Where("status = ?", "published")
 		}
-		if category := normalizeSlug(c.Query("category")); category != "" {
+		if category := normalizeSlug(c.Query("category")); category != "" && category != "realtime" {
 			query = query.Where("category = ?", canonicalCategory(category))
+		}
+		if idsStr := strings.TrimSpace(c.Query("ids")); idsStr != "" {
+			parts := strings.Split(idsStr, ",")
+			var ids []uint
+			for _, p := range parts {
+				if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil && id > 0 {
+					ids = append(ids, uint(id))
+				}
+			}
+			if len(ids) > 0 {
+				query = query.Where("articles.id IN (?)", ids)
+			}
 		}
 		if search := strings.TrimSpace(c.Query("q")); search != "" {
 			pattern := "%" + search + "%"
@@ -291,8 +322,20 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 		if !includeDrafts {
 			countQuery = countQuery.Where("status = ?", "published")
 		}
-		if category := normalizeSlug(c.Query("category")); category != "" {
+		if category := normalizeSlug(c.Query("category")); category != "" && category != "realtime" {
 			countQuery = countQuery.Where("category = ?", canonicalCategory(category))
+		}
+		if idsStr := strings.TrimSpace(c.Query("ids")); idsStr != "" {
+			parts := strings.Split(idsStr, ",")
+			var ids []uint
+			for _, p := range parts {
+				if id, err := strconv.ParseUint(strings.TrimSpace(p), 10, 32); err == nil && id > 0 {
+					ids = append(ids, uint(id))
+				}
+			}
+			if len(ids) > 0 {
+				countQuery = countQuery.Where("articles.id IN (?)", ids)
+			}
 		}
 		if search := strings.TrimSpace(c.Query("q")); search != "" {
 			pattern := "%" + search + "%"
@@ -1343,6 +1386,11 @@ func seedArticles() error {
 		return err
 	}
 	if count > 0 {
+		return nil
+	}
+	// In production mode, do not seed mock articles automatically.
+	// Only seed if explicitly opted-in via SEED_DATABASE=true or in development/test.
+	if gin.Mode() == gin.ReleaseMode && strings.ToLower(os.Getenv("SEED_DATABASE")) != "true" {
 		return nil
 	}
 	now := time.Now().UTC()

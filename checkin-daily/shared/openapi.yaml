@@ -12,10 +12,39 @@ paths:
   /health:
     get:
       tags: [Public]
-      summary: Health check
+      summary: Health check endpoint returning system, database, and build metadata
       responses:
         '200':
           description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  liveness:
+                    type: boolean
+                    example: true
+                  readiness:
+                    type: boolean
+                    example: true
+                  database:
+                    type: string
+                    example: connected
+                  timestamp:
+                    type: string
+                    example: '2026-10-18T07:00:00.000Z'
+                  build:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+                        example: 0.2.0
+                      runtime:
+                        type: string
+                        example: cloudflare-pages
   /api/auth/login:
     post:
       tags: [Admin]
@@ -251,6 +280,10 @@ paths:
         - in: query
           name: offset
           schema: { type: integer, minimum: 0 }
+        - in: query
+          name: ids
+          description: Comma-separated list of article IDs for targeted bookmark retrieval
+          schema: { type: string }
       responses:
         '200':
           description: Published articles

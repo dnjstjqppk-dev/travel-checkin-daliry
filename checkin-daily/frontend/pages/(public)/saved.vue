@@ -1,10 +1,38 @@
 <script setup lang="ts">
 import NewsArticleCard from '~/components/NewsArticleCard.vue'
+import type { Article } from '~/stores/articles'
 
 const store = useArticlesStore()
 const savedStore = useSavedStore()
-await useAsyncData('saved-articles', () => store.load({ limit: 100 }))
-const savedArticles = computed(() => store.articles.filter((article) => savedStore.has(article.slug)))
+const requestFetch = useRequestFetch()
+
+const articles = ref<Article[]>([])
+const loading = ref(true)
+
+onMounted(async () => {
+  savedStore.load()
+  if (savedStore.ids.length === 0 && savedStore.slugs.length === 0) {
+    articles.value = []
+    loading.value = false
+    return
+  }
+
+  try {
+    const idsQuery = savedStore.ids.join(',')
+    if (idsQuery) {
+      const res = await requestFetch<any>('/api/articles', { query: { ids: idsQuery, limit: 50 } })
+      articles.value = Array.isArray(res) ? res : (res?.data || [])
+    } else {
+      // Fallback for legacy slug bookmarks
+      await store.load({ limit: 50 })
+      articles.value = store.articles.filter((a) => savedStore.has(a.slug))
+    }
+  } catch {
+    articles.value = []
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -21,13 +49,22 @@ const savedArticles = computed(() => store.articles.filter((article) => savedSto
         <h1 class="bkp-list-page-title">MY SCRAPBOOK (나의 스크랩북)</h1>
       </div>
       <div class="bkp-list-count">
-        총 {{ savedArticles.length }}개의 저장된 기사
+        총 {{ articles.length }}개의 저장된 기사
       </div>
     </div>
 
+    <!-- 브라우저 로컬 저장소 안내 뱃지 -->
+    <div class="bkp-storage-badge">
+      <span class="badge-icon">ℹ️</span>
+      <span class="badge-text">스크랩 기사는 현재 사용 중인 기기의 브라우저 로컬 저장소(LocalStorage)에 안전하게 보관됩니다. (별도 회원가입 없이 즉시 이용 가능)</span>
+    </div>
+
     <ClientOnly>
-      <div v-if="savedArticles.length" class="bkp-card-grid-3">
-        <NewsArticleCard v-for="article in savedArticles" :key="article.id" :article="article" />
+      <div v-if="loading" class="bkp-saved-loading">
+        <p>저장된 기사를 불러오는 중입니다...</p>
+      </div>
+      <div v-else-if="articles.length" class="bkp-card-grid-3">
+        <NewsArticleCard v-for="article in articles" :key="article.id" :article="article" />
       </div>
       <div v-else class="bkp-saved-empty">
         <div class="bkp-empty-icon">📌</div>

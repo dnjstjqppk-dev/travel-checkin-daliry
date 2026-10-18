@@ -206,10 +206,11 @@ async function handleAuth(event: H3Event, database: D1Database, path: string[]) 
   if (action === 'session' && event.method === 'GET') {
     const session = await authenticateAdmin(event, database)
     if (!session.identity) return respond(event, { error: 'authentication required' }, 401)
+    const remaining = session.expiresAt ? Math.max(0, session.expiresAt - Math.floor(Date.now() / 1000)) : adminSessionTtlSeconds
     return respond(event, {
       username: session.identity.username,
       role: session.identity.role,
-      expiresIn: adminSessionTtlSeconds,
+      expiresIn: remaining,
     })
   }
 
@@ -314,9 +315,17 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
   if (!admin) clauses.push("a.status = 'published'")
 
   const category = normalizeSlug(url.searchParams.get('category') ?? '')
-  if (category) {
+  if (category && category !== 'realtime') {
     clauses.push('a.category = ?')
     values.push(canonicalCategory(category))
+  }
+  const idsParam = url.searchParams.get('ids')
+  if (idsParam) {
+    const rawIds = idsParam.split(',').map((id) => parseInt(id.trim(), 10)).filter((id) => !isNaN(id) && id > 0)
+    if (rawIds.length > 0) {
+      clauses.push(`a.id IN (${rawIds.map(() => '?').join(',')})`)
+      values.push(...rawIds)
+    }
   }
   const search = (url.searchParams.get('q') ?? '').trim()
   if (search) {
@@ -390,8 +399,8 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
   setResponseHeader(event, 'X-Page-Limit', String(limit > 0 ? limit : totalCount))
 
   const sort = !admin && url.searchParams.get('sort') === 'views'
-    ? 'a.view_count DESC, a.published_at DESC, a.created_at DESC'
-    : 'a.published_at DESC, a.created_at DESC'
+    ? 'a.view_count DESC, a.published_at DESC, a.id DESC'
+    : 'a.published_at DESC, a.id DESC'
   const rows = await d1All<ArticleJoinRow>(
     database,
     `WITH paged_articles AS (
@@ -402,7 +411,7 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
             a.published_at, a.created_at, a.updated_at, a.view_count,
             COALESCE(t.title, a.title) AS title,
             COALESCE(t.summary, a.summary) AS summary,
-            COALESCE(t.content, a.content) AS content,
+            ${admin ? 'COALESCE(t.content, a.content)' : "''"} AS content,
             c.id AS city_id, c.country_code AS city_country_code, c.name_ko AS city_name_ko,
             c.name_en AS city_name_en, c.created_at AS city_created_at,
             co.name_ko AS country_name_ko, co.name_en AS country_name_en,
