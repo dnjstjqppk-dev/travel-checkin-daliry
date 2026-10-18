@@ -15,9 +15,7 @@ const filteredArticles = computed(() => {
     if (filterStatus.value !== 'all') {
       if (filterStatus.value === 'published' && a.status !== 'published') return false
       if (filterStatus.value === 'draft' && a.status !== 'draft') return false
-      // @ts-expect-error review_status check
       if (filterStatus.value === 'review' && a.reviewStatus !== 'needs_review' && a.reviewStatus !== 'candidate') return false
-      // @ts-expect-error retracted check
       if (filterStatus.value === 'retracted' && a.reviewStatus !== 'retracted') return false
     }
     if (q) {
@@ -119,7 +117,6 @@ async function retractArticle(id: number) {
                 </span>
               </td>
               <td>
-                <!-- @ts-expect-error reviewStatus -->
                 <span class="badge" :class="{
                   'badge-success': article.reviewStatus === 'approved',
                   'badge-warning': article.reviewStatus === 'needs_review' || article.reviewStatus === 'candidate',
@@ -130,7 +127,6 @@ async function retractArticle(id: number) {
               </td>
               <td><strong>{{ article.viewCount?.toLocaleString() || 0 }}</strong></td>
               <td class="text-mono">
-                <!-- @ts-expect-error firstPublishedAt -->
                 <div>게시: {{ formatDate(article.firstPublishedAt || article.publishedAt) }}</div>
                 <div v-if="article.updatedAt" class="text-subdate">수정: {{ formatDate(article.updatedAt) }}</div>
               </td>

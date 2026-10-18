@@ -24,26 +24,32 @@ const form = reactive({
 })
 
 // Load current settings from /api/settings
-const { data: initialSettings, refresh } = await useAsyncData('admin-site-settings', () =>
-  $fetch<Record<string, string>>('/api/settings').catch(() => ({}))
-)
+const { data: initialSettings, refresh } = await useAsyncData<Record<string, string>>('admin-site-settings', async () => {
+  try {
+    const res = await $fetch<Record<string, string>>('/api/settings')
+    return res || {}
+  } catch {
+    return {}
+  }
+})
 
 watch(initialSettings, (s) => {
   if (s) {
-    form.company_name = s.company_name || siteConfig.publisher.name
-    form.representative = s.representative || siteConfig.publisher.editorInChief
-    form.business_number = s.business_number || '2026-04-52914'
-    form.mail_order_number = s.mail_order_number || '2026-서울중구-0123'
-    form.newspaper_number = s.newspaper_number || siteConfig.publisher.registrationNumber
-    form.youth_protection_officer = s.youth_protection_officer || form.representative
-    form.publisher = s.publisher || form.representative
-    form.address = s.address || siteConfig.publisher.address
-    form.contact_email = s.contact_email || siteConfig.publisher.email
-    form.contact_phone = s.contact_phone || '02-738-2026'
-    form.site_url = s.site_url || siteConfig.domain
-    form.brand_name = s.brand_name || siteConfig.brandName
-    form.brand_subname = s.brand_subname || siteConfig.brandSubname
-    form.slogan = s.slogan || siteConfig.slogan
+    const data = s as Record<string, string>
+    form.company_name = data.company_name || siteConfig.publisher.name
+    form.representative = data.representative || siteConfig.publisher.editorInChief
+    form.business_number = data.business_number || '2026-04-52914'
+    form.mail_order_number = data.mail_order_number || '2026-서울중구-0123'
+    form.newspaper_number = data.newspaper_number || siteConfig.publisher.registrationNumber
+    form.youth_protection_officer = data.youth_protection_officer || form.representative
+    form.publisher = data.publisher || form.representative
+    form.address = data.address || siteConfig.publisher.address
+    form.contact_email = data.contact_email || siteConfig.publisher.email
+    form.contact_phone = data.contact_phone || '02-738-2026'
+    form.site_url = data.site_url || siteConfig.domain
+    form.brand_name = data.brand_name || siteConfig.brandName
+    form.brand_subname = data.brand_subname || siteConfig.brandSubname
+    form.slogan = data.slogan || siteConfig.slogan
   }
 }, { immediate: true })
 

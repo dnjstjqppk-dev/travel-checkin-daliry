@@ -15,6 +15,8 @@ export interface Article {
   updatedAt?: string
   viewCount?: number
   cities?: City[]
+  reviewStatus?: string
+  firstPublishedAt?: string | null
 }
 
 export interface Category {

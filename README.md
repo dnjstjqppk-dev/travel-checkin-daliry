@@ -8,6 +8,7 @@
 ## 📌 서비스 개요 (Service Overview)
 
 **체크인데일리(Check-in Daily)**는 여행 일기나 예약 플랫폼이 아닌, **실제 상용 운영 기준의 여행 전문 뉴스·미디어 플랫폼**입니다.
+
 * **주요 카테고리**: 항공(Flights), 호텔(Hotels), 여행지(Destinations), 업계 동향(Industry), 실시간 속보(Breaking News)
 * **다국어 지원**: 한국어(KO), 영어(EN), 일본어(JA), 중국어 번체(ZH-TW), 베트남어(VI), 태국어(TH), 스페인어(ES) 7개 언어 지원
 * **고도화 기능**:
@@ -52,15 +53,15 @@ travel-news/
 │   │   ├── models/          # GORM 데이터베이스 모델
 │   │   ├── migrations/      # Go 백엔드 DB 마이그레이션
 │   │   └── main.go          # 백엔드 서버 엔트리포인트
-│   ├── frontend/            # Nuxt 4 사용자 웹 및 관리자 CMS
-│   │   ├── components/      # UI 컴포넌트 (디자인 3개 컨셉 지원)
-│   │   ├── pages/           # 사용자 및 어드민 라우트
-│   │   ├── server/          # Nitro 서버 엔드포인트 & Cron 워커
-│   │   ├── stores/          # Pinia 상태 관리
-│   │   ├── tests/           # 유닛 및 통합 테스트
-│   │   └── migrations/      # Cloudflare D1 SQL 마이그레이션
-│   ├── mobile/              # Flutter 모바일 애플리케이션
-│   └── shared/              # OpenAPI 3.0 스키마 명세서
+├── checkin-daily/frontend/  # Nuxt 4 사용자 웹 및 관리자 CMS
+│   ├── components/          # UI 컴포넌트 (디자인 3개 컨셉 지원)
+│   ├── pages/               # 사용자 및 어드민 라우트
+│   ├── server/              # Nitro 서버 엔드포인트 & Cron 워커
+│   ├── stores/              # Pinia 상태 관리
+│   ├── tests/               # 유닛 및 통합 테스트
+│   └── migrations/          # Cloudflare D1 SQL 마이그레이션
+├── checkin-daily/mobile/    # Flutter 모바일 애플리케이션
+├── checkin-daily/shared/    # OpenAPI 3.0 스키마 명세서
 ├── reports/                 # 시스템 전수감사 및 기술 로드맵 보고서
 ├── scripts/                 # 데이터 시딩, 번역 및 일괄 처리 스크립트
 ├── wrangler.toml            # Cloudflare Workers 및 D1 배포 설정
@@ -73,11 +74,13 @@ travel-news/
 ## 🚀 빠른 시작 (Getting Started)
 
 ### 1. 환경 설정 (Prerequisites)
+
 * Node.js v20+ 및 npm
 * Go v1.22+
 * Cloudflare Wrangler CLI (`npm i -g wrangler`)
 
 ### 2. 프론트엔드 & Cloudflare Workers 실행
+
 ```bash
 cd checkin-daily/frontend
 
@@ -95,6 +98,7 @@ npm run build
 ```
 
 ### 3. 백엔드 실행 (Go Backend)
+
 ```bash
 cd checkin-daily/backend
 
@@ -111,6 +115,7 @@ go build -o server .
 ## 🧪 테스트 및 품질 검증 (Testing & Quality)
 
 본 프로젝트는 프로덕션 상용화 기준의 테스트 스위트를 포함하고 있습니다.
+
 * **프론트엔드 유닛 테스트 (`npm test`)**: 26개 테스트 전수 통과
   * 기사 본문 글자수 경계 검증 (800자~2,000자)
   * 본문 이미지 개수 검증 (4장~10장)
@@ -126,6 +131,7 @@ go build -o server .
 * **배포 환경**: Cloudflare Workers & Cloudflare Pages
 * **운영 도메인**: `https://travel-checkin-daily.dnjstjqppk.workers.dev`
 * **배포 명령**:
+
   ```bash
   npx wrangler deploy
   ```
