@@ -488,7 +488,8 @@ html[data-theme="dark"] .admin-articles-table td { border-bottom-color: var(--ad
 .editorial-rank-number { color: #9aa49d; font: 11px 'DM Mono',monospace; }
 .editorial-rank-number.top-rank { color: #b18534; }
 .editorial-ranking li a { min-width: 0; }
-.editorial-ranking li strong { display: -webkit-box; overflow: hidden; color: #354239; font-size: 10px; font-weight: 600; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.editorial-ranking li strong { display: -webkit-box; overflow: hidden; color: #354239; font-size: 10px; font-weight: 600; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; }
 .editorial-ranking li small { display: block; margin-top: 4px; color: #98a29b; font-size: 9px; }
 .editorial-rail-note, .editorial-rank-empty { color: #89958d; font-size: 10px; }
 .currency-panel { padding: 16px 17px 12px; }
@@ -518,8 +519,10 @@ html[data-theme="dark"] .admin-articles-table td { border-bottom-color: var(--ad
 .editorial-gallery .art-label { position: relative; z-index: 1; border-radius: 3px; padding: 5px 7px; color: #36513f; background: rgba(250,251,248,.9); font: 8px 'DM Mono',monospace; letter-spacing: .5px; }
 .editorial-gallery .news-card-meta, .editorial-gallery .news-card h3, .editorial-gallery .news-card p, .editorial-gallery .news-card .location-tags { margin-right: 14px; margin-left: 14px; }
 .editorial-gallery .news-card-meta { color: #8c9890; font-size: 9px; }
-.editorial-gallery .news-card h3 { display: -webkit-box; overflow: hidden; min-height: 46px; margin-top: 7px; margin-bottom: 7px; color: #29382f; font-size: 14px; font-weight: 650; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.editorial-gallery .news-card p { display: -webkit-box; overflow: hidden; min-height: 39px; color: #758279; font-size: 10px; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.editorial-gallery .news-card h3 { display: -webkit-box; overflow: hidden; min-height: 46px; margin-top: 7px; margin-bottom: 7px; color: #29382f; font-size: 14px; font-weight: 650; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; }
+.editorial-gallery .news-card p { display: -webkit-box; overflow: hidden; min-height: 39px; color: #758279; font-size: 10px; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; }
 .editorial-gallery .location-tags > * { border-color: #e4ebe4; border-radius: 3px; color: #577562; font-size: 8px; }
 .editorial-gallery .save-button { margin-left: 14px; font-size: 9px; }
 .editorial-gallery > .ad-slot { grid-column: 1/-1; min-height: 95px; margin: 0; border-top: 1px solid #ebefea; border-bottom: 1px solid #ebefea; }
@@ -567,7 +570,8 @@ html[data-theme="dark"] .admin-articles-table td { border-bottom-color: var(--ad
 .realtime-rank-art { position: relative; display: block; height: 71px; overflow: hidden; border-radius: 5px; background: linear-gradient(135deg,#d9e4d7,#9cb5a3); }
 .realtime-rank-copy { display: grid; gap: 4px; min-width: 0; }
 .realtime-rank-copy .eyebrow { margin: 0; color: #71887a; font-size: 8px; }
-.realtime-rank-copy strong { display: -webkit-box; overflow: hidden; color: #2e3b33; font-size: 12px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.realtime-rank-copy strong { display: -webkit-box; overflow: hidden; color: #2e3b33; font-size: 12px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  line-clamp: 2; }
 .realtime-rank-copy small { overflow: hidden; color: #87938b; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .realtime-views { color: #99a39c; font-size: 8px; text-align: right; white-space: nowrap; }
 .realtime-views strong { color: #55735f; font: 10px 'DM Mono',monospace; }
@@ -1191,6 +1195,7 @@ html[data-design="1"] .wordmark b {
   color: #1e293b;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1700,6 +1705,7 @@ html[data-design="3"] .wordmark-mark {
   margin: 0 0 16px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -2363,6 +2369,7 @@ html[data-design="3"] .wordmark-mark {
   margin: 0 0 14px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -2442,6 +2449,7 @@ html[data-design="3"] .wordmark-mark {
   margin: 0 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -2459,6 +2467,7 @@ html[data-design="3"] .wordmark-mark {
   margin: 0 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -2594,6 +2603,7 @@ html[data-design="3"] .wordmark-mark {
   color: #111827;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 600;

@@ -802,6 +802,7 @@ function goBack() {
   color: #111827;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 600;

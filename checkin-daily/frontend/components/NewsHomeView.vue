@@ -420,6 +420,7 @@ function formatViews(views = 0) {
   margin: 0 0 14px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -491,6 +492,7 @@ function formatViews(views = 0) {
   margin: 0 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -506,6 +508,7 @@ function formatViews(views = 0) {
   margin: 0 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -616,6 +619,7 @@ function formatViews(views = 0) {
   color: #111827;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 600;
