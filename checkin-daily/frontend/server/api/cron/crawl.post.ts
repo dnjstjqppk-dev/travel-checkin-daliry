@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
         now,
         'running',
       )
-      runId = runInsert.meta.last_row_id as number
+      runId = (runInsert.meta?.last_row_id || 0) as number
     } catch {
       // Ignore run tracker error
     }
@@ -188,7 +188,7 @@ export default defineEventHandler(async (event) => {
             reviewStatus,
           )
 
-          const newArticleId = articleInsert.meta.last_row_id as number
+          const newArticleId = (articleInsert.meta?.last_row_id || 0) as number
 
           // Insert Fact Check Record
           await d1Run(

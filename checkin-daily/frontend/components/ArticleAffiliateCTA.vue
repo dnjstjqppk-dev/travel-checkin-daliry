@@ -8,6 +8,8 @@ const props = defineProps<{
 }>()
 
 const affiliates = siteConfig.affiliates
+const tripScannerTarget = affiliates[0] as AffiliateTarget
+const getForTripTarget = (affiliates[1] || affiliates[0]) as AffiliateTarget
 
 // Pick best affiliate target based on category or content
 const primaryTarget = computed<AffiliateTarget>(() => {
@@ -15,15 +17,16 @@ const primaryTarget = computed<AffiliateTarget>(() => {
   const title = (props.title || '').toLowerCase()
 
   if (cat === 'destination' || /투어|입장권|비자|액티비티|페스티벌|체험/i.test(title)) {
-    return affiliates.find(a => a.id === 'getfortrip') || affiliates[1]
+    return (affiliates.find(a => a.id === 'getfortrip') || getForTripTarget) as AffiliateTarget
   }
-  return affiliates.find(a => a.id === 'tripscanner') || affiliates[0]
+  return (affiliates.find(a => a.id === 'tripscanner') || tripScannerTarget) as AffiliateTarget
 })
 
 const secondaryTarget = computed<AffiliateTarget>(() => {
-  return primaryTarget.value.id === 'tripscanner'
-    ? (affiliates.find(a => a.id === 'getfortrip') || affiliates[1])
-    : (affiliates.find(a => a.id === 'tripscanner') || affiliates[0])
+  const target = primaryTarget.value.id === 'tripscanner'
+    ? (affiliates.find(a => a.id === 'getfortrip') || getForTripTarget)
+    : (affiliates.find(a => a.id === 'tripscanner') || tripScannerTarget)
+  return target as AffiliateTarget
 })
 
 function buildUrl(target: AffiliateTarget) {

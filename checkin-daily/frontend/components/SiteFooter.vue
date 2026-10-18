@@ -4,20 +4,27 @@ import { siteConfig } from '~/config/site.config'
 const { t, locUrl } = useI18n()
 
 // Fetch dynamic legal and publisher information from /api/settings
-const { data: settings } = await useAsyncData('site-settings', () =>
-  $fetch<Record<string, string>>('/api/settings').catch(() => ({}))
-)
+const { data: settings } = await useAsyncData<Record<string, string>>('site-settings', async () => {
+  try {
+    const res = await $fetch<Record<string, string>>('/api/settings')
+    return res || {}
+  } catch {
+    return {}
+  }
+})
 
-const companyName = computed(() => settings.value?.company_name || siteConfig.publisher.name)
-const representative = computed(() => settings.value?.representative || siteConfig.publisher.editorInChief)
-const businessNumber = computed(() => settings.value?.business_number || '2026-04-52914')
-const mailOrderNumber = computed(() => settings.value?.mail_order_number || '2026-서울중구-0123')
-const newspaperNumber = computed(() => settings.value?.newspaper_number || siteConfig.publisher.registrationNumber)
-const youthProtectionOfficer = computed(() => settings.value?.youth_protection_officer || representative.value)
-const publisher = computed(() => settings.value?.publisher || representative.value)
-const address = computed(() => settings.value?.address || siteConfig.publisher.address)
-const contactEmail = computed(() => settings.value?.contact_email || siteConfig.publisher.email)
-const contactPhone = computed(() => settings.value?.contact_phone || '02-738-2026')
+const settingsMap = computed<Record<string, string>>(() => (settings.value as Record<string, string>) || {})
+
+const companyName = computed(() => settingsMap.value.company_name || siteConfig.publisher.name)
+const representative = computed(() => settingsMap.value.representative || siteConfig.publisher.editorInChief)
+const businessNumber = computed(() => settingsMap.value.business_number || '2026-04-52914')
+const mailOrderNumber = computed(() => settingsMap.value.mail_order_number || '2026-서울중구-0123')
+const newspaperNumber = computed(() => settingsMap.value.newspaper_number || siteConfig.publisher.registrationNumber)
+const youthProtectionOfficer = computed(() => settingsMap.value.youth_protection_officer || representative.value)
+const publisher = computed(() => settingsMap.value.publisher || representative.value)
+const address = computed(() => settingsMap.value.address || siteConfig.publisher.address)
+const contactEmail = computed(() => settingsMap.value.contact_email || siteConfig.publisher.email)
+const contactPhone = computed(() => settingsMap.value.contact_phone || '02-738-2026')
 </script>
 
 <template>

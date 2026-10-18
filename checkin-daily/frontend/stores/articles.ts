@@ -17,6 +17,12 @@ export interface Article {
   cities?: City[]
   reviewStatus?: string
   firstPublishedAt?: string | null
+  sourceName?: string
+  sourceUrl?: string
+  licenseInfo?: string
+  factCheckedAt?: string | null
+  factChecks?: Array<{ claim?: string; verification_status?: string }>
+  corrections?: Array<{ reason?: string; corrected_at?: string; original_statement?: string; corrected_statement?: string }>
 }
 
 export interface Category {

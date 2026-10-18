@@ -198,6 +198,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
 
   const itemA = images[index]
   const itemB = images[targetIndex]
+  if (!itemA || !itemB) return
 
   // Swap occurrences in markdown
   let content = props.modelValue || ''

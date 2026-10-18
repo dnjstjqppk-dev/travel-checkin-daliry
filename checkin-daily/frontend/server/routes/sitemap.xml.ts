@@ -63,7 +63,8 @@ export default defineEventHandler(async (event) => {
 
   // Generate localized article URLs for all 6 languages
   const articleUrls = articles.flatMap((a) => {
-    const lastmod = (a.updated_at || todayStr).split(' ')[0]
+    const rawDate = String(a.updated_at || todayStr)
+    const lastmod = rawDate.includes(' ') ? rawDate.split(' ')[0]! : rawDate
     return SUPPORTED_LANG_PREFIXES.map((prefix) => {
       const url = `${baseUrl}${prefix}/news/${a.category}/article/${a.id}`
       const priority = prefix === '' ? '0.8' : '0.7'

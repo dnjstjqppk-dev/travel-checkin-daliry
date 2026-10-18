@@ -233,7 +233,7 @@ ${'가'.repeat(900)}
 `
     const images = extractBodyImages(content)
     assert.equal(images.length, 1)
-    assert.equal(images[0].url, 'https://example.com/valid.jpg')
+    assert.equal(images[0]?.url, 'https://example.com/valid.jpg')
   })
 })
 

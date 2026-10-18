@@ -69,7 +69,7 @@ async function submitArticle() {
       category: form.value.category,
       status: 'submitted',
       submitterName: form.value.submitterName,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split('T')[0] || '',
       editorialFeedback: '편집국 데스킹 및 사실 확인 진행 중입니다.',
     })
     // Reset inputs
@@ -87,7 +87,7 @@ async function submitArticle() {
       category: form.value.category,
       status: 'submitted',
       submitterName: form.value.submitterName,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split('T')[0] || '',
       editorialFeedback: '편집국 데스킹 및 사실 확인 대기 중.',
     })
     form.value.title = ''

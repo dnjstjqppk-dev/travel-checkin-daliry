@@ -174,6 +174,7 @@ export const brandPresets: Record<string, SiteConfig> = {
 
 export function getBrandConfig(brandKey?: string): SiteConfig {
   const target = brandKey || process.env.BRAND_PRESET || 'travel'
-  return brandPresets[target] || brandPresets.travel
+  const found = brandPresets[target] || brandPresets.travel
+  return found as SiteConfig
 }
 

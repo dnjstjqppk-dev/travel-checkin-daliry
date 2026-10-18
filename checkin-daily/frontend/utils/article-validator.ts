@@ -161,9 +161,9 @@ export function extractBodyImages(markdown: string, coverImageUrl?: string): Ext
     if (srcMatch && srcMatch[1]) {
       const url = srcMatch[1].trim()
       const altMatch = tag.match(/\balt=["']([^"']*)["']/i)
-      const alt = altMatch ? altMatch[1].trim() : ''
+      const alt = (altMatch && altMatch[1]) ? altMatch[1].trim() : ''
       const titleMatch = tag.match(/\btitle=["']([^"']*)["']/i)
-      const caption = titleMatch ? titleMatch[1].trim() : ''
+      const caption = (titleMatch && titleMatch[1]) ? titleMatch[1].trim() : ''
 
       if (isValidImageUrl(url, normCover)) {
         const lower = url.toLowerCase()

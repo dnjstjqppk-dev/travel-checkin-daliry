@@ -35,7 +35,7 @@ const form = reactive({
   author: item.author,
   coverImage: item.coverImage,
   status: item.status,
-  cityIds: item.cities?.map((city) => city.id) || [],
+  cityIds: item.cities?.map((city: any) => String(city.id || city)) || [],
   sourceName: (item as any).sourceName || '',
   sourceUrl: (item as any).sourceUrl || '',
   licenseInfo: (item as any).licenseInfo || 'Editorial Fair Citation',
@@ -327,7 +327,7 @@ function formatDate(val: string | null | undefined) {
         <div class="field full">
           <LocationMultiSelect
             v-model="form.cityIds"
-            :initial-country-codes="[...new Set(item.cities?.map((city) => city.countryCode) || [])]"
+            :initial-country-codes="Array.from(new Set((item.cities || []).map((city: any) => String(city.countryCode || '')).filter(Boolean)))"
           />
         </div>
       </div>

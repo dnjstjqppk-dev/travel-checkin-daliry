@@ -43,7 +43,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
     const entryRegex = /<entry\b[^>]*>(.*?)<\/entry>/gis
     let match: RegExpExecArray | null
     while ((match = entryRegex.exec(xmlText)) !== null) {
-      const entryXml = match[1]
+      const entryXml = match[1] || ''
       const titleMatch = /<title\b[^>]*>(.*?)<\/title>/is.exec(entryXml)
       const linkMatch = /<link\b[^>]*href=["']([^"']+)["']/is.exec(entryXml)
       const idMatch = /<id\b[^>]*>(.*?)<\/id>/is.exec(entryXml)
@@ -68,7 +68,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
     const itemRegex = /<item\b[^>]*>(.*?)<\/item>/gis
     let match: RegExpExecArray | null
     while ((match = itemRegex.exec(xmlText)) !== null) {
-      const itemXml = match[1]
+      const itemXml = match[1] || ''
       const titleMatch = /<title\b[^>]*>(.*?)<\/title>/is.exec(itemXml)
       const linkMatch = /<link\b[^>]*>(.*?)<\/link>/is.exec(itemXml)
       const guidMatch = /<guid\b[^>]*>(.*?)<\/guid>/is.exec(itemXml)

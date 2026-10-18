@@ -97,9 +97,9 @@ const pageTitle = computed(() => {
   if (currentCityMeta.value) {
     return locale.value === 'en'
       ? `${currentCityMeta.value.nameEn} Travel News`
-      : `${currentCountryMeta.value.nameKo} ${currentCityMeta.value.nameKo} 여행 뉴스`
+      : `${currentCountryMeta.value?.nameKo || ''} ${currentCityMeta.value.nameKo} 여행 뉴스`
   }
-  if (activeCountry.value) {
+  if (activeCountry.value && currentCountryMeta.value) {
     return locale.value === 'en'
       ? `${currentCountryMeta.value.nameEn} Travel News`
       : `${currentCountryMeta.value.nameKo} 여행 뉴스`
@@ -125,7 +125,7 @@ function formatViews(views = 0) {
       <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
       <span class="bkp-bc-sep">›</span>
       <NuxtLink :to="locUrl('/news/region')" class="bkp-bc-link">BY REGION</NuxtLink>
-      <template v-if="activeCountry">
+      <template v-if="activeCountry && currentCountryMeta">
         <span class="bkp-bc-sep">›</span>
         <span class="bkp-bc-current">{{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}</span>
       </template>
@@ -195,7 +195,7 @@ function formatViews(views = 0) {
       <section class="bkp-col-main">
         <div class="bkp-region-results-count">
           <span>총 <strong>{{ store.articles.length }}</strong>개의 지역별 취재 기사</span>
-          <span v-if="activeCountry" class="bkp-filter-indicator">
+          <span v-if="activeCountry && currentCountryMeta" class="bkp-filter-indicator">
             (필터: {{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}<span v-if="currentCityMeta"> · {{ currentCityMeta.nameKo }}</span>)
           </span>
         </div>

@@ -194,9 +194,10 @@ export function generateNewsStory(keyword: string, preferredCategory?: string): 
 
   // Determine affiliate target (tripscanner vs getfortrip)
   const isTourOrActivity = /투어|입장권|비자|체험|DTV|액티비티|페스티벌|eSIM|티켓|패스/i.test(cleanKeyword)
-  const targetAffiliate = isTourOrActivity
-    ? siteConfig.affiliates.find((a) => a.id === 'getfortrip') || siteConfig.affiliates[1]
+  const targetAffiliate = (isTourOrActivity
+    ? siteConfig.affiliates.find((a) => a.id === 'getfortrip') || siteConfig.affiliates[1] || siteConfig.affiliates[0]
     : siteConfig.affiliates.find((a) => a.id === 'tripscanner') || siteConfig.affiliates[0]
+  ) as NonNullable<(typeof siteConfig.affiliates)[0]>
 
   const ctaUrl = `${targetAffiliate.url}?ref=checkindaily&keyword=${encodeURIComponent(cleanKeyword)}`
   const ctaMarkdown = `> ✈️ **[실시간 트래픽 연동]** '${cleanKeyword}' 관련 ${targetAffiliate.tagline}\n> 👉 **[${targetAffiliate.name}에서 최저가 비교 및 실시간 예약 확인하기](${ctaUrl})**`

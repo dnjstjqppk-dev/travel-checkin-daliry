@@ -988,7 +988,7 @@ async function createArticle(event: H3Event, database: D1Database) {
   if (!created) throw createError({ statusCode: 500, statusMessage: 'Article could not be created' })
 
   await replaceArticleCities(database, created.id, input.cityIds)
-  const article = await getArticle(database, 'a.id = ?', created.id)
+  const article = await getArticle(database, 'a.id = ?', 'ko', created.id)
   if (!article) throw createError({ statusCode: 500, statusMessage: 'Article could not be loaded after creation' })
   return respond(event, article, 201)
 }
@@ -1062,13 +1062,13 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
     input.coverImage,
     input.status,
     publishedAt,
-    firstPublishedAt,
+    firstPublishedAt || null,
     now,
     id,
   )
 
   await replaceArticleCities(database, id, input.cityIds)
-  const article = await getArticle(database, 'a.id = ?', id)
+  const article = await getArticle(database, 'a.id = ?', 'ko', id)
   if (!article) throw createError({ statusCode: 500, statusMessage: 'Article could not be loaded after update' })
   return respond(event, article)
 }
@@ -1258,7 +1258,7 @@ async function handleSettings(event: H3Event, database: D1Database, path: string
     ]
 
     for (const key of allowedKeys) {
-      if (input[key] !== undefined) {
+      if (input && input[key] !== undefined) {
         const val = String(input[key] ?? '').trim().slice(0, 500)
         await d1Run(
           database,

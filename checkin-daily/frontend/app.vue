@@ -11,7 +11,9 @@ const { locale, t, locUrl, switchLocale, supportedLocales } = useI18n()
 const isLangModalOpen = ref(false)
 
 const currentLocaleMeta = computed(() => {
-  return supportedLocales.find((l) => l.code === locale.value) || supportedLocales[0]
+  const found = supportedLocales.find((l) => l.code === locale.value)
+  if (found) return found
+  return supportedLocales[0] || { code: 'ko', name: '한국어', nativeName: '한국어', flag: '🇰🇷' }
 })
 
 function openLangModal() {

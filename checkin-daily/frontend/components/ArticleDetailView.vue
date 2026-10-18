@@ -164,7 +164,7 @@ function hasCoverImage(value: string | null | undefined) {
   return Boolean(value && (/^https?:\/\//i.test(value) || value.startsWith('/')))
 }
 
-function formatDate(date: string | null) {
+function formatDate(date?: string | null) {
   if (!date) return '14 OCT 2026'
   const d = new Date(date)
   const datePart = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Seoul' }).format(d)
