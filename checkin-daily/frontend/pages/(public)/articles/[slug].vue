@@ -1,11 +1,18 @@
 <script setup lang="ts">
+import type { Article } from '~/stores/articles'
+
 const route = useRoute()
 const store = useArticlesStore()
-const slug = String(route.params.slug)
+const slug = computed(() => {
+  const param = route.params.slug
+  return (Array.isArray(param) ? param[0] : param) || ''
+})
 
-let article: any = null
+let article: Article | null = null
 try {
-  article = await store.loadOne(slug)
+  if (slug.value) {
+    article = await store.loadOne(slug.value)
+  }
 } catch {
   throw createError({ statusCode: 404, statusMessage: '기사를 찾을 수 없습니다.' })
 }

@@ -49,16 +49,33 @@ export const useSavedStore = defineStore('saved-articles', () => {
     return slugs.value.includes(String(idOrSlug))
   }
 
-  function toggle(article: { id: number; slug?: string }) {
+  function toggle(target: number | string | { id?: number; slug?: string }) {
     if (!import.meta.client) return
-    const id = article.id
-    const slug = article.slug || ''
+    let id: number | undefined
+    let slug: string | undefined
 
-    if (ids.value.includes(id) || (slug && slugs.value.includes(slug))) {
-      ids.value = ids.value.filter((i) => i !== id)
+    if (typeof target === 'number') {
+      id = target
+    } else if (typeof target === 'string') {
+      const num = parseInt(target, 10)
+      if (!isNaN(num) && String(num) === target.trim()) {
+        id = num
+      } else {
+        slug = target.trim()
+      }
+    } else if (target && typeof target === 'object') {
+      if (typeof target.id === 'number') id = target.id
+      if (typeof target.slug === 'string') slug = target.slug
+    }
+
+    const hasId = id !== undefined && ids.value.includes(id)
+    const hasSlug = !!(slug && slugs.value.includes(slug))
+
+    if (hasId || hasSlug) {
+      if (id !== undefined) ids.value = ids.value.filter((i) => i !== id)
       if (slug) slugs.value = slugs.value.filter((s) => s !== slug)
     } else {
-      ids.value = [...ids.value, id]
+      if (id !== undefined) ids.value = [...ids.value, id]
       if (slug) slugs.value = [...slugs.value, slug]
     }
 

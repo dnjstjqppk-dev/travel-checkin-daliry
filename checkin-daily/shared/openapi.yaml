@@ -41,10 +41,10 @@ paths:
                     properties:
                       version:
                         type: string
-                        example: 0.2.0
+                        example: '0.2.0'
                       runtime:
                         type: string
-                        example: cloudflare-pages
+                        example: 'cloudflare-pages'
   /api/auth/login:
     post:
       tags: [Admin]
