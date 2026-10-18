@@ -1,0 +1,66 @@
+URL_Path,HTTP_Method,Access_Level,Mapped_Source_File,Status_Code,Status_Category,Latency_ms,Data_Binding,SEO_Indexed,Defect_ID,Notes
+"/",GET,Public,frontend/pages/(public)/index.vue,302,Normal,385ms,None,No,N/A,Root redirects to /news via Nuxt definePageMeta redirect
+"/news",GET,Public,frontend/pages/news/index.vue,200,Normal,787ms,D1 Database (checkin-daily-db),Yes,N/A,Main news portal SSR magazine layout with headlines and categories
+"/news/major",GET,Public,frontend/pages/news/[category]/index.vue,200,Normal,546ms,D1 Database (category=major),Yes,N/A,Major breaking & industry news category feed
+"/news/airline",GET,Public,frontend/pages/news/[category]/index.vue,200,Normal,721ms,D1 Database (category=airline),Yes,N/A,Aviation and mileage news category feed
+"/news/hotel",GET,Public,frontend/pages/news/[category]/index.vue,200,Normal,621ms,D1 Database (category=hotel),Yes,N/A,Hotels and resorts category feed
+"/news/destination",GET,Public,frontend/pages/news/[category]/index.vue,200,Normal,506ms,D1 Database (category=destination),Yes,N/A,Destinations and travel guide category feed
+"/news/realtime",GET,Public,frontend/pages/news/[category]/index.vue,200,Normal,754ms,D1 Database (category=realtime),Yes,N/A,Realtime breaking travel alert feed
+"/news/region",GET,Public,frontend/pages/news/region/index.vue,200,Normal,511ms,D1 Database (countries/cities),Yes,N/A,Global region and destination hub view
+"/news/region/[countryCode]",GET,Public,frontend/pages/news/region/[countryCode]/index.vue,200,Normal,530ms,D1 Database (country_code),Yes,N/A,Country-filtered news listing
+"/news/region/[countryCode]/[cityId]",GET,Public,frontend/pages/news/region/[countryCode]/[cityId].vue,200,Normal,540ms,D1 Database (city_id),Yes,N/A,City-filtered news listing
+"/news/[category]/article/[id]",GET,Public,frontend/pages/news/[category]/article/[id].vue,200,Normal,560ms,D1 Database (article ID),Yes,N/A,Primary canonical article detail view with SSR typography and affiliate CTA
+"/articles/[slug]",GET,Public,frontend/pages/(public)/articles/[slug].vue,200,Partial,480ms,D1 Database (slug),No,SEC-CANON-01,Secondary article URL; needs canonical pointer or 301 redirect to primary /news/:category/article/:id
+"/saved",GET,Public,frontend/pages/(public)/saved.vue,200,Normal,663ms,Browser LocalStorage,No,N/A,Client-side offline news bookmark repository
+"/partner",GET,Public,frontend/pages/partner/index.vue,200,Normal,186ms,D1 contributor_submissions,No,N/A,Travel journalist & partner submission portal
+"/about",GET,Public,frontend/pages/about.vue,200,Normal,267ms,Static / Config,Yes,N/A,Editorial masthead and mission statement
+"/policy",GET,Public,frontend/pages/policy.vue,200,Normal,903ms,Static / Config,Yes,N/A,Privacy policy terms of service and copyright fair use
+"/corrections",GET,Public,frontend/pages/corrections.vue,200,Normal,198ms,D1 article_corrections,Yes,N/A,Editorial correction and complaint filing channel
+"/health",GET,Public,frontend/server/routes/health.get.ts,200,Normal,240ms,Static status,No,N/A,Liveness & readiness probe returning {status: ok}
+"/robots.txt",GET,Public,frontend/server/routes/robots.txt.ts,200,Normal,689ms,Dynamic text,Yes,N/A,Search engine crawling guidelines declaring sitemap.xml
+"/sitemap.xml",GET,Public,frontend/server/routes/sitemap.xml.ts,200,Normal,341ms,D1 Database (published articles),Yes,N/A,Dynamic Google News and standard XML sitemap
+"/rss.xml",GET,Public,frontend/server/routes/rss.xml.ts,200,Normal,241ms,D1 Database (published articles),Yes,N/A,Standard RSS 2.0 feed for news aggregators
+"/api/articles",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,265ms,D1 articles table,No,N/A,Public article listing API with pagination and filtering
+"/api/articles/:slug",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,250ms,D1 articles table,No,N/A,Public article lookup by slug
+"/api/articles/id/:id",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,245ms,D1 articles table,No,N/A,Public article lookup by ID
+"/api/categories",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,210ms,D1 categories table,No,N/A,Public category taxonomy listing
+"/api/countries",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,220ms,D1 countries table,No,N/A,Public country list with sort_order
+"/api/countries/:code/cities",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,225ms,D1 cities table,No,N/A,Public city list filtered by country code
+"/api/ads",GET,Public,frontend/server/utils/d1-api.ts,200,Normal,205ms,D1 ad_placements,No,N/A,Public active ad placement configurations
+"/api/exchange-rates",GET,Public,frontend/server/api/exchange-rates.get.ts,200,Normal,310ms,Frankfurter API + In-memory cache,No,N/A,Live FX rates for KRW USD EUR JPY THB VND
+"/api/media/:id",GET,Public,frontend/server/api/media/[id].get.ts,200,Normal,190ms,D1 media_assets (binary base64),No,N/A,Edge CDN cached image delivery with immutable headers
+"/api/auth/login",POST,Public,frontend/server/utils/d1-api.ts,401,Normal,250ms,D1 admin_accounts,No,N/A,Admin credential verification with bcrypt and rate limiting
+"/api/auth/session",GET,Admin,frontend/server/utils/d1-api.ts,401,Normal,180ms,Session cookie verification,No,N/A,Validates checkin_admin_session HMAC cookie
+"/api/auth/logout",POST,Admin,frontend/server/utils/d1-api.ts,401,Normal,185ms,Session revocation,No,N/A,Clears cookie and invalidates session token
+"/api/admin/articles",GET,Admin,frontend/server/utils/d1-api.ts,401,Normal,181ms,D1 articles table,No,N/A,Admin article inventory including drafts and reviews
+"/api/admin/articles",POST,Admin,frontend/server/utils/d1-api.ts,401,Normal,N/A,D1 articles table,No,N/A,Creates new article with 800-2000 char and 4-10 image validation
+"/api/admin/articles/:id",GET,Admin,frontend/server/utils/d1-api.ts,401,Normal,N/A,D1 articles table,No,N/A,Single article retrieval for admin editor
+"/api/admin/articles/:id",PUT,Admin,frontend/server/utils/d1-api.ts,401,Normal,N/A,D1 articles table,No,N/A,Updates article with integer ID check and timestamp preservation
+"/api/admin/articles/:id",DELETE,Admin,frontend/server/utils/d1-api.ts,401,Normal,N/A,D1 articles table,No,N/A,Deletes article with relational cleanup in transaction
+"/api/admin/media/upload",POST,Admin,frontend/server/api/admin/media/upload.post.ts,401,Normal,N/A,D1 media_assets,No,N/A,Uploads image up to 5MB with Magic Byte MIME verification
+"/api/admin/media",GET,Admin,frontend/server/api/admin/media/index.get.ts,401,Normal,N/A,D1 media_assets,No,N/A,Lists uploaded image assets
+"/api/admin/media/:id",DELETE,Admin,frontend/server/api/admin/media/[id].delete.ts,401,Normal,N/A,D1 media_assets,No,N/A,Deletes uploaded image asset from D1
+"/api/admin/generate-article",POST,Admin,frontend/server/api/admin/generate-article.post.ts,401,Normal,N/A,Gemini AI + Fallback,No,N/A,Keyword-based automatic news generation with affiliate insertion
+"/admin/login",GET,Public,frontend/pages/admin/login.vue,200,Normal,290ms,Static auth layout,No,N/A,Administrative login screen
+"/admin/dashboard",GET,Admin,frontend/pages/admin/dashboard.vue,302,Normal,170ms,D1 metrics,No,N/A,Protected admin overview; unauthenticated users redirect to /admin/login
+"/admin/articles",GET,Admin,frontend/pages/admin/articles/index.vue,302,Normal,175ms,D1 articles,No,N/A,Admin article management table
+"/admin/articles/new",GET,Admin,frontend/pages/admin/articles/new.vue,302,Normal,180ms,D1 categories/cities,No,N/A,New article editor with live character counter and image manager
+"/admin/articles/:id",GET,Admin,frontend/pages/admin/articles/[id].vue,302,Normal,180ms,D1 article by ID,No,N/A,Article modification interface
+"/admin/media",GET,Admin,frontend/pages/admin/media.vue,302,Normal,185ms,D1 media_assets,No,N/A,Media asset library and upload console
+"/admin/sources",GET,Admin,frontend/pages/admin/sources.vue,302,Normal,180ms,D1 news_sources,No,N/A,News feed source and crawler configuration
+"/admin/automation",GET,Admin,frontend/pages/admin/automation.vue,302,Normal,180ms,Crawler execution,No,N/A,Automated article ingestion and manual trigger console
+"/admin/schedules",GET,Admin,frontend/pages/admin/schedules.vue,302,Normal,180ms,D1 crawler_schedules,No,N/A,Automated crawler and publishing schedule management
+"/admin/review",GET,Admin,frontend/pages/admin/review.vue,302,Normal,185ms,D1 review queue,No,N/A,Editorial desk approval and rejection queue
+"/admin/categories",GET,Admin,frontend/pages/admin/categories.vue,302,Normal,180ms,D1 categories,No,N/A,Category taxonomy management
+"/admin/locations",GET,Admin,frontend/pages/admin/locations.vue,302,Normal,180ms,D1 countries/cities,No,N/A,Country and city metadata editor
+"/admin/translations",GET,Admin,frontend/pages/admin/translations.vue,302,Normal,185ms,D1 article_translations,No,N/A,Multilingual translation workbench
+"/admin/analytics",GET,Admin,frontend/pages/admin/analytics.vue,302,Normal,180ms,D1 analytics_events,No,N/A,Traffic pageviews and affiliate conversion statistics
+"/admin/seo",GET,Admin,frontend/pages/admin/seo.vue,302,Normal,180ms,SEO inspection,No,N/A,SEO meta title description and sitemap auditor
+"/admin/affiliate",GET,Admin,frontend/pages/admin/affiliate.vue,302,Normal,180ms,Affiliate config,No,N/A,TripScanner and GetForTrip affiliate link manager
+"/admin/ads",GET,Admin,frontend/pages/admin/ads.vue,302,Normal,180ms,D1 ad_placements,No,N/A,Google AdSense and sponsor banner manager
+"/admin/logs",GET,Admin,frontend/pages/admin/logs.vue,302,Normal,185ms,D1 system_logs,No,N/A,Audit log viewer and crawler activity logs
+"/admin/settings",GET,Admin,frontend/pages/admin/settings.vue,302,Normal,180ms,System settings,No,N/A,Global website configuration and cache invalidator
+"/admin/users",GET,Admin,frontend/pages/admin/users.vue,302,Normal,185ms,D1 admin_accounts,No,N/A,Administrator accounts and role permissions
+"/[lang]/news",GET,Public,frontend/pages/[lang]/news/index.vue,200,Normal,820ms,D1 translations,Yes,N/A,Localized news feed for EN JA ZH TH VI ES
+"/[lang]/news/[category]/article/[id]",GET,Public,frontend/pages/[lang]/news/[category]/article/[id].vue,200,Normal,610ms,D1 translations,Yes,N/A,Localized article detail view
+"/non-existent-route-test-404",GET,Public,frontend/error.vue,404,Normal,210ms,None,No,N/A,Standard Nuxt 404 handler for invalid routes

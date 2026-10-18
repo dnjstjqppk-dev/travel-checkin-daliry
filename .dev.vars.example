@@ -13,3 +13,4 @@ ADMIN_BOOTSTRAP_TOKEN=dev-admin-bootstrap-token-change-in-production
 
 # External Gemini API Key (optional fallback for AI article generation)
 GEMINI_API_KEY=AIzaSyDummyKeyForDevelopment
+
