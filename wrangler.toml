@@ -15,3 +15,6 @@ command = "npm.cmd --prefix checkin-daily/frontend run build"
 [assets]
 directory = "checkin-daily/frontend/.output/public"
 binding = "ASSETS"
+
+[triggers]
+crons = ["0 */2 * * *"]
