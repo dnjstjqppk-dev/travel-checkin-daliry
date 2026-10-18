@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "nuxt dev --host 0.0.0.0",
     "build": "nuxt build",
+    "build:worker": "nuxt build",
+    "build:node": "node -e \"process.env.NITRO_PRESET='node-server'; require('node:child_process').spawnSync(process.platform==='win32'?'npx.cmd':'npx', ['nuxt', 'build'], {stdio: 'inherit', env: process.env})\"",
     "typecheck": "nuxt typecheck",
     "preview": "nuxt preview --host 0.0.0.0",
     "test": "node --test --experimental-strip-types tests/article-validator.test.ts"

@@ -3,45 +3,65 @@ import type { AdPlacement } from '~/stores/articles'
 
 const props = defineProps<{ placementId: string }>()
 const store = useArticlesStore()
-const placement = ref<AdPlacement | undefined>()
-const requestError = ref('')
 
-await useAsyncData(`ad-placement-${props.placementId}`, async () => {
-  try {
-    const placements = await store.loadAdPlacements()
-    placement.value = placements.find((item) => item.id === props.placementId)
-    return placements
-  } catch {
-    requestError.value = '광고 설정을 불러오지 못했습니다.'
-    return []
-  }
+// Shared asyncData key across all ad slots on the page - eliminates duplicate network calls & guarantees hydration parity
+const { data: placements, error } = await useAsyncData<AdPlacement[]>(
+  'site-ad-placements',
+  async () => {
+    try {
+      return await store.loadAdPlacements()
+    } catch {
+      return []
+    }
+  },
+  { default: () => [] }
+)
+
+const placement = computed<AdPlacement | undefined>(() => {
+  const list = placements.value || []
+  return list.find((item) => item.id === props.placementId)
 })
 
 const isConfigured = computed(() => Boolean(
   placement.value?.isActive
-  && /^ca-pub-\d+$/.test(placement.value.adClientId)
-  && /^\d+$/.test(placement.value.adSlotId),
+  && /^ca-pub-\d+$/.test(placement.value.adClientId || '')
+  && /^\d+$/.test(placement.value.adSlotId || '')
 ))
 
 onMounted(() => {
-  if (!isConfigured.value) return
-  const slot = placement.value!
+  if (!isConfigured.value || !import.meta.client) return
+  const slot = placement.value
+  if (!slot) return
+
   const scriptURL = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(slot.adClientId)}`
   if (!document.querySelector(`script[src="${scriptURL}"]`)) {
     const script = document.createElement('script')
     script.async = true
     script.crossOrigin = 'anonymous'
     script.src = scriptURL
+    script.onerror = () => {
+      // AdBlocker or network failure handled gracefully
+    }
     document.head.appendChild(script)
   }
-  const adsWindow = window as Window & { adsbygoogle?: unknown[] }
-  adsWindow.adsbygoogle = adsWindow.adsbygoogle || []
-  adsWindow.adsbygoogle.push({})
+
+  try {
+    const adsWindow = window as Window & { adsbygoogle?: unknown[] }
+    adsWindow.adsbygoogle = adsWindow.adsbygoogle || []
+    adsWindow.adsbygoogle.push({})
+  } catch {
+    // Suppress ad-blocker push errors
+  }
 })
 </script>
 
 <template>
-  <aside v-if="isConfigured" class="ad-slot" :class="`ad-slot-${placement?.format}`" :aria-label="placement?.name">
+  <aside
+    v-if="isConfigured"
+    class="ad-slot"
+    :class="`ad-slot-${placement?.format || 'auto'}`"
+    :aria-label="placement?.name || '광고'"
+  >
     <span class="ad-slot-label">광고</span>
     <ins
       class="adsbygoogle"
@@ -52,5 +72,5 @@ onMounted(() => {
       data-full-width-responsive="true"
     />
   </aside>
-  <p v-else-if="requestError" class="ad-load-error" role="status">광고 설정을 불러오지 못했습니다.</p>
+  <!-- Non-configured slots render nothing to avoid intrusive empty placeholder boxes -->
 </template>

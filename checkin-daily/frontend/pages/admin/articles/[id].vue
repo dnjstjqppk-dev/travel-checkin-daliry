@@ -14,8 +14,15 @@ const store = useArticlesStore()
 const categories = await store.loadCategories(true)
 const id = Number(route.params.id)
 
-await store.load('', true)
-const item = store.articles.find((candidate) => candidate.id === id)
+const apiFetch = useRequestFetch()
+let item: any
+try {
+  item = await apiFetch<any>(`/api/admin/articles/${id}`)
+} catch {
+  // Fallback to store if single endpoint throws in dev
+  await store.load('', true)
+  item = store.articles.find((candidate) => candidate.id === id)
+}
 if (!item) throw createError({ statusCode: 404, statusMessage: 'Article not found' })
 
 const form = reactive({

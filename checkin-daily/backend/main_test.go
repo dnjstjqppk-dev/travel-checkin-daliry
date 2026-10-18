@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -299,3 +300,117 @@ func TestSeedDataSupportsNewsCategoriesAndCountryCityFilters(t *testing.T) {
 		t.Fatalf("expected repeatable seed counts article/country/city/ad = 5/10/16/11, got %d/%d/%d/%d", articleCount, countryCount, cityCount, adCount)
 	}
 }
+
+func TestAdminIDValidationAndSingleArticleEndpoint(t *testing.T) {
+	previousDB := db
+	testDB, err := gorm.Open(sqlite.Open(fmt.Sprintf("%s/test_id.db", t.TempDir())), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	db = testDB
+	defer func() {
+		if sqlDB, err := testDB.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+		db = previousDB
+	}()
+
+	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}); err != nil {
+		t.Fatal(err)
+	}
+
+	cat := Category{Name: "Airline", Slug: "airline"}
+	if err := db.Create(&cat).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now().UTC()
+	art := Article{
+		Title:       "Test Valid Article",
+		Slug:        "test-valid-article",
+		Category:    "airline",
+		Status:      "published",
+		PublishedAt: &now,
+	}
+	if err := db.Create(&art).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	router := gin.New()
+	router.GET("/api/admin/articles/:id", getAdminArticle)
+	router.PUT("/api/admin/articles/:id", updateArticle)
+	router.DELETE("/api/admin/articles/:id", deleteArticle)
+	router.DELETE("/api/admin/categories/:id", deleteCategory)
+
+	// 1. Invalid IDs return 400 Bad Request
+	for _, badID := range []string{"invalid", "0", "-1", "99999999999999999999"} {
+		req := httptest.NewRequest(http.MethodGet, "/api/admin/articles/"+badID, nil)
+		resp := httptest.NewRecorder()
+		router.ServeHTTP(resp, req)
+		if resp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for bad article id %q, got %d", badID, resp.Code)
+		}
+
+		delReq := httptest.NewRequest(http.MethodDelete, "/api/admin/articles/"+badID, nil)
+		delResp := httptest.NewRecorder()
+		router.ServeHTTP(delResp, delReq)
+		if delResp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for delete with bad article id %q, got %d", badID, delResp.Code)
+		}
+
+		catReq := httptest.NewRequest(http.MethodDelete, "/api/admin/categories/"+badID, nil)
+		catResp := httptest.NewRecorder()
+		router.ServeHTTP(catResp, catReq)
+		if catResp.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 for delete with bad category id %q, got %d", badID, catResp.Code)
+		}
+	}
+
+	// 2. Valid ID retrieves single article
+	validReq := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/admin/articles/%d", art.ID), nil)
+	validResp := httptest.NewRecorder()
+	router.ServeHTTP(validResp, validReq)
+	if validResp.Code != http.StatusOK {
+		t.Fatalf("expected 200 for valid article id, got %d: %s", validResp.Code, validResp.Body.String())
+	}
+	var loaded Article
+	if err := json.Unmarshal(validResp.Body.Bytes(), &loaded); err != nil {
+		t.Fatal(err)
+	}
+	if loaded.ID != art.ID || loaded.Slug != art.Slug {
+		t.Fatalf("loaded article mismatch: %#v", loaded)
+	}
+}
+
+func TestAdPlacementPreservesUnderscores(t *testing.T) {
+	placement, err := adPlacementFromInput(AdPlacementInput{
+		ID:         "main_top",
+		Name:       "Main Top Leaderboard",
+		AdClientID: "ca-pub-1234567890",
+		AdSlotID:   "9876543210",
+		Format:     "horizontal",
+		IsActive:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if placement.ID != "main_top" {
+		t.Fatalf("expected ID to preserve underscore 'main_top', got %q", placement.ID)
+	}
+
+	sidebarPlacement, err := adPlacementFromInput(AdPlacementInput{
+		ID:         "sidebar_rect",
+		Name:       "Sidebar Rectangle",
+		AdClientID: "ca-pub-1234567890",
+		AdSlotID:   "9876543211",
+		Format:     "rectangle",
+		IsActive:   true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if sidebarPlacement.ID != "sidebar_rect" {
+		t.Fatalf("expected ID to preserve underscore 'sidebar_rect', got %q", sidebarPlacement.ID)
+	}
+}
+

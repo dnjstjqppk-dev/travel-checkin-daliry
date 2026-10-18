@@ -294,6 +294,12 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     )
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
+  if (method === 'GET' && path.length === 1 && admin) {
+    const id = Number(path[0] ?? '')
+    if (!Number.isSafeInteger(id) || id < 1) return respond(event, { error: 'invalid article id: must be a positive integer' }, 400)
+    const article = await getArticle(database, 'a.id = ?', lang, id)
+    return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
+  }
   if (method === 'POST' && path.length === 0 && admin) return createArticle(event, database)
   if (method === 'PUT' && path.length === 1 && admin) return updateArticle(event, database, path[0] ?? '')
   if (method === 'DELETE' && path.length === 1 && admin) return deleteArticle(event, database, path[0] ?? '')

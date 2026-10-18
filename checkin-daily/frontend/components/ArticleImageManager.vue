@@ -733,3 +733,4 @@ function moveImage(index: number, direction: 'up' | 'down') {
   color: #DC2626;
 }
 </style>
+

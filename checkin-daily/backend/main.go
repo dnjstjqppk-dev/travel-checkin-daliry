@@ -17,20 +17,21 @@ import (
 )
 
 type Article struct {
-	ID          uint       `json:"id" gorm:"primaryKey"`
-	Title       string     `json:"title" gorm:"size:180;not null"`
-	Slug        string     `json:"slug" gorm:"uniqueIndex;size:200;not null"`
-	Summary     string     `json:"summary" gorm:"size:500"`
-	Content     string     `json:"content" gorm:"type:text"`
-	Category    string     `json:"category" gorm:"size:60;index;not null"`
-	Author      string     `json:"author" gorm:"size:80"`
-	CoverImage  string     `json:"coverImage"`
-	Status      string     `json:"status" gorm:"size:20;index;not null;default:draft"`
-	ViewCount   int64      `json:"viewCount" gorm:"not null;default:0"`
-	PublishedAt *time.Time `json:"publishedAt"`
-	CreatedAt   time.Time  `json:"createdAt"`
-	UpdatedAt   time.Time  `json:"updatedAt"`
-	Cities      []City     `json:"cities,omitempty" gorm:"many2many:article_cities;"`
+	ID               uint       `json:"id" gorm:"primaryKey"`
+	Title            string     `json:"title" gorm:"size:180;not null"`
+	Slug             string     `json:"slug" gorm:"uniqueIndex;size:200;not null"`
+	Summary          string     `json:"summary" gorm:"size:500"`
+	Content          string     `json:"content" gorm:"type:text"`
+	Category         string     `json:"category" gorm:"size:60;index;not null"`
+	Author           string     `json:"author" gorm:"size:80"`
+	CoverImage       string     `json:"coverImage"`
+	Status           string     `json:"status" gorm:"size:20;index;not null;default:draft"`
+	ViewCount        int64      `json:"viewCount" gorm:"not null;default:0"`
+	PublishedAt      *time.Time `json:"publishedAt"`
+	FirstPublishedAt *time.Time `json:"firstPublishedAt"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	Cities           []City     `json:"cities,omitempty" gorm:"many2many:article_cities;"`
 }
 
 type Category struct {
@@ -184,6 +185,7 @@ func newRouter(auth *adminAuth) *gin.Engine {
 	admin.GET("/countries/:code/cities", listCities)
 	admin.GET("/ads", listAdPlacements(true))
 	admin.GET("/articles", listArticles(true))
+	admin.GET("/articles/:id", getAdminArticle)
 
 	adminWrite := router.Group("/api/admin", auth.requireAdmin, auth.requireSameOrigin)
 	adminWrite.POST("/categories", createCategory)
@@ -336,9 +338,40 @@ func getArticle(includeDrafts bool) gin.HandlerFunc {
 	}
 }
 
-func getArticleByID(c *gin.Context) {
+func parsePositiveID(raw string) (uint, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return 0, errors.New("id is required")
+	}
+	val, err := strconv.ParseUint(trimmed, 10, 32)
+	if err != nil || val == 0 {
+		return 0, errors.New("id must be a positive integer")
+	}
+	return uint(val), nil
+}
+
+func getAdminArticle(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id: must be a positive integer"})
+		return
+	}
 	var article Article
-	query := db.Preload("Cities.Country").Where("id = ?", c.Param("id")).Where("status = ?", "published")
+	if err := db.Preload("Cities.Country").Where("id = ?", id).First(&article).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
+		return
+	}
+	c.JSON(http.StatusOK, article)
+}
+
+func getArticleByID(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id: must be a positive integer"})
+		return
+	}
+	var article Article
+	query := db.Preload("Cities.Country").Where("id = ?", id).Where("status = ?", "published")
 	if category := canonicalCategory(normalizeSlug(c.Query("category"))); category != "" {
 		query = query.Where("category = ?", category)
 	}
@@ -412,8 +445,13 @@ func createArticle(c *gin.Context) {
 }
 
 func updateArticle(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id: must be a positive integer"})
+		return
+	}
 	var article Article
-	if err := db.First(&article, c.Param("id")).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&article).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 		return
 	}
@@ -459,11 +497,26 @@ func updateArticle(c *gin.Context) {
 	}
 	updated.ID = article.ID
 	updated.CreatedAt = article.CreatedAt
+
+	// Preserve FirstPublishedAt and PublishedAt
+	if article.FirstPublishedAt != nil {
+		updated.FirstPublishedAt = article.FirstPublishedAt
+	} else if input.Status == "published" {
+		now := time.Now().UTC()
+		updated.FirstPublishedAt = &now
+	}
+
 	if article.PublishedAt != nil && input.Status == "published" {
 		updated.PublishedAt = article.PublishedAt
+	} else if input.Status == "published" {
+		now := time.Now().UTC()
+		updated.PublishedAt = &now
+	} else if input.Status == "draft" {
+		updated.PublishedAt = nil
 	}
+
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&article).Select("Title", "Slug", "Summary", "Content", "Category", "Author", "CoverImage", "Status", "PublishedAt").Updates(updated).Error; err != nil {
+		if err := tx.Model(&article).Select("Title", "Slug", "Summary", "Content", "Category", "Author", "CoverImage", "Status", "PublishedAt", "FirstPublishedAt").Updates(updated).Error; err != nil {
 			return err
 		}
 		return replaceArticleCities(tx, &article, input.CityIDs)
@@ -479,12 +532,17 @@ func updateArticle(c *gin.Context) {
 }
 
 func deleteArticle(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id: must be a positive integer"})
+		return
+	}
 	var result *gorm.DB
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("DELETE FROM article_cities WHERE article_id = ?", c.Param("id")).Error; err != nil {
+		if err := tx.Exec("DELETE FROM article_cities WHERE article_id = ?", id).Error; err != nil {
 			return err
 		}
-		result = tx.Delete(&Article{}, c.Param("id"))
+		result = tx.Where("id = ?", id).Delete(&Article{})
 		return result.Error
 	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "article could not be deleted"})
@@ -525,8 +583,13 @@ func createCategory(c *gin.Context) {
 }
 
 func updateCategory(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category id: must be a positive integer"})
+		return
+	}
 	var category Category
-	if err := db.First(&category, c.Param("id")).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&category).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
 		return
 	}
@@ -555,8 +618,13 @@ func updateCategory(c *gin.Context) {
 }
 
 func deleteCategory(c *gin.Context) {
+	id, err := parsePositiveID(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category id: must be a positive integer"})
+		return
+	}
 	var category Category
-	if err := db.First(&category, c.Param("id")).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&category).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
 		return
 	}
@@ -566,7 +634,7 @@ func deleteCategory(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "category is used by existing articles"})
 		return
 	}
-	if err := db.Delete(&category).Error; err != nil {
+	if err := db.Where("id = ?", id).Delete(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "category could not be deleted"})
 		return
 	}
@@ -644,11 +712,15 @@ func updateCountry(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "country names must not be blank"})
 		return
 	}
-	if err := db.Model(&country).Updates(updated).Error; err != nil {
+	if err := db.Model(&country).Select("NameKo", "NameEn", "Continent", "SortOrder").Updates(updated).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "country could not be updated"})
 		return
 	}
-	c.JSON(http.StatusOK, updated)
+	if err := db.First(&country, "code = ?", code).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "country could not be loaded after update"})
+		return
+	}
+	c.JSON(http.StatusOK, country)
 }
 
 func deleteCountry(c *gin.Context) {
@@ -827,9 +899,20 @@ func deleteAdPlacement(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func normalizeAdPlacementID(raw string) string {
+	raw = strings.TrimSpace(strings.ToLower(raw))
+	var b strings.Builder
+	for _, r := range raw {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return strings.Trim(b.String(), "-_")
+}
+
 func adPlacementFromInput(input AdPlacementInput) (AdPlacement, error) {
 	placement := AdPlacement{
-		ID:         normalizeSlug(input.ID),
+		ID:         normalizeAdPlacementID(input.ID),
 		Name:       strings.TrimSpace(input.Name),
 		AdClientID: strings.TrimSpace(input.AdClientID),
 		AdSlotID:   strings.TrimSpace(input.AdSlotID),

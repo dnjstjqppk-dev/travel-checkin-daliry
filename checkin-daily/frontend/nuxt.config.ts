@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   srcDir: '.',
   compatibilityDate: '2025-02-01',
   devtools: { enabled: false },
-  nitro: { preset: 'cloudflare_module' },
+  nitro: { preset: process.env.NITRO_PRESET || (process.env.BUILD_TARGET === 'node' ? 'node-server' : 'cloudflare_module') },
   modules: ['@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   runtimeConfig: {

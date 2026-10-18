@@ -1,0 +1,15 @@
+# ==============================================================================
+# Cloudflare Workers Local Development Variables Example (.dev.vars.example)
+#
+# For use with `wrangler dev` locally.
+# DO NOT COMMIT REAL PRODUCTION SECRETS TO GIT.
+# ==============================================================================
+
+# Session signing secret (minimum 32 bytes)
+SESSION_SECRET=dev-session-secret-at-least-32-bytes-long-for-testing
+
+# Initial Admin Bootstrap Token (used to initialize admin account in fresh D1 database)
+ADMIN_BOOTSTRAP_TOKEN=dev-admin-bootstrap-token-change-in-production
+
+# External Gemini API Key (optional fallback for AI article generation)
+GEMINI_API_KEY=AIzaSyDummyKeyForDevelopment
