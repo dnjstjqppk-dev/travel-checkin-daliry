@@ -192,7 +192,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
         type="button"
         @click="activeTab = 'ai'"
       >
-        ⚡ AI 키워드 원클릭 자동 생성기 (800~2,000자 & 이미지 4~10장 규격 자동화)
+        ⚡ AI 키워드 원클릭 자동 생성기 (300~1,000자 & 이미지 4~10장 규격 자동화)
       </button>
       <button
         class="tab-btn"
@@ -209,10 +209,10 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
       <div class="ai-card">
         <div class="ai-card-header">
           <h2>키워드 기반 원클릭 뉴스 기사 생성 파이프라인</h2>
-          <span class="spec-badge">상용 발행 규격: 본문 텍스트 800~2,000자 & 본문 이미지 4~10장 엄격 검증</span>
+          <span class="spec-badge">상용 자동 발행 규격: 본문 텍스트 300~1,000자 & 본문 이미지 4~10장 엄격 검증</span>
         </div>
         <p class="ai-desc">
-          핵심 키워드를 입력하면 메이저 언론사 문체의 800~2,000자 심층 보도 기사, 
+          핵심 키워드를 입력하면 메이저 언론사 문체의 300~1,000자 심층 보도 기사, 
           <strong>엄선된 에디토리얼 이미지 4장</strong>, 
           <strong>TripScanner</strong> / <strong>GetForTrip</strong> 문맥 맞춤형 트래픽 유도 CTA, 
           그리고 5개 국어(영어·중국어·태국어·베트남어·스페인어) 번역이 완전 자동으로 완성됩니다.
@@ -263,8 +263,8 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
       <div v-if="aiResult" class="ai-preview-card">
         <div class="preview-header">
           <div class="badges-row">
-            <span class="char-count-badge" :class="{ valid: aiResult.charCount >= 800 && aiResult.charCount <= 2000 }">
-              ✓ 본문 텍스트: {{ aiResult.charCount }}자 (800~2,000자 규격 충족)
+            <span class="char-count-badge" :class="{ valid: aiResult.charCount >= 300 && aiResult.charCount <= 1000 }">
+              ✓ 본문 텍스트: {{ aiResult.charCount }}자 (300~1,000자 규격 충족)
             </span>
             <span class="image-count-badge" :class="{ valid: aiResult.imageCount >= 4 && aiResult.imageCount <= 10 }">
               ✓ 본문 이미지: {{ aiResult.imageCount }}장 (4~10장 규격 충족)

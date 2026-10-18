@@ -1,5 +1,6 @@
-import { defineEventHandler, setResponseHeader } from 'h3'
+import { defineEventHandler, getRequestHeader, getRequestURL, setResponseHeader } from 'h3'
 import { d1All, getD1Database } from '../utils/d1'
+import { siteConfig } from '../../config/site.config'
 
 interface ArticleSitemapRow {
   id: number
@@ -14,7 +15,11 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
   setResponseHeader(event, 'Cache-Control', 'public, max-age=3600, s-maxage=86400')
 
-  const baseUrl = 'https://travel-checkin-daily.dnjstjqppk.workers.dev'
+  const reqUrl = getRequestURL(event)
+  const host = getRequestHeader(event, 'x-forwarded-host') || getRequestHeader(event, 'host') || reqUrl.host
+  const protocol = getRequestHeader(event, 'x-forwarded-proto') || reqUrl.protocol.replace(':', '') || 'https'
+  const baseUrl = host ? `${protocol}://${host}` : (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev')
+
   const database = getD1Database(event)
 
   let articles: ArticleSitemapRow[] = []

@@ -371,6 +371,9 @@ func securityHeaders() gin.HandlerFunc {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
+		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Cache-Control", "no-store")
 		c.Next()
 	}

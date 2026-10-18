@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { extractBodyImages, ARTICLE_RULES, type ExtractedImage } from '~/utils/article-validator'
+import { compressImageToWebP } from '~/utils/image-compressor'
 
 const props = defineProps<{
   modelValue: string
@@ -90,6 +91,14 @@ async function handleFileUpload(e: Event) {
   try {
     const payloadFiles = await Promise.all(
       filesToUpload.map(async (file) => {
+        if (file.type.startsWith('image/')) {
+          const compressed = await compressImageToWebP(file, file.name)
+          return {
+            filename: compressed.filename,
+            mimeType: compressed.mimeType,
+            base64Data: compressed.base64Data,
+          }
+        }
         return new Promise<{ filename: string; mimeType: string; base64Data: string }>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => {
@@ -106,7 +115,7 @@ async function handleFileUpload(e: Event) {
       })
     )
 
-    uploadProgress.value = `Cloudflare D1 영구 저장소에 업로드 및 검증 중...`
+    uploadProgress.value = `WebP 압축 완료 (${payloadFiles.length}개), Cloudflare 미디어 저장소에 전송 중...`
 
     const res = await $fetch<{
       success: boolean

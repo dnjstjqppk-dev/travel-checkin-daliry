@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -80,6 +81,12 @@ type AdminAccount struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
+type SiteSetting struct {
+	Key       string `json:"key" gorm:"primaryKey;size:100"`
+	Value     string `json:"value" gorm:"type:text"`
+	UpdatedAt string `json:"updated_at" gorm:"size:40"`
+}
+
 type ArticleInput struct {
 	Title      string   `json:"title" binding:"required"`
 	Slug       string   `json:"slug" binding:"required"`
@@ -135,7 +142,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}, &AdminAccount{}); err != nil {
+	if err := db.AutoMigrate(&Article{}, &Category{}, &Country{}, &City{}, &AdPlacement{}, &AdminAccount{}, &SiteSetting{}); err != nil {
 		panic(err)
 	}
 	if err := bootstrapAdminAccount(authConfig); err != nil {
@@ -178,6 +185,7 @@ func newRouter(auth *adminAuth) *gin.Engine {
 	router.GET("/api/articles", listArticles(false))
 	router.GET("/api/articles/id/:id", getArticleByID)
 	router.GET("/api/articles/:slug", getArticle(false))
+	router.GET("/api/settings", getSiteSettings)
 
 	admin := router.Group("/api/admin", auth.requireAdmin)
 	admin.GET("/categories", listCategories)
@@ -186,6 +194,7 @@ func newRouter(auth *adminAuth) *gin.Engine {
 	admin.GET("/ads", listAdPlacements(true))
 	admin.GET("/articles", listArticles(true))
 	admin.GET("/articles/:id", getAdminArticle)
+	admin.GET("/settings", getSiteSettings)
 
 	adminWrite := router.Group("/api/admin", auth.requireAdmin, auth.requireSameOrigin)
 	adminWrite.POST("/categories", createCategory)
@@ -203,6 +212,8 @@ func newRouter(auth *adminAuth) *gin.Engine {
 	adminWrite.POST("/articles", createArticle)
 	adminWrite.PUT("/articles/:id", updateArticle)
 	adminWrite.DELETE("/articles/:id", deleteArticle)
+	adminWrite.PUT("/settings", updateSiteSettings)
+	adminWrite.POST("/settings", updateSiteSettings)
 
 	registerEnterpriseRoutes(router, adminWrite)
 	return router
@@ -275,6 +286,45 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 				Where("cities.country_code = ?", countryCode)
 			query = query.Where("articles.id IN (?)", articleIDs)
 		}
+		var totalCount int64
+		countQuery := db.Model(&Article{})
+		if !includeDrafts {
+			countQuery = countQuery.Where("status = ?", "published")
+		}
+		if category := normalizeSlug(c.Query("category")); category != "" {
+			countQuery = countQuery.Where("category = ?", canonicalCategory(category))
+		}
+		if search := strings.TrimSpace(c.Query("q")); search != "" {
+			pattern := "%" + search + "%"
+			countQuery = countQuery.Where("(title LIKE ? OR summary LIKE ?)", pattern, pattern)
+		}
+		if cityID := strings.TrimSpace(c.Query("city")); cityID != "" {
+			articleIDs := db.Table("article_cities").Select("article_cities.article_id").
+				Joins("JOIN cities ON cities.id = article_cities.city_id").
+				Where("cities.id = ?", cityID)
+			if countryCode != "" {
+				articleIDs = articleIDs.Where("cities.country_code = ?", countryCode)
+			}
+			countQuery = countQuery.Where("articles.id IN (?)", articleIDs)
+		} else if countryCode != "" {
+			articleIDs := db.Table("article_cities").Select("article_cities.article_id").
+				Joins("JOIN cities ON cities.id = article_cities.city_id").
+				Where("cities.country_code = ?", countryCode)
+			countQuery = countQuery.Where("articles.id IN (?)", articleIDs)
+		}
+		countQuery.Count(&totalCount)
+
+		pageStr := c.Query("page")
+		hasPage := pageStr != ""
+		page := 1
+		if hasPage {
+			parsedPage, err := strconv.Atoi(pageStr)
+			if err == nil && parsedPage > 0 {
+				page = parsedPage
+			}
+		}
+
+		limitVal := 0
 		if !includeDrafts {
 			limit, err := queryInt(c, "limit", 0)
 			if err != nil {
@@ -286,10 +336,17 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "offset must be a non-negative integer"})
 				return
 			}
+			if hasPage && limit == 0 {
+				limit = 10
+			}
+			if hasPage {
+				offset = (page - 1) * limit
+			}
 			if limit > 0 {
 				if limit > 100 {
 					limit = 100
 				}
+				limitVal = limit
 				query = query.Limit(limit).Offset(offset)
 			} else if offset > 0 {
 				query = query.Offset(offset)
@@ -300,8 +357,70 @@ func listArticles(includeDrafts bool) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "articles could not be loaded"})
 			return
 		}
+
+		totalPages := 1
+		if limitVal > 0 {
+			totalPages = int(math.Ceil(float64(totalCount) / float64(limitVal)))
+		}
+
+		c.Header("X-Total-Count", strconv.FormatInt(totalCount, 10))
+		c.Header("X-Total-Pages", strconv.Itoa(totalPages))
+		c.Header("X-Current-Page", strconv.Itoa(page))
+		c.Header("X-Page-Limit", strconv.Itoa(limitVal))
+
+		if hasPage || c.Query("with_meta") == "true" {
+			c.JSON(http.StatusOK, gin.H{
+				"data":        articles,
+				"page":        page,
+				"limit":       limitVal,
+				"total_count": totalCount,
+				"total_pages": totalPages,
+			})
+			return
+		}
 		c.JSON(http.StatusOK, articles)
 	}
+}
+
+func getSiteSettings(c *gin.Context) {
+	var settings []SiteSetting
+	db.Find(&settings)
+	settingsMap := map[string]string{
+		"company_name":             "체크인데일리 미디어그룹",
+		"representative":          "원섭",
+		"business_number":         "2026-04-52914",
+		"mail_order_number":       "2026-서울중구-0123",
+		"newspaper_number":        "서울 아-52914",
+		"youth_protection_officer": "원섭",
+		"publisher":                "원섭",
+		"address":                  "서울특별시 중구 을지로 100 파인에비뉴 B동",
+		"contact_email":            "editorial@checkindaily.com",
+		"contact_phone":            "02-738-2026",
+		"site_url":                 "https://travel-checkin-daily.dnjstjqppk.workers.dev",
+		"brand_name":               "CHECK-IN",
+		"brand_subname":            "DAILY",
+		"slogan":                   "글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어",
+		"description":              "전 세계 항공, 호텔, 여행지 트렌드 및 여행 정책을 가장 빠르고 깊이 있게 전달하는 글로벌 여행 전문 디지털 뉴스룸",
+	}
+	for _, s := range settings {
+		settingsMap[s.Key] = s.Value
+	}
+	c.JSON(http.StatusOK, settingsMap)
+}
+
+func updateSiteSettings(c *gin.Context) {
+	var input map[string]interface{}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	for k, v := range input {
+		valStr := fmt.Sprintf("%v", v)
+		setting := SiteSetting{Key: k, Value: valStr, UpdatedAt: now}
+		db.Save(&setting)
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "settings updated successfully"})
 }
 
 func queryInt(c *gin.Context, key string, fallback int) (int, error) {

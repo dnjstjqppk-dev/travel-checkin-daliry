@@ -46,6 +46,7 @@ export interface ArticleFilters {
   search?: string
   limit?: number
   offset?: number
+  page?: number
   sort?: 'recent' | 'views'
   lang?: string
 }
@@ -70,6 +71,9 @@ export const useArticlesStore = defineStore('articles', () => {
   const adPlacements = ref<AdPlacement[]>([])
   const loading = ref(false)
   const error = ref('')
+  const totalCount = ref(0)
+  const totalPages = ref(1)
+  const currentPage = ref(1)
 
   async function load(categoryOrFilters: string | ArticleFilters = '', admin = false, append = false) {
     loading.value = true
@@ -77,19 +81,33 @@ export const useArticlesStore = defineStore('articles', () => {
     try {
       const path = admin ? '/api/admin/articles' : '/api/articles'
       const filters = typeof categoryOrFilters === 'string' ? { category: categoryOrFilters } : categoryOrFilters
-      const loaded = await apiRequest<Article[]>(`${apiBase}${path}`, {
+      const loaded = await apiRequest<any>(`${apiBase}${path}`, {
         query: {
           ...(filters.category ? { category: filters.category } : {}),
           ...(filters.country ? { country: filters.country } : {}),
           ...(filters.city ? { city: filters.city } : {}),
           ...(filters.search ? { q: filters.search } : {}),
+          ...(filters.page ? { page: filters.page } : {}),
           ...(filters.limit ? { limit: filters.limit, offset: filters.offset || 0 } : {}),
           ...(filters.sort ? { sort: filters.sort } : {}),
           ...(filters.lang ? { lang: filters.lang } : {}),
         },
       })
-      articles.value = append ? [...articles.value, ...loaded] : loaded
-      return loaded.length
+      if (Array.isArray(loaded)) {
+        articles.value = append ? [...articles.value, ...loaded] : loaded
+        totalCount.value = loaded.length
+        totalPages.value = 1
+        currentPage.value = 1
+        return loaded.length
+      } else if (loaded && typeof loaded === 'object' && Array.isArray(loaded.data)) {
+        const list = loaded.data as Article[]
+        articles.value = append ? [...articles.value, ...list] : list
+        totalCount.value = loaded.total_count ?? loaded.totalCount ?? list.length
+        totalPages.value = loaded.total_pages ?? loaded.totalPages ?? 1
+        currentPage.value = loaded.page ?? 1
+        return list.length
+      }
+      return 0
     } catch {
       error.value = '기사를 불러오지 못했습니다. API 서버가 실행 중인지 확인해 주세요.'
       if (!append) articles.value = []
@@ -184,7 +202,8 @@ export const useArticlesStore = defineStore('articles', () => {
   }
 
   return {
-    articles, current, adPlacements, loading, error, load, loadOne, loadById, save, remove,
+    articles, current, adPlacements, loading, error, totalCount, totalPages, currentPage,
+    load, loadOne, loadById, save, remove,
     loadCategories, saveCategory, removeCategory, loadCountries, saveCountry,
     removeCountry, loadCities, saveCity, removeCity, loadAdPlacements,
     saveAdPlacement, removeAdPlacement,

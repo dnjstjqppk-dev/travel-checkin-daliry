@@ -133,7 +133,7 @@ function formatViews(views = 0) {
         </div>
       </div>
       <div class="bkp-list-count">
-        총 {{ store.articles.length }}개의 보도 기사
+        총 {{ store.totalCount || store.articles.length }}개의 보도 기사
       </div>
     </div>
 

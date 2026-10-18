@@ -22,16 +22,33 @@ const categoryNames: Record<string, string> = {
 }
 
 const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
+const searchPage = computed(() => {
+  const p = route.query.page
+  return typeof p === 'string' ? Math.max(1, parseInt(p, 10) || 1) : 1
+})
 
-await useAsyncData(`news-home-${locale.value}`, () => store.load({ limit: 24, search: searchQuery.value, lang: locale.value }))
+await useAsyncData(
+  `news-home-${locale.value}-${searchQuery.value}-${searchPage.value}`,
+  () => store.load({
+    limit: searchQuery.value ? 12 : 24,
+    page: searchQuery.value ? searchPage.value : 1,
+    search: searchQuery.value,
+    lang: locale.value,
+  })
+)
 const { data: popularArticles, error: popularLoadError } = await useAsyncData<Article[]>(
   `news-home-popular-${locale.value}`,
   () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
   { default: () => [] },
 )
 
-watch(searchQuery, async (search) => {
-  await store.load({ limit: 24, search, lang: locale.value })
+watch([searchQuery, searchPage], async ([search, page]) => {
+  await store.load({
+    limit: search ? 12 : 24,
+    page: search ? page : 1,
+    search,
+    lang: locale.value,
+  })
 })
 
 const featuredArticle = computed(() => store.articles[0])
@@ -83,12 +100,43 @@ function formatViews(views = 0) {
           <span class="bkp-color-bar default" />
           <h2>SEARCH RESULTS: “{{ searchQuery }}”</h2>
         </div>
-        <span>{{ store.articles.length }}건</span>
+        <span class="bkp-search-meta-badge">총 {{ store.totalCount }}건 ({{ store.currentPage }} / {{ store.totalPages }} 페이지)</span>
       </div>
       <p v-if="store.error" class="bkp-empty-state">{{ store.error }}</p>
       <p v-else-if="!store.articles.length" class="bkp-empty-state">검색 결과가 없습니다.</p>
-      <div v-else class="bkp-card-grid-3">
-        <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+      <div v-else>
+        <div class="bkp-card-grid-3">
+          <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+        </div>
+
+        <!-- 검색 결과 페이지네이션 UI -->
+        <nav v-if="store.totalPages > 1" class="bkp-pagination-bar" aria-label="Search Pagination">
+          <NuxtLink
+            v-if="store.currentPage > 1"
+            :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage - 1 } }"
+            class="bkp-page-btn prev"
+          >
+            ← 이전
+          </NuxtLink>
+          <div class="bkp-page-numbers">
+            <NuxtLink
+              v-for="p in store.totalPages"
+              :key="p"
+              :to="{ path: locUrl('/news'), query: { q: searchQuery, page: p } }"
+              class="bkp-page-num"
+              :class="{ active: p === store.currentPage }"
+            >
+              {{ p }}
+            </NuxtLink>
+          </div>
+          <NuxtLink
+            v-if="store.currentPage < store.totalPages"
+            :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage + 1 } }"
+            class="bkp-page-btn next"
+          >
+            다음 →
+          </NuxtLink>
+        </nav>
       </div>
     </section>
 
@@ -744,6 +792,69 @@ function formatViews(views = 0) {
 .topic-chip:hover {
   background: #176B52;
   color: #ffffff;
+}
+
+.bkp-search-meta-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4B5563;
+  background: #F3F4F6;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.bkp-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.bkp-page-btn {
+  padding: 8px 18px;
+  background: #F3F4F6;
+  color: #111827;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.bkp-page-btn:hover {
+  background: #060D81;
+  color: #FFFFFF;
+}
+
+.bkp-page-numbers {
+  display: flex;
+  gap: 6px;
+}
+
+.bkp-page-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4B5563;
+  text-decoration: none;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s;
+}
+
+.bkp-page-num:hover,
+.bkp-page-num.active {
+  background: #060D81;
+  color: #FFFFFF;
+  border-color: #060D81;
 }
 </style>
 

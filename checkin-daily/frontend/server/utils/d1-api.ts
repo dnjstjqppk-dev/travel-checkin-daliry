@@ -255,6 +255,7 @@ async function handleResource(event: H3Event, database: D1Database, parts: strin
   if (resource === 'countries') return handleCountries(event, database, path.slice(1))
   if (resource === 'cities' && admin) return handleCityById(event, database, path.slice(1))
   if (resource === 'ads') return handleAds(event, database, path.slice(1), admin)
+  if (resource === 'settings') return handleSettings(event, database, path.slice(1), admin)
   return respond(event, { error: 'not found' }, 404)
 }
 
@@ -263,7 +264,7 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
   const method = event.method
   const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   if (method === 'GET' && path.length === 0) {
-    return respond(event, await listArticles(database, url, admin))
+    return respond(event, await listArticles(event, database, url, admin))
   }
   if (method === 'GET' && path.length === 2 && path[0] === 'id' && !admin) {
     const id = Number(path[1] ?? '')
@@ -306,12 +307,10 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
   return respond(event, { error: 'not found' }, 404)
 }
 
-async function listArticles(database: D1Database, url: URL, admin: boolean): Promise<unknown[]> {
+async function listArticles(event: H3Event, database: D1Database, url: URL, admin: boolean): Promise<unknown> {
   const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   const clauses: string[] = []
   const values: Array<string | number> = []
-  let pagination = ''
-  const paginationValues: number[] = []
   if (!admin) clauses.push("a.status = 'published'")
 
   const category = normalizeSlug(url.searchParams.get('category') ?? '')
@@ -344,25 +343,52 @@ async function listArticles(database: D1Database, url: URL, admin: boolean): Pro
     values.push(country)
   }
 
+  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
+
+  // Total count calculation
+  const countRow = await d1First<{ count: number }>(
+    database,
+    `SELECT COUNT(DISTINCT a.id) AS count FROM articles a ${where}`,
+    ...values
+  ).catch(() => ({ count: 0 }))
+  const totalCount = countRow?.count ?? 0
+
+  const pageParam = url.searchParams.get('page')
+  const hasPage = pageParam !== null
+  let page = 1
+  if (hasPage) {
+    page = Math.max(1, parseInt(pageParam, 10) || 1)
+  }
+
+  const limitValue = url.searchParams.get('limit')
+  const offsetValue = url.searchParams.get('offset')
+  let limit = limitValue === null ? (hasPage ? 10 : 0) : Number(limitValue)
+  let offset = offsetValue === null ? (hasPage ? (page - 1) * limit : 0) : Number(offsetValue)
+
   if (!admin) {
-    const limitValue = url.searchParams.get('limit')
-    const offsetValue = url.searchParams.get('offset')
-    const limit = limitValue === null ? 0 : Number(limitValue)
-    const offset = offsetValue === null ? 0 : Number(offsetValue)
     if ((limitValue !== null && (!Number.isInteger(limit) || limit <= 0))
       || (offsetValue !== null && (!Number.isInteger(offset) || offset < 0))) {
       throw createError({ statusCode: 400, statusMessage: 'limit and offset must be valid integers' })
     }
-    if (limit > 0) {
-      pagination = ' LIMIT ? OFFSET ?'
-      paginationValues.push(Math.min(limit, 100), offset)
-    } else if (offset > 0) {
-      pagination = ' LIMIT -1 OFFSET ?'
-      paginationValues.push(offset)
-    }
   }
 
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
+  let pagination = ''
+  const paginationValues: number[] = []
+  if (limit > 0) {
+    pagination = ' LIMIT ? OFFSET ?'
+    paginationValues.push(Math.min(limit, 100), offset)
+  } else if (offset > 0) {
+    pagination = ' LIMIT -1 OFFSET ?'
+    paginationValues.push(offset)
+  }
+
+  const totalPages = limit > 0 ? Math.ceil(totalCount / limit) : 1
+
+  setResponseHeader(event, 'X-Total-Count', String(totalCount))
+  setResponseHeader(event, 'X-Total-Pages', String(totalPages))
+  setResponseHeader(event, 'X-Current-Page', String(page))
+  setResponseHeader(event, 'X-Page-Limit', String(limit > 0 ? limit : totalCount))
+
   const sort = !admin && url.searchParams.get('sort') === 'views'
     ? 'a.view_count DESC, a.published_at DESC, a.created_at DESC'
     : 'a.published_at DESC, a.created_at DESC'
@@ -393,7 +419,19 @@ async function listArticles(database: D1Database, url: URL, admin: boolean): Pro
     ...paginationValues,
     lang,
   )
-  return groupArticles(rows)
+  const articles = groupArticles(rows)
+
+  if (hasPage || url.searchParams.get('with_meta') === 'true') {
+    return {
+      data: articles,
+      page,
+      limit: limit > 0 ? limit : totalCount,
+      total_count: totalCount,
+      total_pages: totalPages,
+    }
+  }
+
+  return articles
 }
 
 async function getArticle(
@@ -1144,3 +1182,90 @@ async function deleteAdPlacement(event: H3Event, database: D1Database, id: strin
   setResponseStatus(event, 204)
   return null
 }
+
+async function handleSettings(event: H3Event, database: D1Database, path: string[], admin: boolean) {
+  const method = event.method
+
+  // Ensure site_settings table exists
+  await d1Run(
+    database,
+    `CREATE TABLE IF NOT EXISTS site_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TEXT
+    )`
+  ).catch(() => {})
+
+  if (method === 'GET' && path.length === 0) {
+    const rows = await d1All<{ key: string; value: string }>(
+      database,
+      'SELECT key, value FROM site_settings'
+    ).catch(() => [])
+
+    const dbMap: Record<string, string> = {}
+    for (const r of rows) {
+      dbMap[r.key] = r.value
+    }
+
+    const merged = {
+      company_name: dbMap.company_name || '체크인데일리 미디어그룹',
+      representative: dbMap.representative || '원섭',
+      business_number: dbMap.business_number || '2026-04-52914',
+      mail_order_number: dbMap.mail_order_number || '2026-서울중구-0123',
+      newspaper_number: dbMap.newspaper_number || '서울 아-52914',
+      youth_protection_officer: dbMap.youth_protection_officer || '원섭',
+      publisher: dbMap.publisher || '원섭',
+      address: dbMap.address || '서울특별시 중구 을지로 100 파인에비뉴 B동',
+      contact_email: dbMap.contact_email || 'editorial@checkindaily.com',
+      contact_phone: dbMap.contact_phone || '02-738-2026',
+      site_url: dbMap.site_url || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+      brand_name: dbMap.brand_name || 'CHECK-IN',
+      brand_subname: dbMap.brand_subname || 'DAILY',
+      slogan: dbMap.slogan || '글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어',
+      description: dbMap.description || '전 세계 항공, 호텔, 여행지 트렌드 및 여행 정책을 가장 빠르고 깊이 있게 전달하는 글로벌 여행 전문 디지털 뉴스룸',
+    }
+    return respond(event, merged)
+  }
+
+  if ((method === 'PUT' || method === 'POST') && path.length === 0 && admin) {
+    const input = await readJsonObject(event)
+    const nowIso = new Date().toISOString()
+    const allowedKeys = [
+      'company_name',
+      'representative',
+      'business_number',
+      'mail_order_number',
+      'newspaper_number',
+      'youth_protection_officer',
+      'publisher',
+      'address',
+      'contact_email',
+      'contact_phone',
+      'site_url',
+      'brand_name',
+      'brand_subname',
+      'slogan',
+      'description',
+    ]
+
+    for (const key of allowedKeys) {
+      if (input[key] !== undefined) {
+        const val = String(input[key] ?? '').trim().slice(0, 500)
+        await d1Run(
+          database,
+          `INSERT INTO site_settings (key, value, updated_at)
+           VALUES (?, ?, ?)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+          key,
+          val,
+          nowIso
+        )
+      }
+    }
+
+    return respond(event, { success: true, message: '사이트 및 법적 설정이 성공적으로 저장되었습니다.' })
+  }
+
+  return respond(event, { error: 'not found' }, 404)
+}
+

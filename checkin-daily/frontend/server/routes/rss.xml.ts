@@ -1,11 +1,11 @@
-import { defineEventHandler, setResponseHeader } from 'h3'
+import { defineEventHandler, getRequestHeader, getRequestURL, setResponseHeader } from 'h3'
 import { d1All, getD1Database } from '../utils/d1'
 import { siteConfig } from '../../config/site.config'
 
 interface ArticleRssRow {
   id: number
   title: string
-  lead_paragraph: string | null
+  summary: string | null
   category: string
   slug: string
   published_at: string | null
@@ -25,7 +25,11 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Content-Type', 'application/rss+xml; charset=utf-8')
   setResponseHeader(event, 'Cache-Control', 'public, max-age=1800, s-maxage=3600')
 
-  const baseUrl = siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev'
+  const reqUrl = getRequestURL(event)
+  const host = getRequestHeader(event, 'x-forwarded-host') || getRequestHeader(event, 'host') || reqUrl.host
+  const protocol = getRequestHeader(event, 'x-forwarded-proto') || reqUrl.protocol.replace(':', '') || 'https'
+  const baseUrl = host ? `${protocol}://${host}` : (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev')
+
   const database = getD1Database(event)
 
   let articles: ArticleRssRow[] = []
@@ -33,7 +37,7 @@ export default defineEventHandler(async (event) => {
     try {
       articles = await d1All<ArticleRssRow>(
         database,
-        "SELECT id, title, lead_paragraph, category, slug, published_at, created_at FROM articles WHERE status = 'published' ORDER BY id DESC LIMIT 50",
+        "SELECT id, title, summary, category, slug, published_at, created_at FROM articles WHERE status = 'published' ORDER BY id DESC LIMIT 50",
       )
     } catch {
       articles = []
@@ -46,7 +50,7 @@ export default defineEventHandler(async (event) => {
     .map((a) => {
       const itemUrl = `${baseUrl}/news/${encodeURIComponent(a.category || 'major')}/article/${a.id}`
       const pubDate = a.published_at || a.created_at ? new Date(a.published_at || a.created_at).toUTCString() : nowRfc822
-      const description = a.lead_paragraph || a.title || ''
+      const description = a.summary || a.title || ''
       const category = a.category || 'General'
 
       return `    <item>

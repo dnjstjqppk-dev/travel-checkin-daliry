@@ -152,3 +152,4 @@ flowchart TD
    - Cloudflare Audit Logs 및 Workers Real-time Logs를 통해 SSL 인증서 체인 및 Origin 응답 검사.
 3. **재시도:**
    - 로컬 스테이징 환경에서 DNS 모의 해석 검증 후 재배포.
+

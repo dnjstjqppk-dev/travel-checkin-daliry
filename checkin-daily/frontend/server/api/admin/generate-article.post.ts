@@ -11,19 +11,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '키워드를 입력해 주세요.' })
   }
 
-  // 1. Generate article story with strict 800~2,000 char validation, 4~10 body images, and CTA
+  // 1. Generate article story with strict 300~1,000 char validation, 4~10 body images, and CTA
   const story = generateNewsStory(keyword, body.category)
 
-  // Verify strict publishing standards (800 <= length <= 2000, 4 <= images <= 10)
-  if (story.charCount < 800 || story.charCount > 2000) {
+  // Verify strict publishing standards (300 <= length <= 1,000, 4 <= images <= 10)
+  if (story.charCount < 300 || story.charCount > 1000) {
     throw createError({
-      statusCode: 500,
-      statusMessage: `글자 수 검증 실패: ${story.charCount}자 (800자 이상 2,000자 이하여야 합니다)`,
+      statusCode: 400,
+      statusMessage: `글자 수 검증 실패: ${story.charCount}자 (300자 이상 1,000자 이하여야 합니다)`,
     })
   }
   if (story.imageCount < 4 || story.imageCount > 10) {
     throw createError({
-      statusCode: 500,
+      statusCode: 400,
       statusMessage: `본문 이미지 검증 실패: ${story.imageCount}장 (4장 이상 10장 이하여야 합니다)`,
     })
   }

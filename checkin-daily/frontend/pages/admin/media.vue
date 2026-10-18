@@ -22,6 +22,8 @@ const assets = computed(() => mediaData.value?.assets || [])
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const uploadMsg = ref('')
+import { compressImageToWebP } from '~/utils/image-compressor'
+
 const uploadErr = ref('')
 const copiedId = ref<string | null>(null)
 
@@ -37,6 +39,14 @@ async function handleUpload(e: Event) {
   try {
     const payloadFiles = await Promise.all(
       Array.from(files).map(async (file) => {
+        if (file.type.startsWith('image/')) {
+          const compressed = await compressImageToWebP(file, file.name)
+          return {
+            filename: compressed.filename,
+            mimeType: compressed.mimeType,
+            base64Data: compressed.base64Data,
+          }
+        }
         return new Promise<{ filename: string; mimeType: string; base64Data: string }>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => {
@@ -57,7 +67,7 @@ async function handleUpload(e: Event) {
       body: { files: payloadFiles },
     })
 
-    uploadMsg.value = `✓ ${payloadFiles.length}개의 미디어가 성공적으로 업로드되었습니다.`
+    uploadMsg.value = `✓ ${payloadFiles.length}개의 미디어가 성공적으로 WebP 압축 및 업로드되었습니다.`
     await refresh()
   } catch (err: any) {
     uploadErr.value = err?.data?.statusMessage || err?.message || '업로드 중 오류가 발생했습니다.'

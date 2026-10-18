@@ -64,3 +64,4 @@ URL_Path,HTTP_Method,Access_Level,Mapped_Source_File,Status_Code,Status_Category
 "/[lang]/news",GET,Public,frontend/pages/[lang]/news/index.vue,200,Normal,820ms,D1 translations,Yes,N/A,Localized news feed for EN JA ZH TH VI ES
 "/[lang]/news/[category]/article/[id]",GET,Public,frontend/pages/[lang]/news/[category]/article/[id].vue,200,Normal,610ms,D1 translations,Yes,N/A,Localized article detail view
 "/non-existent-route-test-404",GET,Public,frontend/error.vue,404,Normal,210ms,None,No,N/A,Standard Nuxt 404 handler for invalid routes
+

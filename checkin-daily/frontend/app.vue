@@ -499,54 +499,8 @@ async function submitSearch() {
       </NuxtLink>
     </nav>
 
-    <!-- 방콕포스트 공식 3단 푸터 (divfooter) -->
-    <footer v-if="!isAdminRoute" class="bkp-site-footer">
-      <div class="bkp-footer-main">
-        <div class="bkp-page-container bkp-footer-grid">
-          <div class="bkp-fcol brand-col">
-            <NuxtLink :to="locUrl('/news')" class="bkp-footer-logo">
-              <img src="/logo-white.svg" alt="Check-in Daily" class="bkp-footer-vector-logo" width="280" height="46">
-            </NuxtLink>
-            <p class="bkp-footer-summary">
-              {{ t('footer_tagline') }}
-            </p>
-            <div class="bkp-footer-meta-tags">
-              <span>EDITORIAL OFFICE: SEOUL & BANGKOK</span>
-              <span>·</span>
-              <span>EST. 2026</span>
-            </div>
-          </div>
-
-          <div class="bkp-fcol">
-            <h4>{{ t('sections').toUpperCase() }}</h4>
-            <ul>
-              <li><NuxtLink :to="locUrl('/news')">{{ t('all_news') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/news/major')">{{ t('major') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/news/airline')">{{ t('airline') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/news/hotel')">{{ t('hotel') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/news/destination')">{{ t('destination') }}</NuxtLink></li>
-            </ul>
-          </div>
-
-          <div class="bkp-fcol">
-            <h4>{{ t('my_services').toUpperCase() }}</h4>
-            <ul>
-              <li><NuxtLink :to="locUrl('/news/realtime')">{{ t('realtime') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/news/region')">{{ t('region') }}</NuxtLink></li>
-              <li><NuxtLink :to="locUrl('/saved')">{{ t('saved') }}</NuxtLink></li>
-              <li><NuxtLink to="/admin/login">{{ t('admin_login') }}</NuxtLink></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="bkp-footer-bottom">
-        <div class="bkp-page-container bkp-footer-legal-row">
-          <span>© 2026 CHECK-IN DAILY MEDIA GROUP. ALL RIGHTS RESERVED.</span>
-          <span>체크인데일리 | 등록번호: 서울 아-52914 | 대표전화: 02-738-2026 | 문의: desk@checkin-daily.com | 모든 기사는 저작권법의 보호를 받습니다.</span>
-        </div>
-      </div>
-    </footer>
+    <!-- 방콕포스트 공식 3단 동적 푸터 (SiteFooter) -->
+    <SiteFooter v-if="!isAdminRoute" />
   </div>
 </template>
 

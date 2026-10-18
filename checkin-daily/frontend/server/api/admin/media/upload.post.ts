@@ -155,6 +155,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // Check Cloudflare R2 bucket binding if configured
+    const cfEnv = event.context._platform?.cloudflare?.env || event.context.cloudflare?.env || {}
+    const r2Bucket = (cfEnv.MEDIA_BUCKET || cfEnv.R2_BUCKET) as any
+
+    // D1 SQL Statement Byte Limit Protection (1.5MB)
+    const SAFE_D1_SIZE_BYTES = 1.5 * 1024 * 1024
+    if (!r2Bucket && buffer.length > SAFE_D1_SIZE_BYTES) {
+      throw createError({
+        statusCode: 413,
+        statusMessage: `D1 스토리지 한도(1.5MB)를 초과했습니다 (${(buffer.length / 1024 / 1024).toFixed(2)}MB). 클라이언트 WebP 압축 파이프라인을 사용해 주세요.`,
+      })
+    }
+
     // Generate secure ID
     const randomHex = Math.random().toString(36).substring(2, 10)
     const assetId = `img_${Date.now()}_${randomHex}`
@@ -162,7 +175,15 @@ export default defineEventHandler(async (event) => {
     const altText = (item.altText || '').slice(0, 200)
     const caption = (item.caption || '').slice(0, 200)
 
-    // Store in media_assets
+    if (r2Bucket && typeof r2Bucket.put === 'function') {
+      // Store in Cloudflare R2
+      await r2Bucket.put(assetId, buffer, {
+        httpMetadata: { contentType: mime },
+        customMetadata: { filename: safeFilename, uploadedBy: session.identity.username },
+      })
+    }
+
+    // Store record in media_assets (if R2 is active, data_base64 can be stored as pointer or fallback)
     await d1Run(
       database,
       `INSERT INTO media_assets (id, filename, mime_type, size_bytes, data_base64, alt_text, caption, uploaded_by)

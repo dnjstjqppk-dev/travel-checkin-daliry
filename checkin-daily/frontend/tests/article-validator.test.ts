@@ -282,3 +282,34 @@ test('Article Validator - Combined Publishing Status Tests', async (t) => {
   })
 })
 
+test('AI Keyword Generation - 300 to 1,000 Chars Rules', async (t) => {
+  await t.test('299 characters: is below minimum 300 chars', () => {
+    const content = '가'.repeat(299)
+    const len = calculateBodyTextLength(content)
+    assert.equal(len, 299)
+    assert.equal(len >= 300 && len <= 1000, false)
+  })
+
+  await t.test('300 characters: passes minimum 300 boundary', () => {
+    const content = '가'.repeat(300)
+    const len = calculateBodyTextLength(content)
+    assert.equal(len, 300)
+    assert.equal(len >= 300 && len <= 1000, true)
+  })
+
+  await t.test('1,000 characters: passes maximum 1,000 boundary', () => {
+    const content = '나'.repeat(1000)
+    const len = calculateBodyTextLength(content)
+    assert.equal(len, 1000)
+    assert.equal(len >= 300 && len <= 1000, true)
+  })
+
+  await t.test('1,001 characters: exceeds maximum 1,000 boundary', () => {
+    const content = '다'.repeat(1001)
+    const len = calculateBodyTextLength(content)
+    assert.equal(len, 1001)
+    assert.equal(len >= 300 && len <= 1000, false)
+  })
+})
+
+
