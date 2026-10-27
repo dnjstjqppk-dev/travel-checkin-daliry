@@ -80,12 +80,42 @@ const title = computed(() => {
   return categoryNames[props.category || ''] || (locale.value === 'en' ? 'All News' : '전체 뉴스')
 })
 
+const { origin: siteOrigin } = useSiteDomain()
+const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
+const listCanonicalUrl = computed(() => `${siteOrigin.value}${route.path}`)
+
 useSeoMeta({
   title: computed(() => `${title.value} | 체크인데일리 (Check-in Daily)`),
   ogTitle: computed(() => `${title.value} | Check-in Daily`),
   description: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드. 글로벌 항공, 호텔, 여행지 트렌드를 실시간으로 전해드립니다.`),
   ogDescription: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드.`),
+  ogType: 'website',
+  ogUrl: listCanonicalUrl,
+  ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  twitterImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  twitterCard: 'summary_large_image',
 })
+
+useHead(() => ({
+  link: [
+    { rel: 'canonical', href: listCanonicalUrl.value },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbs.value.map((b, idx) => ({
+          '@type': 'ListItem',
+          position: idx + 1,
+          name: b.label,
+          item: `${siteOrigin.value}${b.to}`,
+        })),
+      }),
+    },
+  ],
+}))
 
 const breadcrumbs = computed(() => [
   { label: 'HOME', to: locUrl('/news') },

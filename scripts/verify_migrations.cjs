@@ -19,6 +19,8 @@ const reactionsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='ta
 const newsletterTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='newsletter_subscribers'").get();
 const contactTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='contact_inquiries'").get();
 const rateLimitTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rate_limits'").get();
+const siteSettingsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='site_settings'").get();
+const siteUrlSetting = db.prepare("SELECT value FROM site_settings WHERE key='site_url'").get();
 
 console.log('Articles count:', articlesCount);
 console.log('Translations count:', translationsCount);
@@ -26,8 +28,9 @@ console.log('Reactions table:', reactionsTable?.name);
 console.log('Newsletter table:', newsletterTable?.name);
 console.log('Contact table:', contactTable?.name);
 console.log('Rate limits table:', rateLimitTable?.name);
+console.log('Site settings table:', siteSettingsTable?.name, 'site_url:', siteUrlSetting?.value);
 
-if (articlesCount === 66 && translationsCount === 330) {
+if (articlesCount === 66 && translationsCount === 330 && siteSettingsTable) {
   console.log('SUCCESS: All 66 articles and 330 translations verified 100%!');
 } else {
   throw new Error(`Integrity check mismatch: articles=${articlesCount}, translations=${translationsCount}`);

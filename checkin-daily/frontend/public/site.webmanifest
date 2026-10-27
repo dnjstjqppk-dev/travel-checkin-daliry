@@ -1,0 +1,16 @@
+{
+  "name": "Check-in Daily",
+  "short_name": "Check-in Daily",
+  "description": "글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어",
+  "start_url": "/news",
+  "display": "standalone",
+  "background_color": "#060D81",
+  "theme_color": "#060D81",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

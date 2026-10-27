@@ -10,6 +10,18 @@ const isMobileSearchOpen = ref(false)
 const { locale, t, locUrl, switchLocale, supportedLocales } = useI18n()
 const isLangModalOpen = ref(false)
 
+useHead(() => ({
+  htmlAttrs: {
+    lang: locale.value === 'zh' ? 'zh-Hans' : locale.value,
+  },
+  script: [
+    {
+      key: 'theme-fouc-guard',
+      innerHTML: `(function(){try{var t=localStorage.getItem('checkin-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.dataset.theme='dark';}else{document.documentElement.dataset.theme='light';}}catch(e){}})();`,
+    },
+  ],
+}))
+
 const currentLocaleMeta = computed(() => {
   const found = supportedLocales.find((l) => l.code === locale.value)
   if (found) return found

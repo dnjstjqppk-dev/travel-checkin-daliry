@@ -16,11 +16,28 @@ export default defineNuxtConfig({
         'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       },
     },
+    '/news/**/article/**': {
+      swr: 300,
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+      },
+    },
+    '/[lang]/news/**/article/**': {
+      swr: 300,
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+      },
+    },
+    '/sitemap*.xml': { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
+    '/news-sitemap.xml': { headers: { 'Cache-Control': 'public, max-age=900, s-maxage=1800' } },
+    '/rss.xml': { headers: { 'Cache-Control': 'public, max-age=1800, s-maxage=3600' } },
+    '/ads.txt': { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } },
   },
   runtimeConfig: {
     apiInternalBase: process.env.NUXT_API_INTERNAL_BASE || process.env.API_INTERNAL_BASE || 'http://localhost:8080',
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
     },
   },
   app: {
@@ -34,12 +51,14 @@ export default defineNuxtConfig({
         { name: 'theme-color', content: '#060D81' },
         { property: 'og:site_name', content: 'Check-in Daily' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:image', content: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80' },
+        { property: 'og:image', content: '/images/og-default.png' },
         { name: 'twitter:card', content: 'summary_large_image' },
       ],
       link: [
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'canonical', href: 'https://travel-checkin-daily.dnjstjqppk.workers.dev' },
+        { rel: 'alternate', type: 'application/rss+xml', title: 'Check-in Daily Global RSS Feed', href: '/rss.xml' },
       ],
     },
   },

@@ -107,11 +107,55 @@ const pageTitle = computed(() => {
   return locale.value === 'en' ? 'News by Region & Cities' : '국가 및 도시별 여행 뉴스 탐색'
 })
 
+const { origin: siteOrigin } = useSiteDomain()
+const regionCanonicalUrl = computed(() => `${siteOrigin.value}${route.path}`)
+
 useSeoMeta({
   title: computed(() => `${pageTitle.value} | 체크인데일리 (Check-in Daily)`),
   ogTitle: computed(() => `${pageTitle.value} | Check-in Daily`),
   description: computed(() => `${pageTitle.value} - 아시아, 유럽, 미주 등 전 세계 주요 국가와 도시별 심층 여행 저널리즘 기사를 모아서 전해드립니다.`),
+  ogDescription: computed(() => `${pageTitle.value} - 아시아, 유럽, 미주 등 전 세계 주요 국가와 도시별 심층 여행 저널리즘 기사를 모아서 전해드립니다.`),
+  ogType: 'website',
+  ogUrl: regionCanonicalUrl,
+  ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  twitterImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  twitterCard: 'summary_large_image',
 })
+
+useHead(() => ({
+  link: [
+    { rel: 'canonical', href: regionCanonicalUrl.value },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'HOME',
+            item: `${siteOrigin.value}${locUrl('/news')}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'BY REGION',
+            item: `${siteOrigin.value}${locUrl('/news/region')}`,
+          },
+          ...(currentCountryMeta.value ? [{
+            '@type': 'ListItem',
+            position: 3,
+            name: currentCountryMeta.value.nameKo,
+            item: `${siteOrigin.value}${locUrl(`/news/region/${currentCountryMeta.value.code}`)}`,
+          }] : []),
+        ],
+      }),
+    },
+  ],
+}))
 
 function formatViews(views = 0) {
   return new Intl.NumberFormat('ko-KR').format(views)

@@ -6,7 +6,7 @@ import type { SiteConfig } from './site.config'
 
 export const brandPresets: Record<string, SiteConfig> = {
   travel: {
-    domain: 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+    domain: (typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
     siteId: 'travel-news',
     brandName: 'CHECK-IN',
     brandSubname: 'DAILY',

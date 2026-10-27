@@ -74,3 +74,37 @@ onMounted(() => {
   </aside>
   <!-- Non-configured slots render nothing to avoid intrusive empty placeholder boxes -->
 </template>
+
+<style scoped>
+.ad-slot {
+  margin: 28px auto;
+  max-width: 100%;
+  text-align: center;
+  min-height: 280px;
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px dashed #CBD5E1;
+  border-radius: 4px;
+  padding: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.ad-slot-horizontal {
+  min-height: 100px;
+}
+.ad-slot-rectangle {
+  min-height: 280px;
+}
+.ad-slot-label {
+  font-size: 10px;
+  color: #94A3B8;
+  letter-spacing: 0.1em;
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+</style>

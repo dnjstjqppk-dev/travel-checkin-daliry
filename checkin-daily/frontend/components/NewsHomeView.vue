@@ -68,6 +68,81 @@ function formatDate(date: string | null) {
 function formatViews(views = 0) {
   return new Intl.NumberFormat('ko-KR').format(views)
 }
+
+const { origin: siteOrigin } = useSiteDomain()
+const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
+const homeCanonicalUrl = computed(() => `${siteOrigin.value}${currentLangPrefix.value}/news`)
+
+useSeoMeta({
+  title: computed(() => locale.value === 'en'
+    ? 'Check-in Daily | The World’s Window on Travel Journalism'
+    : '체크인데일리 | 글로벌 항공·호텔·여행지 전문 뉴스룸'),
+  ogTitle: computed(() => 'Check-in Daily — The World’s Window on Travel Journalism'),
+  description: computed(() => t('footer_tagline')),
+  ogDescription: computed(() => t('footer_tagline')),
+  ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  twitterImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  ogType: 'website',
+  ogUrl: homeCanonicalUrl,
+  twitterCard: 'summary_large_image',
+})
+
+useHead(() => ({
+  link: [
+    { rel: 'canonical', href: homeCanonicalUrl.value },
+    { rel: 'alternate', hreflang: 'ko', href: `${siteOrigin.value}/news` },
+    { rel: 'alternate', hreflang: 'en', href: `${siteOrigin.value}/en/news` },
+    { rel: 'alternate', hreflang: 'zh-Hans', href: `${siteOrigin.value}/zh/news` },
+    { rel: 'alternate', hreflang: 'th', href: `${siteOrigin.value}/th/news` },
+    { rel: 'alternate', hreflang: 'vi', href: `${siteOrigin.value}/vi/news` },
+    { rel: 'alternate', hreflang: 'es', href: `${siteOrigin.value}/es/news` },
+    { rel: 'alternate', hreflang: 'x-default', href: `${siteOrigin.value}/news` },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': `${siteOrigin.value}/#website`,
+            name: 'Check-in Daily',
+            url: siteOrigin.value,
+            description: '글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어',
+            inLanguage: locale.value === 'zh' ? 'zh-Hans' : locale.value,
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${siteOrigin.value}${currentLangPrefix.value}/news?q={search_term_string}`,
+              },
+              'query-input': 'required name=search_term_string',
+            },
+          },
+          {
+            '@type': 'NewsMediaOrganization',
+            '@id': `${siteOrigin.value}/#organization`,
+            name: 'Check-in Daily',
+            url: siteOrigin.value,
+            logo: {
+              '@type': 'ImageObject',
+              url: `${siteOrigin.value}/logo.svg`,
+              width: 310,
+              height: 52,
+            },
+            sameAs: [
+              'https://twitter.com/CheckInDaily',
+              'https://facebook.com/CheckInDailyNews',
+            ],
+            ethicsPolicy: `${siteOrigin.value}/policy`,
+            correctionsPolicy: `${siteOrigin.value}/corrections`,
+          },
+        ],
+      }),
+    },
+  ],
+}))
 </script>
 
 <template>

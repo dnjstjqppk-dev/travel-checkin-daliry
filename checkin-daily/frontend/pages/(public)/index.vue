@@ -1,3 +1,3 @@
 <script setup lang="ts">
-await navigateTo('/news', { replace: true })
+await navigateTo('/news', { redirectCode: 301, replace: true })
 </script>

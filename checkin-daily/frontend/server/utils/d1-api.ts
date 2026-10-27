@@ -1315,17 +1315,7 @@ async function deleteAdPlacement(event: H3Event, database: D1Database, id: strin
 async function handleSettings(event: H3Event, database: D1Database, path: string[], admin: boolean) {
   const method = event.method
 
-  // Ensure site_settings table exists
-  await d1Run(
-    database,
-    `CREATE TABLE IF NOT EXISTS site_settings (
-      key TEXT PRIMARY KEY,
-      value TEXT,
-      updated_at TEXT
-    )`
-  ).catch(() => {})
-
-  if (method === 'GET' && path.length === 0) {
+    if (method === 'GET' && path.length === 0) {
     const rows = await d1All<{ key: string; value: string }>(
       database,
       'SELECT key, value FROM site_settings'
@@ -1347,7 +1337,7 @@ async function handleSettings(event: H3Event, database: D1Database, path: string
       address: dbMap.address || '서울특별시 중구 을지로 100 파인에비뉴 B동',
       contact_email: dbMap.contact_email || 'editorial@checkindaily.com',
       contact_phone: dbMap.contact_phone || '02-738-2026',
-      site_url: dbMap.site_url || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+      site_url: dbMap.site_url || (typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
       brand_name: dbMap.brand_name || 'CHECK-IN',
       brand_subname: dbMap.brand_subname || 'DAILY',
       slogan: dbMap.slogan || '글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어',

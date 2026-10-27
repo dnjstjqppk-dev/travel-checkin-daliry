@@ -16,7 +16,7 @@ try {
   throw createError({ statusCode: 404, statusMessage: 'News article not found' })
 }
 
-// 안전한 마크다운 파싱 (Cloudflare Workers SSR 호환 & 이미지 지연 로딩 캡션 렌더링)
+// 안전한 마크다운 파싱 (Cloudflare Workers SSR 호환 & 이미지 지연 로딩 캡션 렌더링 & 헤딩 ID 앵커)
 function renderMarkdown(raw: string): string {
   try {
     const renderer = new marked.Renderer()
@@ -25,6 +25,13 @@ function renderMarkdown(raw: string): string {
       const cleanAlt = text || '기사 보도 사진'
       const cleanTitle = title ? `<figcaption class="article-body-caption">${title}</figcaption>` : ''
       return `<figure class="article-body-figure"><img src="${cleanHref}" alt="${cleanAlt}" loading="lazy" class="article-body-img" />${cleanTitle}</figure>`
+    }
+    renderer.heading = function (arg: any) {
+      const depth = typeof arg === 'object' && arg.depth ? arg.depth : 2
+      const text = typeof arg === 'object' && arg.text ? arg.text : (typeof arg === 'string' ? arg : '')
+      const cleanText = text.replace(/<[^>]*>/g, '')
+      const slugId = 'sec-' + cleanText.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/(^-|-$)/g, '')
+      return `<h${depth} id="${slugId}" class="article-subheading h${depth}">${text}</h${depth}>`
     }
     const parsed = marked.parse(raw || '', { renderer, async: false }) as string
     const sanitizeFn = (DOMPurify as any)?.sanitize || (DOMPurify as any)?.default?.sanitize
@@ -36,6 +43,28 @@ function renderMarkdown(raw: string): string {
     return raw || ''
   }
 }
+
+interface TocItem {
+  id: string
+  text: string
+  level: number
+}
+
+const tocItems = computed<TocItem[]>(() => {
+  const raw = article.content || ''
+  const lines = raw.split('\n')
+  const items: TocItem[] = []
+  for (const line of lines) {
+    const match = line.match(/^(#{2,3})\s+(.+)$/)
+    if (match) {
+      const level = match[1].length
+      const text = match[2].trim().replace(/\*\*/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1')
+      const id = 'sec-' + text.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/(^-|-$)/g, '')
+      items.push({ id, text, level })
+    }
+  }
+  return items
+})
 
 const html = computed(() => renderMarkdown(article.content || ''))
 
@@ -154,65 +183,110 @@ function trackEvent(eventType: 'share' | 'bookmark') {
   } catch {}
 }
 
-const articleCanonicalUrl = `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}`
+const { origin: siteOrigin } = useSiteDomain()
+const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
+const articleCanonicalUrl = computed(() => `${siteOrigin.value}${currentLangPrefix.value}/news/${category}/article/${article.id}`)
 
 useSeoMeta({
   title: computed(() => `${article.title} | Check-in Daily`),
   ogTitle: computed(() => article.title),
   description: computed(() => article.summary),
   ogDescription: computed(() => article.summary),
-  ogImage: article.coverImage || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80',
-  twitterImage: article.coverImage || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80',
+  ogImage: computed(() => article.coverImage || `${siteOrigin.value}/images/og-default.png`),
+  twitterImage: computed(() => article.coverImage || `${siteOrigin.value}/images/og-default.png`),
   ogType: 'article',
   ogUrl: articleCanonicalUrl,
   articlePublishedTime: article.publishedAt || undefined,
-  articleAuthor: [article.author || 'Check-in Daily Editorial Desk'],
+  articleModifiedTime: article.updatedAt || article.publishedAt || undefined,
+  articleAuthor: [displayAuthor.value],
   articleSection: categoryDisplayName.value,
   twitterCard: 'summary_large_image',
 })
 
-useHead({
+useHead(() => ({
   link: [
-    { rel: 'canonical', href: articleCanonicalUrl },
-    { rel: 'alternate', hreflang: 'ko', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'en', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/en/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'zh-Hans', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/zh/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'th', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/th/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'vi', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/vi/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'es', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/es/news/${category}/article/${article.id}` },
-    { rel: 'alternate', hreflang: 'x-default', href: `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}` },
+    { rel: 'canonical', href: articleCanonicalUrl.value },
+    { rel: 'alternate', hreflang: 'ko', href: `${siteOrigin.value}/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'en', href: `${siteOrigin.value}/en/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'zh-Hans', href: `${siteOrigin.value}/zh/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'th', href: `${siteOrigin.value}/th/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'vi', href: `${siteOrigin.value}/vi/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'es', href: `${siteOrigin.value}/es/news/${category}/article/${article.id}` },
+    { rel: 'alternate', hreflang: 'x-default', href: `${siteOrigin.value}/news/${category}/article/${article.id}` },
   ],
   script: [
     {
       type: 'application/ld+json',
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org',
-        '@type': 'NewsArticle',
-        headline: article.title,
-        description: article.summary,
-        image: article.coverImage ? [article.coverImage] : [],
-        datePublished: article.firstPublishedAt || article.publishedAt,
-        dateModified: article.updatedAt || article.publishedAt,
-        author: {
-          '@type': 'Person',
-          name: article.author || 'Check-in Daily Reporter',
-        },
-        publisher: {
-          '@type': 'Organization',
-          name: 'Check-in Daily',
-          logo: {
-            '@type': 'ImageObject',
-            url: 'https://travel-checkin-daily.dnjstjqppk.workers.dev/logo.svg',
+        '@graph': [
+          {
+            '@type': 'NewsArticle',
+            '@id': `${articleCanonicalUrl.value}#article`,
+            isPartOf: {
+              '@type': 'WebSite',
+              name: 'Check-in Daily',
+              url: siteOrigin.value,
+            },
+            headline: article.title,
+            description: article.summary,
+            image: article.coverImage ? [article.coverImage] : [`${siteOrigin.value}/images/og-default.png`],
+            datePublished: article.firstPublishedAt || article.publishedAt,
+            dateModified: article.updatedAt || article.publishedAt,
+            inLanguage: locale.value === 'zh' ? 'zh-Hans' : locale.value,
+            isAccessibleForFree: 'True',
+            author: {
+              '@type': 'Person',
+              name: displayAuthor.value,
+            },
+            publisher: {
+              '@type': 'NewsMediaOrganization',
+              name: 'Check-in Daily',
+              url: siteOrigin.value,
+              logo: {
+                '@type': 'ImageObject',
+                url: `${siteOrigin.value}/logo.svg`,
+              },
+              ethicsPolicy: `${siteOrigin.value}/policy`,
+              correctionsPolicy: `${siteOrigin.value}/corrections`,
+            },
+            mainEntityOfPage: {
+              '@type': 'WebPage',
+              '@id': articleCanonicalUrl.value,
+            },
+            speakable: {
+              '@type': 'SpeakableSpecification',
+              cssSelector: ['.bkp-article-title', '.takeaways-list', '.bkp-article-content-html > p:first-of-type'],
+            },
           },
-        },
-        mainEntityOfPage: {
-          '@type': 'WebPage',
-          '@id': articleCanonicalUrl,
-        },
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'HOME',
+                item: `${siteOrigin.value}${currentLangPrefix.value}/news`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 2,
+                name: categoryDisplayName.value.toUpperCase(),
+                item: `${siteOrigin.value}${currentLangPrefix.value}/news/${category}`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: article.title,
+                item: articleCanonicalUrl.value,
+              },
+            ],
+          },
+        ],
       }),
     },
   ],
-})
+}))
 
 function hasCoverImage(value: string | null | undefined) {
   return Boolean(value && (/^https?:\/\//i.test(value) || value.startsWith('/')))
@@ -258,20 +332,43 @@ function copyUrl() {
   setTimeout(() => { copySuccess.value = false }, 2500)
 }
 
-async function shareArticle() {
+const isShareModalOpen = ref(false)
+
+function openShareModal() {
   trackEvent('share')
-  if (!import.meta.client) return
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: article.title,
-        text: article.summary,
-        url: window.location.href,
-      })
-      return
-    } catch {}
+  if (import.meta.client && navigator.share) {
+    navigator.share({
+      title: article.title,
+      text: article.summary,
+      url: window.location.href,
+    }).catch(() => {
+      isShareModalOpen.value = true
+    })
+  } else {
+    isShareModalOpen.value = true
   }
-  copyUrl()
+}
+
+function shareToTwitter() {
+  if (!import.meta.client) return
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function shareToFacebook() {
+  if (!import.meta.client) return
+  const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function shareToLinkedIn() {
+  if (!import.meta.client) return
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+async function shareArticle() {
+  openShareModal()
 }
 
 function goBack() {
@@ -383,6 +480,19 @@ function goBack() {
               {{ point }}
             </li>
           </ul>
+        </div>
+
+        <!-- 기사 인터랙티브 목차 (Table of Contents) -->
+        <div v-if="tocItems.length >= 2" class="bkp-toc-card">
+          <div class="toc-header">
+            <span class="toc-icon">📑</span>
+            <span class="toc-title">ARTICLE OUTLINE &amp; KEY SECTIONS</span>
+          </div>
+          <ol class="toc-list">
+            <li v-for="item in tocItems" :key="item.id" :class="`toc-level-${item.level}`">
+              <a :href="`#${item.id}`" class="toc-link">{{ item.text }}</a>
+            </li>
+          </ol>
         </div>
 
         <!-- 메인 커버 이미지 -->
@@ -568,10 +678,192 @@ function goBack() {
         <span>{{ savedStore.has(article.slug) ? (locale === 'en' ? 'Saved' : '저장됨') : (locale === 'en' ? 'Save' : '스크랩') }}</span>
       </button>
     </nav>
+
+    <!-- 소셜 공유 팝업 모달 -->
+    <Teleport to="body">
+      <div v-if="isShareModalOpen" class="share-modal-overlay" @click.self="isShareModalOpen = false">
+        <div class="share-modal-card">
+          <div class="share-modal-header">
+            <h3>기사 공유하기 / SHARE STORY</h3>
+            <button class="share-close-btn" type="button" aria-label="닫기" @click="isShareModalOpen = false">✕</button>
+          </div>
+          <p class="share-modal-desc">{{ article.title }}</p>
+          <div class="share-channel-grid">
+            <button class="share-channel-btn twitter" type="button" @click="shareToTwitter">
+              <span class="share-icon">𝕏</span>
+              <span>X (트위터)</span>
+            </button>
+            <button class="share-channel-btn facebook" type="button" @click="shareToFacebook">
+              <span class="share-icon">f</span>
+              <span>페이스북</span>
+            </button>
+            <button class="share-channel-btn linkedin" type="button" @click="shareToLinkedIn">
+              <span class="share-icon">in</span>
+              <span>링크드인</span>
+            </button>
+            <button class="share-channel-btn copy" type="button" @click="copyUrl">
+              <span class="share-icon">🔗</span>
+              <span>{{ copySuccess ? '복사 완료!' : '링크 복사' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
+/* 인터랙티브 목차 (Table of Contents) */
+.bkp-toc-card {
+  margin: 24px 0;
+  padding: 18px 22px;
+  background: #F8FAFC;
+  border-left: 4px solid #060D81;
+  border-radius: 4px;
+}
+
+.toc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: #060D81;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.toc-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.toc-list li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.toc-list li.toc-level-3 {
+  margin-left: 18px;
+  list-style-type: circle;
+}
+
+.toc-link {
+  color: #1E293B;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.toc-link:hover {
+  color: #D9534F;
+  text-decoration: underline;
+}
+
+/* 소셜 공유 모달 */
+.share-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.share-modal-card {
+  background: #FFFFFF;
+  border-radius: 8px;
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  font-family: 'DM Mono', monospace;
+}
+
+.share-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748B;
+}
+
+.share-modal-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0 0 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.share-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.share-channel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.share-channel-btn:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  transform: translateY(-1px);
+}
+
+.share-channel-btn.twitter:hover {
+  background: #0F172A;
+  color: #FFFFFF;
+}
+
+.share-channel-btn.facebook:hover {
+  background: #1877F2;
+  color: #FFFFFF;
+}
+
+.share-channel-btn.linkedin:hover {
+  background: #0A66C2;
+  color: #FFFFFF;
+}
+
+.share-icon {
+  font-size: 15px;
+  font-weight: 800;
+}
 .bkp-article-page {
   padding: 20px 0 60px;
 }

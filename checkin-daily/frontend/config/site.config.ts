@@ -46,7 +46,7 @@ export interface SiteConfig {
 }
 
 export const siteConfig: SiteConfig = {
-  domain: 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+  domain: (typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
   siteId: 'travel-news',
   brandName: 'CHECK-IN',
   brandSubname: 'DAILY',
