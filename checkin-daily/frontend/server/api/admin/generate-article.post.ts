@@ -1,8 +1,9 @@
 // checkin-daily/frontend/server/api/admin/generate-article.post.ts
 import { defineEventHandler, readBody, createError } from 'h3'
-import { getD1Database, d1Run, type D1Database } from '../../utils/d1'
+import { getD1Database, d1Run, d1First, type D1Database } from '../../utils/d1'
 import { authenticateAdmin, isSameOriginRequest } from '../../utils/d1-auth'
-import { generateNewsStory } from '../../utils/ai-generator'
+import { generateNewsStory, type GeneratedArticle } from '../../utils/ai-generator'
+import { generateNewsWithGemini } from '../../utils/gemini-client'
 
 export default defineEventHandler(async (event) => {
   // 1. Enforce same-origin CSRF protection
@@ -22,15 +23,37 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Admin authentication required' })
   }
 
-  const body = await readBody<{ keyword?: string; category?: string; publishNow?: boolean }>(event)
+  const body = await readBody<{ keyword?: string; contextText?: string; category?: string; publishNow?: boolean }>(event)
   const keyword = body?.keyword?.trim()
 
   if (!keyword) {
     throw createError({ statusCode: 400, statusMessage: '키워드를 입력해 주세요.' })
   }
 
-  // 4. Generate article story with strict 800~2,000 char validation, 4~10 body images, and CTA
-  const story = generateNewsStory(keyword, body.category)
+  // 4. Fetch optional Gemini API key from site_settings or environment
+  let apiKey = ''
+  try {
+    const setting = await d1First<{ value: string }>(
+      database,
+      "SELECT value FROM site_settings WHERE key = 'gemini_api_key' LIMIT 1"
+    )
+    if (setting?.value) {
+      apiKey = setting.value.trim()
+    }
+  } catch {}
+
+  // 5. Generate article story with Gemini 3.5 Flash (with graceful fallback)
+  let story: GeneratedArticle
+  try {
+    story = await generateNewsWithGemini({
+      keyword,
+      contextText: body?.contextText,
+      preferredCategory: body?.category,
+      apiKey: apiKey || undefined,
+    })
+  } catch (err: any) {
+    story = generateNewsStory(keyword, body.category)
+  }
 
   // Verify strict publishing standards (800 <= length <= 2,000, 4 <= images <= 10)
   if (story.charCount < 800 || story.charCount > 2000) {

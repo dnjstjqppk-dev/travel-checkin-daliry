@@ -42,3 +42,4 @@ export async function resolveBaseUrl(event: H3Event): Promise<string> {
 
   return (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
 }
+

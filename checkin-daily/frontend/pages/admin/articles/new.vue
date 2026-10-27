@@ -17,6 +17,7 @@ const activeTab = ref<'ai' | 'manual'>('ai')
 
 // AI Generation state
 const aiKeyword = ref('')
+const aiContextText = ref('')
 const aiCategory = ref(categories[0]?.slug || 'major')
 const generating = ref(false)
 const publishing = ref(false)
@@ -121,6 +122,7 @@ async function generateAiDraft() {
       method: 'POST',
       body: {
         keyword: aiKeyword.value.trim(),
+        contextText: aiContextText.value.trim() || undefined,
         category: aiCategory.value,
         publishNow: false,
       },
@@ -148,6 +150,7 @@ async function generateAndPublishNow() {
       method: 'POST',
       body: {
         keyword: aiKeyword.value.trim(),
+        contextText: aiContextText.value.trim() || undefined,
         category: aiCategory.value,
         publishNow: true,
       },
@@ -275,6 +278,14 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             <select v-model="aiCategory">
               <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
             </select>
+          </label>
+          <label class="field full">
+            참고 보도자료 원문 또는 팩트 메모 (선택 사항 - Gemini 심층 취재 모드)
+            <textarea
+              v-model="aiContextText"
+              rows="3"
+              placeholder="외신 원문, 항공사/관광청 보도자료 텍스트, 팩트 수치를 입력하면 Gemini 3.5 Flash가 이를 분석하여 고품질 전문 기사로 재작성합니다."
+            ></textarea>
           </label>
         </div>
 

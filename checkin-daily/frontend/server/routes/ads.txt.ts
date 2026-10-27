@@ -65,3 +65,4 @@ export default defineEventHandler(async (event) => {
 
   return lines.join('\n') + '\n'
 })
+

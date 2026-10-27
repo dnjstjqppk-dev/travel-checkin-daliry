@@ -28,4 +28,6 @@ INSERT OR IGNORE INTO site_settings (key, value) VALUES
   ('ads_txt_content', 'google.com, pub-9201847192847192, DIRECT, f08c47fec0942fa0'),
   ('google_site_verification', ''),
   ('naver_site_verification', ''),
+  ('gemini_api_key', ''),
   ('default_og_image', '/images/og-default.png');
+
