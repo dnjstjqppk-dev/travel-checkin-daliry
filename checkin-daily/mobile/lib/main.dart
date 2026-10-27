@@ -47,10 +47,14 @@ class BookmarkNotifier extends StateNotifier<Set<String>> {
 // Articles List Provider
 final articlesProvider = FutureProvider<List<Article>>((ref) async {
   final category = ref.watch(selectedCategoryProvider);
+  final lang = ref.watch(currentLangProvider);
   try {
+    final queryParams = <String, dynamic>{};
+    if (category.isNotEmpty) queryParams['category'] = category;
+    if (lang != 'ko') queryParams['lang'] = lang;
     final response = await ref.watch(dioProvider).get<dynamic>(
           '/api/articles',
-          queryParameters: category.isEmpty ? null : {'category': category},
+          queryParameters: queryParams.isEmpty ? null : queryParams,
         );
     final data = response.data;
     if (data is List) {
@@ -725,17 +729,39 @@ class _ReporterPortalScreenState extends State<ReporterPortalScreen> {
     }
 
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 1)); // simulated api call
-    setState(() => _isSubmitting = false);
-
-    _titleCtrl.clear();
-    _summaryCtrl.clear();
-    _contentCtrl.clear();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('초안이 성공적으로 제출되었습니다. 편집국 승인 후 발행됩니다.')),
+    try {
+      final dio = Dio(BaseOptions(
+        baseUrl: apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+      final response = await dio.post<Map<String, dynamic>>(
+        '/api/partners/submissions',
+        data: {
+          'title': _titleCtrl.text.trim(),
+          'summary': _summaryCtrl.text.trim(),
+          'content': _contentCtrl.text.trim(),
+          'category': _category,
+          'submitterName': _authorCtrl.text.trim().isNotEmpty ? _authorCtrl.text.trim() : '모바일 특파원',
+          'submitterEmail': 'mobile-reporter@checkindaily.com',
+        },
       );
+      if (mounted) {
+        final message = response.data?['message'] ?? '초안이 성공적으로 제출되었습니다. 편집국 승인 후 발행됩니다.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message.toString())));
+      }
+      _titleCtrl.clear();
+      _summaryCtrl.clear();
+      _contentCtrl.clear();
+      _authorCtrl.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('제출 중 오류가 발생했습니다: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 

@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import type { Article } from '~/stores/articles'
 
-defineProps<{
-  articles: Article[]
+const props = defineProps<{
+  articles?: Article[]
 }>()
+
+const { locUrl } = useI18n()
+
+interface TrendingResponse {
+  success: boolean
+  articles: Array<{
+    id: number
+    title: string
+    slug: string
+    category: string
+    isBreaking: boolean
+    viewCount: number
+  }>
+}
 
 interface CurrencyRate {
   code: string
@@ -22,19 +36,42 @@ const { data: fxData } = await useFetch<ExchangeRates>('/api/exchange-rates', {
   default: () => ({ rates: [] }),
 })
 
-const tickerItems = [
-  '⚡ [속보] 일본 벚꽃 시즌 나리타/간사이 노선 임시 증편 결정',
-  '✈️ 대한항공-아시아나 마일리지 통합 비율 세부 지침 발표 예정',
-  '🏨 메리어트 본보이 2026 티어 산정 프로모션 2배 적립 시작',
-  '📍 파리 올림픽 이후 유럽 호텔 숙박세 인하 검토',
-]
+const { data: trendingData } = await useFetch<TrendingResponse>('/api/trending', {
+  key: 'ticker-trending-articles',
+  default: () => ({ success: true, articles: [] }),
+})
+
+const tickerItems = computed(() => {
+  if (trendingData.value?.articles?.length) {
+    return trendingData.value.articles.map((a) => ({
+      id: a.id,
+      category: a.category,
+      isBreaking: a.isBreaking,
+      title: `${a.isBreaking ? '⚡ [속보] ' : '🔥 [인기] '}${a.title}`,
+    }))
+  }
+  if (props.articles?.length) {
+    return props.articles.slice(0, 5).map((a) => ({
+      id: a.id,
+      category: a.category,
+      isBreaking: false,
+      title: `📰 ${a.title}`,
+    }))
+  }
+  return [
+    { id: 1, category: 'airline', isBreaking: true, title: '⚡ [속보] 글로벌 항공사 동계 정기 노선 증편 발표' },
+    { id: 2, category: 'hotel', isBreaking: false, title: '🏨 주요 럭셔리 리조트 멤버십 포인트 적립 정책 개편' },
+  ]
+})
 
 const activeIndex = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   timer = setInterval(() => {
-    activeIndex.value = (activeIndex.value + 1) % tickerItems.length
+    if (tickerItems.value.length > 0) {
+      activeIndex.value = (activeIndex.value + 1) % tickerItems.value.length
+    }
   }, 4500)
 })
 
@@ -50,9 +87,14 @@ onUnmounted(() => {
         <span class="ticker-badge">FLASH NEWS</span>
         <div class="ticker-content">
           <transition name="ticker-slide" mode="out-in">
-            <span :key="activeIndex" class="ticker-headline">
-              {{ tickerItems[activeIndex] }}
-            </span>
+            <NuxtLink
+              v-if="tickerItems.length"
+              :key="activeIndex"
+              :to="locUrl(`/news/${tickerItems[activeIndex]?.category}/article/${tickerItems[activeIndex]?.id}`)"
+              class="ticker-headline"
+            >
+              {{ tickerItems[activeIndex]?.title }}
+            </NuxtLink>
           </transition>
         </div>
       </div>
@@ -83,6 +125,9 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 16px;
   gap: 20px;
 }
 
@@ -117,6 +162,13 @@ onUnmounted(() => {
   display: inline-block;
   color: #cbd5e1;
   font-size: 12px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.ticker-headline:hover {
+  color: #ffffff;
+  text-decoration: underline;
 }
 
 .ticker-right {
@@ -163,4 +215,3 @@ onUnmounted(() => {
   .ticker-right { display: none; }
 }
 </style>
-

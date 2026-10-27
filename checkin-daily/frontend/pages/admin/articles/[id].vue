@@ -64,6 +64,36 @@ const isImageCountValid = computed(
 
 const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
 
+// Revision history & restore
+const { data: revisionsData, refresh: refreshRevisions } = await useAsyncData(
+  `article-revisions-${id}`,
+  () => $fetch<{ revisions: any[] }>(`/api/admin/articles/${id}/revisions`).catch(() => ({ revisions: [] })),
+  { default: () => ({ revisions: [] }) },
+)
+
+const restoringId = ref<number | null>(null)
+async function restoreRevision(revId: number) {
+  if (!confirm('이 버전으로 기사 내용을 복원하시겠습니까? 현재 상태는 새로운 스냅샷으로 자동 보존됩니다.')) return
+  restoringId.value = revId
+  try {
+    const res = await $fetch<{ success: boolean; message: string; restored: any }>(`/api/admin/articles/${id}/restore`, {
+      method: 'POST',
+      body: { revisionId: revId },
+    })
+    if (res.success && res.restored) {
+      form.title = res.restored.title
+      form.summary = res.restored.summary
+      form.content = res.restored.content
+      alert(res.message)
+      await refreshRevisions()
+    }
+  } catch (err: any) {
+    alert(err?.data?.statusMessage || '버전 복원 중 오류가 발생했습니다.')
+  } finally {
+    restoringId.value = null
+  }
+}
+
 // Dirty state tracking for navigation protection
 const initialSnapshot = JSON.stringify({
   title: form.title,
@@ -376,6 +406,40 @@ function formatDate(val: string | null | undefined) {
         </div>
       </div>
     </form>
+
+    <!-- 기사 버전 히스토리 & 원클릭 복원 패널 -->
+    <section class="revisions-panel">
+      <div class="revisions-header">
+        <div>
+          <h3>기사 버전 스냅샷 및 변경 이력</h3>
+          <p class="revisions-sub">기사를 저장할 때마다 이전 상태가 자동으로 영구 보존되며 언제든지 원클릭으로 복원할 수 있습니다.</p>
+        </div>
+        <button type="button" class="btn-refresh-rev" @click="() => refreshRevisions()">이력 새로고침 ↻</button>
+      </div>
+
+      <div v-if="!revisionsData?.revisions?.length" class="empty-revisions">
+        <p>저장된 이전 버전 히스토리가 없습니다. (현재 버전이 최초 버전입니다)</p>
+      </div>
+      <div v-else class="revisions-list">
+        <div v-for="rev in revisionsData.revisions" :key="rev.id" class="revision-item">
+          <div class="rev-left">
+            <span class="rev-badge">Rev #{{ rev.revision_num }}</span>
+            <div class="rev-info">
+              <strong class="rev-title">{{ rev.title }}</strong>
+              <span class="rev-meta">{{ rev.editor_note || '편집국 수정' }} · {{ new Date(rev.created_at).toLocaleString('ko-KR') }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-restore"
+            :disabled="restoringId === rev.id"
+            @click="restoreRevision(rev.id)"
+          >
+            {{ restoringId === rev.id ? '복원 처리 중...' : '↺ 이 버전으로 복원' }}
+          </button>
+        </div>
+      </div>
+    </section>
   </section>
 </template>
 
@@ -515,5 +579,106 @@ function formatDate(val: string | null | undefined) {
 .btn-publish:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.revisions-panel {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 24px;
+  margin-top: 24px;
+}
+.revisions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
+  padding-bottom: 12px;
+}
+.revisions-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 4px;
+}
+.revisions-sub {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0;
+}
+.btn-refresh-rev {
+  background: #F3F4F6;
+  border: 1px solid #D1D5DB;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.empty-revisions {
+  text-align: center;
+  padding: 24px;
+  color: #6B7280;
+  font-size: 13px;
+  background: #F9FAFB;
+  border-radius: 4px;
+}
+.revisions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.revision-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+}
+.rev-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rev-badge {
+  background: #060D81;
+  color: #FFFFFF;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.rev-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rev-title {
+  font-size: 13.5px;
+  color: #111827;
+}
+.rev-meta {
+  font-size: 11px;
+  color: #6B7280;
+}
+.btn-restore {
+  background: #EEF2FF;
+  border: 1px solid #C7D2FE;
+  color: #3730A3;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-restore:hover:not(:disabled) {
+  background: #4338CA;
+  border-color: #4338CA;
+  color: #FFFFFF;
 }
 </style>

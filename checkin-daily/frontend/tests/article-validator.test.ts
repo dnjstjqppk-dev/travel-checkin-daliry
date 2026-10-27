@@ -282,33 +282,33 @@ test('Article Validator - Combined Publishing Status Tests', async (t) => {
   })
 })
 
-test('AI Keyword Generation - 300 to 1,000 Chars Rules', async (t) => {
-  await t.test('299 characters: is below minimum 300 chars', () => {
-    const content = '가'.repeat(299)
+test('AI Keyword Generation - 800 to 2,000 Chars Rules', async (t) => {
+  await t.test('799 characters: is below minimum 800 chars', () => {
+    const content = '가'.repeat(799)
     const len = calculateBodyTextLength(content)
-    assert.equal(len, 299)
-    assert.equal(len >= 300 && len <= 1000, false)
+    assert.equal(len, 799)
+    assert.equal(len >= 800 && len <= 2000, false)
   })
 
-  await t.test('300 characters: passes minimum 300 boundary', () => {
-    const content = '가'.repeat(300)
+  await t.test('800 characters: passes minimum 800 boundary', () => {
+    const content = '가'.repeat(800)
     const len = calculateBodyTextLength(content)
-    assert.equal(len, 300)
-    assert.equal(len >= 300 && len <= 1000, true)
+    assert.equal(len, 800)
+    assert.equal(len >= 800 && len <= 2000, true)
   })
 
-  await t.test('1,000 characters: passes maximum 1,000 boundary', () => {
-    const content = '나'.repeat(1000)
+  await t.test('2,000 characters: passes maximum 2,000 boundary', () => {
+    const content = '나'.repeat(2000)
     const len = calculateBodyTextLength(content)
-    assert.equal(len, 1000)
-    assert.equal(len >= 300 && len <= 1000, true)
+    assert.equal(len, 2000)
+    assert.equal(len >= 800 && len <= 2000, true)
   })
 
-  await t.test('1,001 characters: exceeds maximum 1,000 boundary', () => {
-    const content = '다'.repeat(1001)
+  await t.test('2,001 characters: exceeds maximum 2,000 boundary', () => {
+    const content = '다'.repeat(2001)
     const len = calculateBodyTextLength(content)
-    assert.equal(len, 1001)
-    assert.equal(len >= 300 && len <= 1000, false)
+    assert.equal(len, 2001)
+    assert.equal(len >= 800 && len <= 2000, false)
   })
 })
 

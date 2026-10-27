@@ -1,8 +1,12 @@
 import { createError, defineEventHandler, getRouterParam, setResponseStatus } from 'h3'
 import { getD1Database, d1First, d1Run } from '../../../utils/d1'
-import { authenticateAdmin } from '../../../utils/d1-auth'
+import { authenticateAdmin, isSameOriginRequest } from '../../../utils/d1-auth'
 
 export default defineEventHandler(async (event) => {
+  if (!isSameOriginRequest(event)) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden request origin' })
+  }
+
   const database = getD1Database(event)
   if (!database) {
     throw createError({ statusCode: 503, statusMessage: 'Database binding not available' })

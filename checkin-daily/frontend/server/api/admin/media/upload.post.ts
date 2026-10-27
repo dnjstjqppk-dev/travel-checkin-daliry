@@ -175,7 +175,8 @@ export default defineEventHandler(async (event) => {
     const altText = (item.altText || '').slice(0, 200)
     const caption = (item.caption || '').slice(0, 200)
 
-    if (r2Bucket && typeof r2Bucket.put === 'function') {
+    const isR2Active = Boolean(r2Bucket && typeof r2Bucket.put === 'function')
+    if (isR2Active) {
       // Store in Cloudflare R2
       await r2Bucket.put(assetId, buffer, {
         httpMetadata: { contentType: mime },
@@ -183,7 +184,8 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Store record in media_assets (if R2 is active, data_base64 can be stored as pointer or fallback)
+    // Store record in media_assets (if R2 is active, record 'R2_STORED' marker to prevent D1 duplicate bloat)
+    const storedBase64 = isR2Active ? 'R2_STORED' : cleanBase64
     await d1Run(
       database,
       `INSERT INTO media_assets (id, filename, mime_type, size_bytes, data_base64, alt_text, caption, uploaded_by)
@@ -192,7 +194,7 @@ export default defineEventHandler(async (event) => {
       safeFilename,
       mime,
       buffer.length,
-      cleanBase64,
+      storedBase64,
       altText,
       caption,
       session.identity.username

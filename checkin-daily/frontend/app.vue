@@ -508,10 +508,52 @@ async function submitSearch() {
 
 <style>
 .bkp-theme-root {
-  background: #FFFFFF !important;
+  background: #FFFFFF;
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
+}
+
+html[data-theme='dark'] .bkp-theme-root {
+  background: #0F172A;
+  color: #F8FAFC;
+}
+
+html[data-theme='dark'] .bkp-utility-bar {
+  background: #090D16;
+  border-bottom-color: #1E293B;
+}
+
+html[data-theme='dark'] .bkp-datetime-label {
+  color: #94A3B8;
+}
+
+html[data-theme='dark'] .bkp-tagline-text {
+  color: #64748B;
+}
+
+html[data-theme='dark'] .bkp-masthead-bar {
+  background: #0F172A;
+  border-bottom-color: #1E293B;
+}
+
+html[data-theme='dark'] .bkp-main-brand {
+  color: #F8FAFC;
+}
+
+html[data-theme='dark'] .bkp-search-box input {
+  background: #1E293B;
+  color: #F8FAFC;
+  border-color: #334155;
+}
+
+html[data-theme='dark'] .bkp-mode-toggle {
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+html[data-theme='dark'] .bkp-mode-toggle:hover {
+  background: #1E293B;
 }
 
 .bkp-page-container {

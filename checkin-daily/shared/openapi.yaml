@@ -426,6 +426,151 @@ paths:
       responses:
         '204': { description: Placement deleted }
         '404': { description: Placement not found }
+  /api/trending:
+    get:
+      tags: [Public]
+      summary: Retrieve real-time trending and breaking travel news
+      responses:
+        '200':
+          description: List of trending articles ordered by breaking priority and views
+
+  /api/reactions/{id}:
+    get:
+      tags: [Public]
+      summary: Get reader reaction counts for an article
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Reaction counts (helpful, insightful, recommend)
+    post:
+      tags: [Public]
+      summary: Record or toggle a reader reaction with IP deduplication
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reactionType]
+              properties:
+                reactionType: { type: string, enum: [helpful, insightful, recommend] }
+      responses:
+        '200':
+          description: Updated reaction status and counts
+
+  /api/newsletter/subscribe:
+    post:
+      tags: [Public]
+      summary: Subscribe an email to the weekly travel news briefing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Subscription confirmed
+
+  /api/partners/submissions:
+    get:
+      tags: [Public, Admin]
+      summary: List partner press releases and contributor submissions
+      responses:
+        '200':
+          description: List of submissions
+    post:
+      tags: [Public]
+      summary: Submit a press release or contributor article for editorial fact-checking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, submitterEmail]
+              properties:
+                title: { type: string }
+                summary: { type: string }
+                content: { type: string }
+                category: { type: string }
+                submitterName: { type: string }
+                submitterEmail: { type: string, format: email }
+                sourceUrl: { type: string }
+                copyrightProof: { type: string }
+      responses:
+        '200':
+          description: Submission received into editorial review queue
+
+  /api/contact:
+    post:
+      tags: [Public]
+      summary: Submit a reader inquiry, partnership proposal, or press pitch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, title, message]
+              properties:
+                name: { type: string }
+                organization: { type: string }
+                email: { type: string, format: email }
+                category: { type: string }
+                title: { type: string }
+                message: { type: string }
+      responses:
+        '200':
+          description: Inquiry received
+
+  /api/admin/articles/{id}/revisions:
+    get:
+      tags: [Admin]
+      summary: List revision history snapshots for an article
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of previous article revisions
+
+  /api/admin/articles/{id}/restore:
+    post:
+      tags: [Admin]
+      summary: Revert an article to a previous revision snapshot
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revisionId]
+              properties:
+                revisionId: { type: integer }
+      responses:
+        '200':
+          description: Article successfully reverted to snapshot
+
 components:
   securitySchemes:
     AdminSessionCookie:

@@ -100,6 +100,60 @@ const photoCaptionPrefix = computed(() => {
   }
 })
 
+const readingTimeLabel = computed(() => {
+  const m = (article as any).readingTimeMinutes || 3
+  switch (locale.value) {
+    case 'en': return `${m} min read`
+    case 'zh': return `${m} 分钟阅读`
+    case 'th': return `อ่าน ${m} นาที`
+    case 'vi': return `${m} phút đọc`
+    case 'es': return `${m} min de lectura`
+    default: return `${m}분 소요`
+  }
+})
+
+const { data: reactionsData } = await useAsyncData(
+  `reactions-${article.id}`,
+  () => apiFetch<{ counts: { helpful: number; insightful: number; recommend: number }; userReactions: string[] }>(`/api/reactions/${article.id}`).catch(() => ({
+    counts: { helpful: 0, insightful: 0, recommend: 0 },
+    userReactions: [],
+  })),
+  { default: () => ({ counts: { helpful: 0, insightful: 0, recommend: 0 }, userReactions: [] }) },
+)
+
+const reactionCounts = computed(() => reactionsData.value?.counts || { helpful: 0, insightful: 0, recommend: 0 })
+const activeReactions = computed(() => new Set(reactionsData.value?.userReactions || []))
+
+async function handleReaction(type: 'helpful' | 'insightful' | 'recommend') {
+  try {
+    const res = await $fetch<{ success: boolean; active: boolean; counts: any }>(`/api/reactions/${article.id}`, {
+      method: 'POST',
+      body: { reactionType: type },
+    })
+    if (res?.counts && reactionsData.value) {
+      reactionsData.value.counts = res.counts
+      if (res.active) {
+        reactionsData.value.userReactions.push(type)
+      } else {
+        reactionsData.value.userReactions = reactionsData.value.userReactions.filter((r: string) => r !== type)
+      }
+    }
+  } catch {}
+}
+
+function trackEvent(eventType: 'share' | 'bookmark') {
+  try {
+    $fetch('/api/analytics/track', {
+      method: 'POST',
+      body: {
+        eventType,
+        articleId: article.id,
+        referrer: typeof window !== 'undefined' ? window.location.href : '',
+      },
+    }).catch(() => {})
+  } catch {}
+}
+
 const articleCanonicalUrl = `https://travel-checkin-daily.dnjstjqppk.workers.dev/news/${category}/article/${article.id}`
 
 useSeoMeta({
@@ -205,6 +259,7 @@ function copyUrl() {
 }
 
 async function shareArticle() {
+  trackEvent('share')
   if (!import.meta.client) return
   if (navigator.share) {
     try {
@@ -263,6 +318,8 @@ function goBack() {
               </template>
               <span class="bkp-pipe">|</span>
               <span>WRITER: <strong>{{ displayAuthor.toUpperCase() }}</strong></span>
+              <span class="bkp-pipe">|</span>
+              <span class="bkp-readtime">⏱ {{ readingTimeLabel }}</span>
               <span v-if="article.viewCount" class="bkp-pipe">|</span>
               <span v-if="article.viewCount">{{ article.viewCount.toLocaleString('ko-KR') }} VIEWS</span>
             </div>
@@ -315,6 +372,19 @@ function goBack() {
           </div>
         </header>
 
+        <!-- AI Key Takeaways Box -->
+        <div v-if="(article as any).keyTakeaways?.length" class="bkp-takeaways-card">
+          <div class="takeaways-header">
+            <span class="takeaways-badge">KEY TAKEAWAYS</span>
+            <span class="takeaways-label">AI 핵심 3줄 요약</span>
+          </div>
+          <ul class="takeaways-list">
+            <li v-for="(point, pIdx) in (article as any).keyTakeaways" :key="pIdx">
+              {{ point }}
+            </li>
+          </ul>
+        </div>
+
         <!-- 메인 커버 이미지 -->
         <figure v-if="hasCoverImage(article.coverImage)" class="bkp-article-featured-image">
           <img :src="article.coverImage" :alt="article.title" fetchpriority="high">
@@ -342,6 +412,89 @@ function goBack() {
 
         <!-- 전략적 제휴 트래픽 전환 CTA (TripScanner / GetForTrip) -->
         <ArticleAffiliateCTA :category="category" :title="article.title" variant="card" />
+
+        <!-- 독자 기사 반응 위젯 (Reader Reactions) -->
+        <div class="bkp-reactions-box">
+          <div class="reactions-title-row">
+            <span class="reaction-tag">READER REACTIONS</span>
+            <h4 class="reaction-heading">이 기사가 도움이 되셨나요?</h4>
+          </div>
+          <div class="reactions-buttons">
+            <button
+              class="reaction-btn"
+              :class="{ active: activeReactions.has('helpful') }"
+              type="button"
+              @click="handleReaction('helpful')"
+            >
+              <span class="reaction-emoji">👍</span>
+              <span class="reaction-text">유익해요</span>
+              <span class="reaction-count">{{ reactionCounts.helpful }}</span>
+            </button>
+            <button
+              class="reaction-btn"
+              :class="{ active: activeReactions.has('insightful') }"
+              type="button"
+              @click="handleReaction('insightful')"
+            >
+              <span class="reaction-emoji">💡</span>
+              <span class="reaction-text">심층분석</span>
+              <span class="reaction-count">{{ reactionCounts.insightful }}</span>
+            </button>
+            <button
+              class="reaction-btn"
+              :class="{ active: activeReactions.has('recommend') }"
+              type="button"
+              @click="handleReaction('recommend')"
+            >
+              <span class="reaction-emoji">✈️</span>
+              <span class="reaction-text">추천해요</span>
+              <span class="reaction-count">{{ reactionCounts.recommend }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 기자 프로필 & 편집국 팩트체크 인증 배지 -->
+        <div class="bkp-author-profile-card">
+          <div class="author-avatar-col">
+            <div class="author-avatar-circle">✍️</div>
+          </div>
+          <div class="author-info-col">
+            <div class="author-meta-row">
+              <h4 class="author-name">{{ displayAuthor }}</h4>
+              <span class="author-role-badge">공인 에디터</span>
+              <span class="author-fc-verified">🛡️ FACT-CHECKED</span>
+            </div>
+            <p class="author-bio">
+              체크인데일리 글로벌 뉴스룸 에디터. 국제항공운송협회(IATA), 정부 관광청(TAT 등), 글로벌 호텔 체인의 공식 데이터를 검증 보도합니다.
+            </p>
+            <div class="author-links">
+              <NuxtLink :to="locUrl('/corrections')" class="author-link">오류 제보 및 정정 청구 →</NuxtLink>
+              <NuxtLink :to="locUrl('/policy')" class="author-link">편집 윤리 강령 확인 →</NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이전 기사 / 다음 기사 양방향 네비게이션 -->
+        <div v-if="(article as any).prevArticle || (article as any).nextArticle" class="bkp-prev-next-nav">
+          <NuxtLink
+            v-if="(article as any).prevArticle"
+            :to="locUrl(`/news/${(article as any).prevArticle.category}/article/${(article as any).prevArticle.id}`)"
+            class="pn-card prev"
+          >
+            <span class="pn-direction">← 이전 기사 (PREV)</span>
+            <span class="pn-title">{{ (article as any).prevArticle.title }}</span>
+          </NuxtLink>
+          <div v-else class="pn-card empty" />
+
+          <NuxtLink
+            v-if="(article as any).nextArticle"
+            :to="locUrl(`/news/${(article as any).nextArticle.category}/article/${(article as any).nextArticle.id}`)"
+            class="pn-card next"
+          >
+            <span class="pn-direction">다음 기사 (NEXT) →</span>
+            <span class="pn-title">{{ (article as any).nextArticle.title }}</span>
+          </NuxtLink>
+        </div>
 
         <AdSlot placement-id="article_bottom" />
 
@@ -1048,6 +1201,271 @@ function goBack() {
 .bkp-cn-item p {
   margin: 4px 0;
   font-size: 12px;
+}
+
+/* Key Takeaways Card */
+.bkp-takeaways-card {
+  background: #F0FDF4;
+  border: 1.5px solid #86EFAC;
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin: 20px 0;
+}
+.takeaways-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.takeaways-badge {
+  background: #16A34A;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+}
+.takeaways-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #166534;
+}
+.takeaways-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.takeaways-list li {
+  font-size: 13.5px;
+  color: #14532D;
+  line-height: 1.6;
+}
+
+/* Reader Reactions Box */
+.bkp-reactions-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 28px 0;
+  text-align: center;
+}
+.reactions-title-row {
+  margin-bottom: 14px;
+}
+.reaction-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748B;
+  letter-spacing: 0.5px;
+}
+.reaction-heading {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 4px 0 0;
+}
+.reactions-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.reaction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  padding: 10px 18px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  transition: all 0.15s ease;
+}
+.reaction-btn:hover {
+  border-color: #060D81;
+  color: #060D81;
+  transform: translateY(-1px);
+}
+.reaction-btn.active {
+  background: #EEF2FF;
+  border-color: #060D81;
+  color: #060D81;
+  box-shadow: 0 2px 6px rgba(6, 13, 129, 0.15);
+}
+.reaction-emoji {
+  font-size: 18px;
+}
+.reaction-count {
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+/* Author Profile Card */
+.bkp-author-profile-card {
+  display: flex;
+  gap: 18px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 28px 0;
+  align-items: flex-start;
+}
+.author-avatar-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+.author-info-col {
+  flex: 1;
+}
+.author-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.author-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+.author-role-badge {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.author-fc-verified {
+  background: #F0FDF4;
+  color: #15803D;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+}
+.author-bio {
+  font-size: 13px;
+  color: #4B5563;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+.author-links {
+  display: flex;
+  gap: 16px;
+}
+.author-link {
+  font-size: 12px;
+  color: #060D81;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Prev / Next Article Navigation */
+.bkp-prev-next-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 28px 0;
+}
+.pn-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.pn-card:hover {
+  border-color: #060D81;
+  box-shadow: 0 4px 12px rgba(6, 13, 129, 0.08);
+}
+.pn-card.empty {
+  border: 0;
+  background: transparent;
+}
+.pn-direction {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #060D81;
+  margin-bottom: 6px;
+}
+.pn-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 10. Newspaper Print Stylesheet (@media print) */
+@media print {
+  .reading-progress-track,
+  .bkp-breadcrumb-nav,
+  .bkp-share-tools,
+  .bkp-mobile-reading-bar,
+  .bkp-col-side,
+  .affiliate-cta-wrapper,
+  .bkp-reactions-box,
+  .bkp-prev-next-nav,
+  .bkp-header-wrapper,
+  .bkp-mobile-bottom-nav,
+  .bkp-related-section,
+  .ad-slot-container {
+    display: none !important;
+  }
+  .bkp-article-page {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .bkp-highlight-row {
+    display: block !important;
+  }
+  .bkp-col-main {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  body, .bkp-theme-root {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+  .bkp-article-headline {
+    font-size: 22pt !important;
+    color: #000000 !important;
+    line-height: 1.2 !important;
+  }
+  .bkp-article-content-html {
+    color: #111111 !important;
+    line-height: 1.6 !important;
+  }
 }
 </style>
 

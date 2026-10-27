@@ -153,7 +153,7 @@ ${cleanDesc || title}
     author: 'Check-in Daily Global Wire',
     coverImage,
     publishedAt: now,
-    viewCount: Math.floor(Math.random() * 200) + 50,
+    viewCount: 0,
   };
 }
 

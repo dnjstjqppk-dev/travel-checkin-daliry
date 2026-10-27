@@ -58,20 +58,24 @@ async function submitArticle() {
   message.value = ''
 
   try {
-    const res = await $fetch<{ message: string; submission: Submission }>('/api/partners/submissions', {
+    const res = await $fetch<{ success: boolean; message: string; submission: Submission }>('/api/partners/submissions', {
       method: 'POST',
       body: form.value,
     })
     message.value = res.message || '보도자료가 편집국에 성공적으로 접수되었습니다.'
-    submissions.value.unshift({
-      id: Date.now(),
-      title: form.value.title,
-      category: form.value.category,
-      status: 'submitted',
-      submitterName: form.value.submitterName,
-      createdAt: new Date().toISOString().split('T')[0] || '',
-      editorialFeedback: '편집국 데스킹 및 사실 확인 진행 중입니다.',
-    })
+    if (res.submission) {
+      submissions.value.unshift(res.submission)
+    } else {
+      submissions.value.unshift({
+        id: Date.now(),
+        title: form.value.title,
+        category: form.value.category,
+        status: 'submitted',
+        submitterName: form.value.submitterName,
+        createdAt: new Date().toISOString().split('T')[0] || '',
+        editorialFeedback: '편집국 데스킹 및 사실 확인 진행 중입니다.',
+      })
+    }
     // Reset inputs
     form.value.title = ''
     form.value.summary = ''
@@ -79,20 +83,7 @@ async function submitArticle() {
     form.value.sourceUrl = ''
     form.value.copyrightProof = ''
   } catch (err: any) {
-    // If running in static/SSR preview without local Go server, fallback gracefully
-    message.value = '보도자료가 성공적으로 접수되었습니다 (검토 대기).'
-    submissions.value.unshift({
-      id: Date.now(),
-      title: form.value.title,
-      category: form.value.category,
-      status: 'submitted',
-      submitterName: form.value.submitterName,
-      createdAt: new Date().toISOString().split('T')[0] || '',
-      editorialFeedback: '편집국 데스킹 및 사실 확인 대기 중.',
-    })
-    form.value.title = ''
-    form.value.summary = ''
-    form.value.content = ''
+    error.value = err?.data?.statusMessage || err?.message || '보도자료 접수 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
     submitting.value = false
   }

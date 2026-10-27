@@ -1,15 +1,20 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import { d1Run, getD1Database } from '../../utils/d1'
-import { authenticateAdmin } from '../../utils/d1-auth'
+import { authenticateAdmin, isSameOriginRequest } from '../../utils/d1-auth'
+import { assertSafeExternalUrl } from '../../utils/ssrf-guard'
 
 export default defineEventHandler(async (event) => {
+  if (!isSameOriginRequest(event)) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden request origin' })
+  }
+
   const database = getD1Database(event)
   if (!database) throw createError({ statusCode: 503, statusMessage: 'Database unavailable' })
   const session = await authenticateAdmin(event, database)
   if (!session.identity) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   const body = await readBody(event)
-  const action = body.action || 'create'
+  const action = body?.action || 'create'
 
   if (action === 'toggle') {
     const { id, is_active } = body
@@ -28,11 +33,8 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, statusMessage: 'id, name, and endpoint_url are required' })
     }
 
-    // SSRF Check
-    const parsed = new URL(endpoint_url)
-    if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1' || parsed.hostname.startsWith('192.168.')) {
-      throw createError({ statusCode: 400, statusMessage: 'Forbidden host address' })
-    }
+    // SSRF Check via assertSafeExternalUrl
+    assertSafeExternalUrl(endpoint_url)
 
     await d1Run(
       database,
@@ -59,13 +61,12 @@ export default defineEventHandler(async (event) => {
       'admin',
       session.identity.username,
       'create_or_update_source',
-      `news_sources:${id}`,
-      JSON.stringify(body),
+      `source:${id}`,
+      JSON.stringify({ name, endpoint_url }),
     )
 
-    return { success: true, id }
+    return { success: true, id, name }
   }
 
   throw createError({ statusCode: 400, statusMessage: 'Unknown action' })
 })
-

@@ -29,6 +29,19 @@ const secondaryTarget = computed<AffiliateTarget>(() => {
   return target as AffiliateTarget
 })
 
+function trackAffiliateClick(platform: string) {
+  try {
+    $fetch('/api/analytics/track', {
+      method: 'POST',
+      body: {
+        eventType: 'affiliate_click',
+        targetPlatform: platform,
+        referrer: typeof window !== 'undefined' ? window.location.href : '',
+      },
+    }).catch(() => {})
+  } catch {}
+}
+
 function buildUrl(target: AffiliateTarget) {
   const ref = 'checkindaily'
   const param = props.category ? `&cat=${encodeURIComponent(props.category)}` : ''
@@ -59,7 +72,7 @@ function buildUrl(target: AffiliateTarget) {
             :href="buildUrl(primaryTarget)"
             target="_blank"
             rel="noopener sponsored"
-            class="cta-primary-button"
+            @click="trackAffiliateClick(primaryTarget.id)" class="cta-primary-button"
             :style="{ backgroundColor: primaryTarget.themeColor }"
           >
             {{ primaryTarget.ctaText }}
@@ -68,7 +81,7 @@ function buildUrl(target: AffiliateTarget) {
             :href="buildUrl(secondaryTarget)"
             target="_blank"
             rel="noopener sponsored"
-            class="cta-secondary-link"
+            @click="trackAffiliateClick(secondaryTarget.id)" class="cta-secondary-link"
           >
             + {{ secondaryTarget.name }} 바로가기
           </a>
@@ -86,7 +99,7 @@ function buildUrl(target: AffiliateTarget) {
         :href="buildUrl(primaryTarget)"
         target="_blank"
         rel="noopener sponsored"
-        class="inline-btn"
+        @click="trackAffiliateClick(primaryTarget.id)" class="inline-btn"
       >
         최저가 조회 ↗
       </a>
@@ -103,7 +116,7 @@ function buildUrl(target: AffiliateTarget) {
           :href="buildUrl(primaryTarget)"
           target="_blank"
           rel="noopener sponsored"
-          class="bar-button"
+          @click="trackAffiliateClick(primaryTarget.id)" class="bar-button"
           :style="{ backgroundColor: primaryTarget.themeColor }"
         >
           {{ primaryTarget.ctaText }}

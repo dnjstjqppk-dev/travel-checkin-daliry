@@ -11,7 +11,7 @@ function hasCoverImage(article: Article) {
   return Boolean(article.coverImage && (/^https?:\/\//i.test(article.coverImage) || article.coverImage.startsWith('/')))
 }
 
-const { locale, t } = useI18n()
+const { locale, t, locUrl } = useI18n()
 
 function getCategoryLabel(cat: string) {
   const map: Record<string, string> = {
@@ -23,13 +23,6 @@ function getCategoryLabel(cat: string) {
     region: t('region'),
   }
   return map[cat] || t(cat) || cat
-}
-
-function locUrl(path: string) {
-  if (locale.value === 'en') {
-    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
-  }
-  return path.replace(/^\/en/, '') || '/news'
 }
 </script>
 

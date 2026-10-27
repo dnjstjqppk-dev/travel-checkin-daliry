@@ -119,6 +119,7 @@ interface ArticleJoinRow extends ArticleRow {
 
 interface ArticleInput {
   title: string
+  subtitle?: string
   slug: string
   summary: string
   content: string
@@ -126,6 +127,10 @@ interface ArticleInput {
   author: string
   coverImage: string
   status: 'draft' | 'published'
+  reviewStatus?: string
+  sourceName?: string
+  sourceUrl?: string
+  licenseInfo?: string
   cityIds: string[]
 }
 
@@ -482,13 +487,40 @@ async function getArticle(
     try {
       const citations = await d1All(database, 'SELECT source_name, source_url, published_date, license_type FROM article_citations WHERE article_id = ?', articleId)
       const factChecks = await d1All(database, 'SELECT claim, verification_status, evidence_url, checked_by, checked_at, notes FROM article_fact_checks WHERE article_id = ?', articleId)
-      const corrections = await d1All(database, 'SELECT original_statement, corrected_statement, reason, corrected_at FROM article_corrections WHERE article_id = ?', articleId)
+      const corrections = await d1All(database, "SELECT original_statement, corrected_statement, reason, corrected_at FROM article_corrections WHERE article_id = ? AND status = 'approved'", articleId)
       ;(article as Record<string, unknown>).citations = citations
       ;(article as Record<string, unknown>).factChecks = factChecks
       ;(article as Record<string, unknown>).corrections = corrections
+
+      // Prev & Next articles for bidirectional reader navigation
+      const prev = await d1First<{ id: number; title: string; category: string; slug: string }>(
+        database,
+        "SELECT id, title, category, slug FROM articles WHERE id < ? AND status = 'published' ORDER BY id DESC LIMIT 1",
+        articleId,
+      )
+      const next = await d1First<{ id: number; title: string; category: string; slug: string }>(
+        database,
+        "SELECT id, title, category, slug FROM articles WHERE id > ? AND status = 'published' ORDER BY id ASC LIMIT 1",
+        articleId,
+      )
+      ;(article as Record<string, unknown>).prevArticle = prev || null
+      ;(article as Record<string, unknown>).nextArticle = next || null
     } catch {
       // Fallback if citations/factChecks table not populated
     }
+
+    // Auto-calculate Reading Time and AI Key Takeaways
+    const contentStr = String((article as Record<string, unknown>).content || '')
+    const cleanChars = contentStr.replace(/!\[.*?\]\(.*?\)/g, '').replace(/#+\s/g, '').trim().length
+    const readingTimeMinutes = Math.max(1, Math.ceil(cleanChars / 500))
+    ;(article as Record<string, unknown>).readingTimeMinutes = readingTimeMinutes
+
+    const summaryText = String((article as Record<string, unknown>).summary || '')
+    const summarySentences = summaryText.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 5)
+    const leadParagraph = contentStr.split('\n\n').find((p) => !p.startsWith('#') && !p.startsWith('!') && p.length > 20) || ''
+    const leadSentences = leadParagraph.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 5)
+    const takeaways = Array.from(new Set([...summarySentences, ...leadSentences])).slice(0, 3)
+    ;(article as Record<string, unknown>).keyTakeaways = takeaways.length ? takeaways : [summaryText]
   }
   return article
 }
@@ -728,15 +760,21 @@ function parseArticleInput(input: JsonObject | null): ArticleInput | null {
     || cityIds.some((id) => typeof id !== 'string' || id.length > 50)
   ) return null
   const title = readString(input, 'title', 180)
+  const subtitle = optionalString(input, 'subtitle', 255) || ''
   const slug = normalizeSlug(readString(input, 'slug', 200))
   const category = canonicalCategory(normalizeSlug(readString(input, 'category', 60)))
   const summary = optionalString(input, 'summary', 500)
   const content = optionalString(input, 'content', maxRequestBytes)
   const author = optionalString(input, 'author', 80)
   const coverImage = optionalString(input, 'coverImage', 2048)
+  const sourceName = optionalString(input, 'sourceName', 120) || ''
+  const sourceUrl = optionalString(input, 'sourceUrl', 500) || ''
+  const licenseInfo = optionalString(input, 'licenseInfo', 120) || 'Editorial Fair Citation'
+  const reviewStatus = optionalString(input, 'reviewStatus', 50) || (status === 'published' ? 'approved' : 'needs_review')
   if (!title || !slug || !category || summary === null || content === null || author === null || coverImage === null) return null
   return {
     title,
+    subtitle,
     slug,
     summary,
     content,
@@ -744,6 +782,10 @@ function parseArticleInput(input: JsonObject | null): ArticleInput | null {
     author,
     coverImage,
     status: status as ArticleInput['status'],
+    reviewStatus,
+    sourceName,
+    sourceUrl,
+    licenseInfo,
     cityIds: [...new Set((cityIds as string[]).map((id) => id.trim()).filter(Boolean))],
   }
 }
@@ -968,13 +1010,18 @@ async function createArticle(event: H3Event, database: D1Database) {
 
   const now = new Date().toISOString()
   const publishedAt = input.status === 'published' ? now : null
+  const reviewStatus = input.reviewStatus || (input.status === 'published' ? 'approved' : 'needs_review')
+  const session = await authenticateAdmin(event, database)
+  const username = session.identity?.username || 'admin'
+
   const created = await database.prepare(
     `INSERT INTO articles
-      (title, slug, summary, content, category, author, cover_image, status, published_at, first_published_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (title, subtitle, slug, summary, content, category, author, cover_image, status, review_status, source_name, source_url, license_info, published_at, first_published_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      RETURNING id`,
   ).bind(
     input.title,
+    input.subtitle || '',
     input.slug,
     input.summary,
     input.content,
@@ -982,10 +1029,26 @@ async function createArticle(event: H3Event, database: D1Database) {
     input.author,
     input.coverImage,
     input.status,
+    reviewStatus,
+    input.sourceName || '',
+    input.sourceUrl || '',
+    input.licenseInfo || 'Editorial Fair Citation',
     publishedAt,
     publishedAt,
+    now,
+    now,
   ).first<{ id: number }>()
   if (!created) throw createError({ statusCode: 500, statusMessage: 'Article could not be created' })
+
+  await d1Run(
+    database,
+    'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
+    'editor',
+    username,
+    'create_article',
+    `article:${created.id}`,
+    JSON.stringify({ title: input.title, status: input.status, category: input.category }),
+  )
 
   await replaceArticleCities(database, created.id, input.cityIds)
   const article = await getArticle(database, 'a.id = ?', 'ko', created.id)
@@ -1040,20 +1103,51 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
   }
 
   const now = new Date().toISOString()
+  const session = await authenticateAdmin(event, database)
+  const username = session.identity?.username || 'admin'
   const publishedAt = input.status === 'published'
     ? (existing.published_at || now)
     : null
   const firstPublishedAt = input.status === 'published'
     ? (existing.first_published_at || existing.published_at || now)
     : existing.first_published_at
+  const reviewStatus = input.reviewStatus || (input.status === 'published' ? 'approved' : 'needs_review')
 
+  // 1. Snapshot previous version into article_revisions
+  try {
+    const latestRev = await d1First<{ max_rev: number | null }>(
+      database,
+      'SELECT MAX(revision_number) AS max_rev FROM article_revisions WHERE article_id = ?',
+      id,
+    )
+    const nextRevNumber = (latestRev?.max_rev ?? 0) + 1
+    await d1Run(
+      database,
+      `INSERT INTO article_revisions (article_id, revision_number, title, summary, content, author_id, change_summary, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      nextRevNumber,
+      existing.title,
+      existing.summary,
+      existing.content,
+      username,
+      'Editorial update via CMS',
+      now,
+    )
+  } catch {
+    // If article_revisions table not present in test env
+  }
+
+  // 2. Update articles table with all metadata
   await d1Run(
     database,
     `UPDATE articles
-     SET title = ?, slug = ?, summary = ?, content = ?, category = ?, author = ?,
-         cover_image = ?, status = ?, published_at = ?, first_published_at = ?, updated_at = ?
+     SET title = ?, subtitle = ?, slug = ?, summary = ?, content = ?, category = ?, author = ?,
+         cover_image = ?, status = ?, review_status = ?, source_name = ?, source_url = ?, license_info = ?,
+         published_at = ?, first_published_at = ?, updated_at = ?
      WHERE id = ?`,
     input.title,
+    input.subtitle || '',
     input.slug,
     input.summary,
     input.content,
@@ -1061,10 +1155,25 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
     input.author,
     input.coverImage,
     input.status,
+    reviewStatus,
+    input.sourceName || '',
+    input.sourceUrl || '',
+    input.licenseInfo || 'Editorial Fair Citation',
     publishedAt,
     firstPublishedAt || null,
     now,
     id,
+  )
+
+  // 3. Record in audit_logs
+  await d1Run(
+    database,
+    'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
+    'editor',
+    username,
+    'update_article',
+    `article:${id}`,
+    JSON.stringify({ title: input.title, status: input.status, category: input.category }),
   )
 
   await replaceArticleCities(database, id, input.cityIds)
@@ -1076,9 +1185,20 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
 async function deleteArticle(event: H3Event, database: D1Database, idValue: string) {
   const id = Number(idValue)
   if (!Number.isSafeInteger(id) || id < 1) return respond(event, { error: 'article not found' }, 404)
-  const existing = await d1First<{ id: number }>(database, 'SELECT id FROM articles WHERE id = ?', id)
+  const existing = await d1First<{ id: number; title: string }>(database, 'SELECT id, title FROM articles WHERE id = ?', id)
   if (!existing) return respond(event, { error: 'article not found' }, 404)
+  const session = await authenticateAdmin(event, database)
+  const username = session.identity?.username || 'admin'
   await d1Run(database, 'DELETE FROM articles WHERE id = ?', id)
+  await d1Run(
+    database,
+    'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
+    'editor',
+    username,
+    'delete_article',
+    `article:${id}`,
+    JSON.stringify({ title: existing.title }),
+  )
   setResponseStatus(event, 204)
   return null
 }

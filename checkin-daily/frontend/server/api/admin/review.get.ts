@@ -18,6 +18,30 @@ export default defineEventHandler(async (event) => {
      ORDER BY a.quality_score ASC, a.id DESC`,
   )
 
-  return { queue: items }
-})
+  let submissions: any[] = []
+  let corrections: any[] = []
 
+  try {
+    submissions = await d1All(
+      database,
+      `SELECT id, org_id, submitter_name, submitter_email, title, summary, content, category, source_url, status, created_at
+       FROM contributor_submissions
+       WHERE status = 'submitted'
+       ORDER BY id DESC LIMIT 50`,
+    )
+  } catch {}
+
+  try {
+    corrections = await d1All(
+      database,
+      `SELECT c.id, c.article_id, c.original_statement, c.corrected_statement, c.reason, c.status, c.corrected_at,
+              a.title as article_title, a.category as article_category
+       FROM article_corrections c
+       LEFT JOIN articles a ON a.id = c.article_id
+       WHERE c.status = 'pending'
+       ORDER BY c.id DESC LIMIT 50`,
+    )
+  } catch {}
+
+  return { queue: items, submissions, corrections }
+})

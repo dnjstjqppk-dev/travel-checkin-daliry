@@ -4,22 +4,15 @@ import type { Article } from '~/stores/articles'
 const store = useArticlesStore()
 const route = useRoute()
 const requestFetch = useRequestFetch()
-const { locale, t } = useI18n()
+const { locale, t, locUrl } = useI18n()
 
-function locUrl(path: string) {
-  if (locale.value === 'en') {
-    return path.startsWith('/en') ? path : `/en${path.startsWith('/') ? '' : '/'}${path}`
-  }
-  return path.replace(/^\/en/, '') || '/news'
-}
-
-const categoryNames: Record<string, string> = {
-  major: locale.value === 'en' ? 'Major Stories' : '주요뉴스',
-  airline: locale.value === 'en' ? 'Airlines' : '항공',
-  hotel: locale.value === 'en' ? 'Hotels' : '호텔',
-  destination: locale.value === 'en' ? 'Destinations' : '여행지',
-  realtime: locale.value === 'en' ? 'Top Stories' : '실시간',
-}
+const categoryNames = computed<Record<string, string>>(() => ({
+  major: t('major'),
+  airline: t('airline'),
+  hotel: t('hotel'),
+  destination: t('places'),
+  realtime: t('realtime'),
+}))
 
 const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
 const searchPage = computed(() => {
@@ -222,6 +215,33 @@ function formatViews(views = 0) {
           </div>
 
           <!-- 환율 위젯 -->
+          <div class="bkp-side-widget bkp-newsletter-widget">
+            <div class="bkp-widget-header">
+              <span class="bkp-widget-indicator" />
+              <h3>DAILY NEWSLETTER</h3>
+            </div>
+            <div class="newsletter-body">
+              <p class="newsletter-copy">
+                전 세계 항공권 특가, 신규 취항, 비자 및 호텔 인텔리전스를 매주 가장 먼저 이메일로 받아보세요.
+              </p>
+              <div v-if="newsletterSuccess" class="newsletter-success-box">
+                ✓ {{ newsletterMessage }}
+              </div>
+              <form v-else class="newsletter-form" @submit.prevent="handleNewsletterSubmit">
+                <input
+                  v-model="newsletterEmail"
+                  type="email"
+                  required
+                  placeholder="name@example.com"
+                  aria-label="이메일 주소"
+                >
+                <button type="submit" :disabled="newsletterSubmitting">
+                  {{ newsletterSubmitting ? '구독 신청 중...' : '구독하기 →' }}
+                </button>
+              </form>
+            </div>
+          </div>
+
           <div class="bkp-side-widget">
             <CurrencyRates />
           </div>
@@ -859,6 +879,60 @@ function formatViews(views = 0) {
   background: #060D81;
   color: #FFFFFF;
   border-color: #060D81;
+}
+
+.bkp-newsletter-widget {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.newsletter-body {
+  padding: 16px;
+}
+.newsletter-copy {
+  font-size: 13px;
+  color: #4B5563;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.newsletter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.newsletter-form input {
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+}
+.newsletter-form input:focus {
+  border-color: #060D81;
+}
+.newsletter-form button {
+  background: #060D81;
+  color: #FFFFFF;
+  border: 0;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.newsletter-form button:hover {
+  background: #040959;
+}
+.newsletter-success-box {
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  color: #166534;
+  font-size: 13px;
+  padding: 12px;
+  border-radius: 6px;
+  line-height: 1.5;
 }
 </style>
 

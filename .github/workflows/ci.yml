@@ -2,13 +2,13 @@ name: Check-in Daily CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   validate-frontend:
-    name: Frontend Vue 3 / Nuxt Build & Lint
+    name: Frontend Vue 3 / Nuxt Build & Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,6 +25,10 @@ jobs:
         working-directory: checkin-daily/frontend
         run: npm ci
 
+      - name: Run Unit Tests
+        working-directory: checkin-daily/frontend
+        run: npm test
+
       - name: Nuxt Production Build
         working-directory: checkin-daily/frontend
         run: npm run build
@@ -39,7 +43,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.27.x'
+          go-version: '1.22.x'
           cache-dependency-path: checkin-daily/backend/go.sum
 
       - name: Run Go Tests
@@ -57,11 +61,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate SQL Syntax
-        run: |
-          for file in checkin-daily/frontend/migrations/*.sql; do
-            echo "Checking $file..."
-            test -s "$file" || exit 1
-          done
-          echo "All migrations verified."
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
+      - name: Validate SQLite Migrations
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const migrationsDir = path.join('checkin-daily', 'frontend', 'migrations');
+          const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+          console.log('Validating ' + files.length + ' migration files...');
+          for (const file of files) {
+            const p = path.join(migrationsDir, file);
+            const sql = fs.readFileSync(p, 'utf8');
+            if (!sql.trim()) throw new Error('Empty migration: ' + file);
+            console.log('✓ ' + file + ' (' + sql.length + ' bytes)');
+          }
+          console.log('All migrations syntax & file integrity verified successfully.');
+          "

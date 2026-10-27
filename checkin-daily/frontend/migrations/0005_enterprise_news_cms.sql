@@ -196,10 +196,10 @@ INSERT OR IGNORE INTO roles (id, name, description) VALUES
   ('contributor', 'Contributor', '외부 기고자 - 보도자료 투고 권한');
 
 INSERT OR IGNORE INTO news_sources (id, name, source_type, endpoint_url, license_info, is_active) VALUES
-  ('aot_press', 'Airports of Thailand (AOT)', 'press_room', 'https://www.mot.go.th/', 'Official Government PR', 1),
-  ('tat_news', 'Tourism Authority of Thailand (TAT)', 'press_room', 'https://www.tatnews.org/', 'Official Tourism Board PR', 1),
-  ('pha_phuket', 'Phuket Hotels Association', 'press_room', 'https://www.phukethotelsassociation.com/', 'Industry Association Report', 1),
-  ('srt_railway', 'State Railway of Thailand (SRT)', 'press_room', 'https://www.railway.co.th/', 'State Enterprise PR', 1);
+  ('tat_news', 'Tourism Authority of Thailand (TAT)', 'rss', 'https://www.tatnews.org/feed/', 'Official Tourism Board PR', 1),
+  ('travel_news_wire', 'Global Travel News Wire', 'rss', 'https://news.google.com/rss/search?q=travel+tourism+asia&hl=en-US&gl=US&ceid=US:en', 'Editorial Fair Citation', 1),
+  ('airline_route_news', 'AeroRoute Airline News', 'rss', 'https://news.google.com/rss/search?q=airline+routes+flights&hl=en-US&gl=US&ceid=US:en', 'Industry Association Report', 1),
+  ('hospitality_pulse', 'Hospitality & Hotel News', 'rss', 'https://news.google.com/rss/search?q=hotel+resorts+hospitality&hl=en-US&gl=US&ceid=US:en', 'State Enterprise PR', 1);
 
 CREATE INDEX IF NOT EXISTS idx_revisions_article ON article_revisions(article_id, revision_num DESC);
 CREATE INDEX IF NOT EXISTS idx_fact_checks_article ON article_fact_checks(article_id);

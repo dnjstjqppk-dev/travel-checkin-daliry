@@ -1,8 +1,12 @@
 import { createError, defineEventHandler, readBody } from 'h3'
 import { d1Run, getD1Database } from '../../../../utils/d1'
-import { authenticateAdmin } from '../../../../utils/d1-auth'
+import { authenticateAdmin, isSameOriginRequest } from '../../../../utils/d1-auth'
 
 export default defineEventHandler(async (event) => {
+  if (!isSameOriginRequest(event)) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden request origin' })
+  }
+
   const database = getD1Database(event)
   if (!database) throw createError({ statusCode: 503, statusMessage: 'Database unavailable' })
   const session = await authenticateAdmin(event, database)
@@ -14,7 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  const reason = (body.reason || 'Editorial Retraction').trim()
+  const reason = (body?.reason || 'Editorial Retraction').trim()
   const now = new Date().toISOString()
 
   await d1Run(
@@ -42,4 +46,3 @@ export default defineEventHandler(async (event) => {
 
   return { success: true, id, status: 'retracted', reason, retracted_at: now }
 })
-
