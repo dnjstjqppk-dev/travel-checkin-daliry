@@ -1906,8 +1906,8 @@ html[data-design="3"] .wordmark-mark {
 /* 0. 글로벌 레이아웃 컨테이너 및 베이스 */
 .bkp-theme-root,
 .bkp-shell {
-  background: #FFFFFF !important;
-  color: var(--bkp-text);
+  background: transparent;
+  color: inherit;
   font-family: var(--bkp-font-sans);
   min-height: 100vh;
 }
