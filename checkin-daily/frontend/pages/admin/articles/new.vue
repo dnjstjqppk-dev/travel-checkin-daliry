@@ -13,7 +13,7 @@ const router = useRouter()
 const categories = await store.loadCategories(true)
 
 // Mode tab: 'ai' or 'manual'
-const activeTab = ref<'ai' | 'manual'>('ai')
+const activeTab = ref<'ai' | 'manual' | 'batch'>('ai')
 
 // AI Generation state
 const aiKeyword = ref('')
@@ -24,6 +24,43 @@ const publishing = ref(false)
 const aiResult = ref<any>(null)
 const aiMessage = ref('')
 const aiError = ref('')
+
+// Batch Generation state
+const batchKeywords = ref('')
+const batchCategory = ref(categories[0]?.slug || 'major')
+const batchContextText = ref('')
+const batchRunning = ref(false)
+const batchResult = ref<any>(null)
+const batchMessage = ref('')
+const batchError = ref('')
+
+async function runBatchGeneration() {
+  const lines = batchKeywords.value.split('\n').map(s => s.trim()).filter(s => s.length >= 2)
+  if (lines.length === 0) {
+    batchError.value = '최소 1개 이상의 키워드를 입력해 주세요.'
+    return
+  }
+  batchRunning.value = true
+  batchError.value = ''
+  batchMessage.value = ''
+  batchResult.value = null
+  try {
+    const res = await $fetch<any>('/api/admin/generate-batch', {
+      method: 'POST',
+      body: {
+        keywords: lines,
+        category: batchCategory.value,
+        contextText: batchContextText.value.trim() || undefined,
+      },
+    })
+    batchResult.value = res
+    batchMessage.value = res.message
+  } catch (err: any) {
+    batchError.value = err?.data?.statusMessage || err?.message || '대량 생성에 실패했습니다.'
+  } finally {
+    batchRunning.value = false
+  }
+}
 
 // Manual Form state
 const form = reactive({
@@ -230,6 +267,14 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
         @click="activeTab = 'manual'"
       >
         ✍️ 수동 에디터 모드
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'batch' }"
+        type="button"
+        @click="activeTab = 'batch'"
+      >
+        🚀 대량 일괄 생성 모드 (Batch Mode)
       </button>
     </div>
 

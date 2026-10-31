@@ -5,7 +5,7 @@ const props = defineProps<{ placementId: string }>()
 const store = useArticlesStore()
 
 // Shared asyncData key across all ad slots on the page - eliminates duplicate network calls & guarantees hydration parity
-const { data: placements, error } = await useAsyncData<AdPlacement[]>(
+const { data: placements } = await useAsyncData<AdPlacement[]>(
   'site-ad-placements',
   async () => {
     try {
@@ -62,7 +62,7 @@ onMounted(() => {
     :class="`ad-slot-${placement?.format || 'auto'}`"
     :aria-label="placement?.name || '광고'"
   >
-    <span class="ad-slot-label">광고</span>
+    <span class="ad-slot-label">SPONSORED ADVERTISEMENT</span>
     <ins
       class="adsbygoogle"
       style="display:block"
@@ -81,9 +81,9 @@ onMounted(() => {
   max-width: 100%;
   text-align: center;
   min-height: 280px;
-  background: rgba(248, 250, 252, 0.6);
-  border: 1px dashed #CBD5E1;
-  border-radius: 4px;
+  background: var(--bg-card, #181927);
+  border: 1px dashed var(--border, #23253a);
+  border-radius: 8px;
   padding: 12px;
   position: relative;
   display: flex;
@@ -91,18 +91,22 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  contain: layout style;
+  contain-intrinsic-size: 300px 280px;
 }
 .ad-slot-horizontal {
   min-height: 100px;
+  contain-intrinsic-size: 728px 100px;
 }
 .ad-slot-rectangle {
   min-height: 280px;
+  contain-intrinsic-size: 336px 280px;
 }
 .ad-slot-label {
   font-size: 10px;
-  color: #94A3B8;
+  color: var(--text-muted, #7e8299);
   letter-spacing: 0.1em;
-  font-family: 'DM Mono', monospace;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
   text-transform: uppercase;
   margin-bottom: 8px;
   display: block;

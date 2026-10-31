@@ -1,6 +1,8 @@
 import { createError } from 'h3'
 import { d1First, type D1Database } from './d1'
 import { assertArticlePublishable } from './publication-gate'
+import { notifySearchEnginesOfPublication } from './indexing-api'
+import { siteConfig } from '../../config/site.config'
 
 /** D1 batch is transactional. The token guards all dependent writes after the CAS. */
 export async function transitionArticle(database: D1Database, input: {
@@ -10,8 +12,8 @@ export async function transitionArticle(database: D1Database, input: {
   if (!Number.isSafeInteger(input.articleId) || input.articleId < 1) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid article ID' })
   }
-  const before = await d1First<{ workflow_token: string; updated_at: string; content: string; license_info: string; cover_image: string }>(
-    database, 'SELECT workflow_token, updated_at, content, license_info, cover_image FROM articles WHERE id = ?', input.articleId,
+  const before = await d1First<{ workflow_token: string; updated_at: string; content: string; license_info: string; cover_image: string; category?: string }>(
+    database, 'SELECT workflow_token, updated_at, content, license_info, cover_image, category FROM articles WHERE id = ?', input.articleId,
   )
   if (!before) throw createError({ statusCode: 404, statusMessage: 'Article not found' })
   if (input.decision === 'approve') await assertArticlePublishable(database, input.articleId)
@@ -50,4 +52,14 @@ export async function transitionArticle(database: D1Database, input: {
   const results = await database.batch(statements)
   if (results.some(result => !result.success)) throw createError({ statusCode: 500, statusMessage: 'Publication transaction failed' })
   if (!results[0]?.meta?.changes) throw createError({ statusCode: 409, statusMessage: 'Article changed; reload before publishing' })
+
+  if (publishing) {
+    const origin = (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
+    const cat = before.category || 'major'
+    const canonical = `${origin}/news/${cat}/article/${input.articleId}`
+    const alternateUrls = ['en', 'zh', 'th', 'vi', 'es'].map(
+      (lang) => `${origin}/${lang}/news/${cat}/article/${input.articleId}`,
+    )
+    notifySearchEnginesOfPublication(canonical, alternateUrls).catch(() => {})
+  }
 }

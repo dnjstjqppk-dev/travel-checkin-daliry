@@ -677,6 +677,11 @@ async function handleAds(event: H3Event, database: D1Database, path: string[], a
 
 function respond(event: H3Event, body: unknown, status = 200) {
   setResponseStatus(event, status)
+  if (event.method === 'GET' && !isAdminPath(event) && status >= 200 && status < 300) {
+    setResponseHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600')
+  } else {
+    setResponseHeader(event, 'Cache-Control', 'no-store, no-cache, must-revalidate')
+  }
   return body
 }
 

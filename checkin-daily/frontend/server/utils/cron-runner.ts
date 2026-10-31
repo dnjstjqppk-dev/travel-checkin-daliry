@@ -1,4 +1,5 @@
 import { transitionArticle } from './editorial-workflow'
+import { isDuplicateOrClustered } from './text-similarity'
 // checkin-daily/frontend/server/utils/cron-runner.ts
 import { d1All, d1First, d1Run, type D1Database } from './d1'
 import { parseRssOrAtomXml } from './feed-parser'
@@ -87,6 +88,12 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
     .map((k) => k.trim())
     .filter(Boolean)
 
+  // 3.5. Recent Ingested Items for Clustering and Near-Duplicate Prevention
+  const recentIngested: Array<{ title: string }> = await d1All<{ title: string }>(
+    database,
+    "SELECT title FROM feed_ingestion_items WHERE datetime(created_at) >= datetime('now', '-3 days') ORDER BY id DESC LIMIT 50",
+  ).catch((): Array<{ title: string }> => [])
+
   // 4. Fetch Active Sources
   const sources = await d1All<NewsSourceRow>(database, "SELECT * FROM news_sources WHERE is_active = 1 AND (last_fetched_at IS NULL OR julianday(last_fetched_at) + fetch_interval_minutes / 1440.0 <= julianday('now'))")
   let totalFetched = 0
@@ -166,6 +173,28 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
 
         totalFetched++
         sourceFetched++
+        // Check near-duplicate title similarity (>0.65 threshold) with recent items
+        const isSimilarDupe = recentIngested.some((r) => isDuplicateOrClustered(item.title, r.title, 0.65))
+        if (isSimilarDupe) {
+          totalDuplicates++
+          sourceDupes++
+          await d1Run(
+            database,
+            `INSERT INTO feed_ingestion_items (source_id, guid, title, link, pub_date, summary, category, status, is_duplicate, raw_payload)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'duplicate', 1, ?)`,
+            source.id,
+            item.guid,
+            item.title,
+            item.link,
+            item.pubDate,
+            item.summary,
+            item.category,
+            JSON.stringify(item),
+          ).catch(() => {})
+          continue
+        }
+        recentIngested.push({ title: item.title })
+
 
         // Check restricted keywords
         const containsRestricted = restrictedKeywords.some((rk) =>

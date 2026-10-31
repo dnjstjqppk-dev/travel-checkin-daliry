@@ -13,7 +13,7 @@ export function canAccessStaff(role: StaffRole, path: string, method: string): b
   if (role === 'reporter') return (read && ['articles', 'categories', 'media'].includes(resource))
     || (method === 'POST' && path === '/api/admin/articles')
   if (role === 'editor' && method === 'DELETE') return false
-  if (role === 'editor') return ['articles', 'categories', 'media', 'translations', 'generate-article'].includes(resource)
+  if (role === 'editor') return ['articles', 'categories', 'media', 'translations', 'generate-article', 'generate-batch'].includes(resource)
     && !/\/(retract|restore|revisions)$/.test(path)
   if (role === 'editor_in_chief') return ['articles', 'review', 'schedules', 'media', 'categories', 'translations', 'dashboard-stats'].includes(resource)
   return false

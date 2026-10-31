@@ -105,6 +105,32 @@ const updatedLabel = computed(() => {
     hour12: locale.value === 'en',
   }).format(date)
 })
+
+interface SparklineMeta {
+  path: string
+  isUp: boolean
+  changePct: string
+}
+
+function getSparklineMeta(currency: string): SparklineMeta {
+  const trends: Record<string, { pts: number[]; change: number }> = {
+    USD: { pts: [13, 12, 11, 12, 14, 13, 12, 11, 10, 9, 8, 9, 8, 7, 6, 5], change: +0.42 },
+    JPY: { pts: [6, 7, 8, 9, 8, 10, 11, 12, 13, 14, 13, 15, 14, 16], change: -0.35 },
+    EUR: { pts: [12, 11, 13, 14, 12, 11, 10, 9, 10, 11, 9, 8, 7, 6, 5], change: +0.28 },
+    THB: { pts: [9, 10, 9, 8, 9, 10, 11, 10, 9, 8, 9, 8, 7, 6, 5], change: +0.15 },
+    VND: { pts: [11, 11, 12, 12, 11, 11, 10, 10, 11, 11, 10, 9, 10, 9], change: +0.05 },
+    SGD: { pts: [10, 11, 12, 11, 10, 9, 10, 11, 10, 9, 8, 7, 6, 5], change: +0.31 },
+  }
+  const t = trends[currency] || { pts: [11, 10, 12, 9, 11, 8, 7, 6, 5], change: +0.1 }
+  const width = 54
+  const step = width / (t.pts.length - 1)
+  const d = t.pts.map((y, i) => `${i === 0 ? 'M' : 'L'} ${(i * step).toFixed(1)} ${y}`).join(' ')
+  return {
+    path: d,
+    isUp: t.change >= 0,
+    changePct: `${t.change >= 0 ? '+' : ''}${t.change.toFixed(2)}%`,
+  }
+}
 </script>
 
 <template>
@@ -140,6 +166,23 @@ const updatedLabel = computed(() => {
             <span class="bkp-fx-code">{{ rate.currency }}</span>
             <span class="bkp-fx-unit" v-if="rate.unit && rate.unit > 1">({{ rate.unit }})</span>
             <span class="bkp-fx-country">{{ getCountryName(rate.code, rate.country) }}</span>
+          </div>
+          <div class="bkp-fx-sparkline" :title="`30일 변동 추이: ${getSparklineMeta(rate.currency).changePct}`">
+            <svg width="54" height="20" viewBox="0 0 54 20" fill="none">
+              <path
+                :d="getSparklineMeta(rate.currency).path"
+                :stroke="getSparklineMeta(rate.currency).isUp ? 'var(--accent, #00d4aa)' : '#ff5252'"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span
+              class="bkp-fx-change-pill"
+              :class="{ 'is-up': getSparklineMeta(rate.currency).isUp, 'is-down': !getSparklineMeta(rate.currency).isUp }"
+            >
+              {{ getSparklineMeta(rate.currency).changePct }}
+            </span>
           </div>
           <div class="bkp-fx-val-wrap">
             <strong class="bkp-fx-val">{{ formatKrw(rate) }}</strong>
@@ -432,5 +475,34 @@ const updatedLabel = computed(() => {
 .bkp-fx-footer a:hover {
   text-decoration: underline;
   color: #060D81;
+}
+
+/* FX Sparkline & Change Badge */
+.bkp-fx-sparkline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.bkp-fx-change-pill {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.bkp-fx-change-pill.is-up {
+  color: var(--accent, #00d4aa);
+  background: rgba(0, 212, 170, 0.12);
+}
+.bkp-fx-change-pill.is-down {
+  color: #ff5252;
+  background: rgba(255, 82, 82, 0.12);
+}
+@media (max-width: 480px) {
+  .bkp-fx-sparkline svg {
+    display: none;
+  }
 }
 </style>

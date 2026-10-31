@@ -169,6 +169,33 @@ const { origin: siteOrigin } = useSiteDomain()
 const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
 const articleCanonicalUrl = computed(() => `${siteOrigin.value}${currentLangPrefix.value}/news/${category}/article/${article.id}`)
 
+const computedFaqs = computed(() => {
+  const customFaqs = (article as any).faqs
+  if (Array.isArray(customFaqs) && customFaqs.length > 0) {
+    return customFaqs
+  }
+  const title = article.title
+  const takeaways = (article as any).keyTakeaways || []
+  const t1 = takeaways[0] || article.summary
+  const t2 = takeaways[1] || '현지 공항 및 공식 정부 관광청 발표를 확인 후 사전 예약을 권장합니다.'
+  const t3 = takeaways[2] || '공식 제휴 항공 및 호텔 가격 비교를 통해 최저가 요금을 확인하세요.'
+
+  return [
+    {
+      question: `${title} 관련 핵심 발표 요점은 무엇인가요?`,
+      answer: t1,
+    },
+    {
+      question: '여행자가 출국 전 반드시 확인해야 할 실무 주의사항은 무엇인가요?',
+      answer: t2,
+    },
+    {
+      question: '최저가 항공권 및 호텔 예약은 어떻게 준비하는 것이 좋은가요?',
+      answer: t3,
+    },
+  ]
+})
+
 useSeoMeta({
   title: computed(() => `${article.title} | Check-in Daily`),
   ogTitle: computed(() => article.title),
@@ -264,6 +291,28 @@ useHead(() => ({
               },
             ],
           },
+          {
+            '@type': 'FAQPage',
+            mainEntity: computedFaqs.value.map((f: { question: string; answer: string }) => ({
+              '@type': 'Question',
+              name: f.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: f.answer,
+              },
+            })),
+          },
+          {
+            '@type': 'Dataset',
+            name: `${article.title} - Travel Intelligence Dataset`,
+            description: article.summary,
+            license: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+            creator: {
+              '@type': 'Organization',
+              name: 'Check-in Daily Desk',
+            },
+            variableMeasured: ['Flight Pricing', 'Hotel Occupancy', 'Immigration Rules'],
+          }
         ],
       }),
     },
@@ -502,6 +551,27 @@ function goBack() {
         <!-- 기사 본문 텍스트 (신문사 타이포그래피) -->
         <div class="bkp-article-content-html" :class="`font-${fontSize}`" v-html="html" />
 
+        
+        <!-- Q&A 및 독자 가이드 (FAQPage Accordion) -->
+        <section class="ttr-faq-section" aria-label="자주 묻는 질문 및 여행 실무 Q&A">
+          <div class="ttr-faq-header">
+            <div class="ttr-faq-tag">TRAVEL INTELLIGENCE FAQ</div>
+            <h3 class="ttr-faq-heading">핵심 팩트체크 & 실무 여행 Q&A</h3>
+            <p class="ttr-faq-sub">체크인데일리 데스크와 공식 1차 출처가 검증한 필수 여행 가이드입니다.</p>
+          </div>
+          <div class="ttr-faq-list">
+            <details v-for="(faq, idx) in computedFaqs" :key="idx" class="ttr-faq-item" :open="idx === 0">
+              <summary class="ttr-faq-question">
+                <span class="ttr-faq-q-mark">Q{{ idx + 1 }}</span>
+                <span class="ttr-faq-q-text">{{ faq.question }}</span>
+                <span class="ttr-faq-toggle-icon">▾</span>
+              </summary>
+              <div class="ttr-faq-answer">
+                <p>{{ faq.answer }}</p>
+              </div>
+            </details>
+          </div>
+        </section>
         <!-- 전략적 제휴 트래픽 전환 CTA (TripScanner / GetForTrip) -->
         <ArticleAffiliateCTA :category="category" :title="article.title" variant="card" />
 
@@ -1739,6 +1809,99 @@ function goBack() {
     color: #111111 !important;
     line-height: 1.6 !important;
   }
+}
+
+/* FAQ Accordion Styles */
+.ttr-faq-section {
+  margin: 28px 0;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.ttr-faq-header {
+  margin-bottom: 16px;
+}
+.ttr-faq-tag {
+  display: inline-block;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent, #00d4aa);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.ttr-faq-heading {
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+.ttr-faq-sub {
+  font-size: 13px;
+  color: var(--text-muted, #8e92a8);
+  margin: 0;
+}
+.ttr-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.ttr-faq-item {
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 8px;
+  padding: 12px 16px;
+  transition: border-color 0.2s;
+}
+.ttr-faq-item[open] {
+  border-color: rgba(0, 212, 170, 0.4);
+}
+.ttr-faq-question {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-base, #e1e3ea);
+  list-style: none;
+}
+.ttr-faq-question::-webkit-details-marker {
+  display: none;
+}
+.ttr-faq-q-mark {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent, #00d4aa);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+.ttr-faq-q-text {
+  flex: 1;
+}
+.ttr-faq-toggle-icon {
+  color: var(--text-muted, #8e92a8);
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.ttr-faq-item[open] .ttr-faq-toggle-icon {
+  transform: rotate(180deg);
+}
+.ttr-faq-answer {
+  padding-top: 10px;
+  margin-top: 8px;
+  border-top: 1px dashed var(--border, #23253a);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted, #a1a5b8);
+}
+.ttr-faq-answer p {
+  margin: 0;
 }
 </style>
 

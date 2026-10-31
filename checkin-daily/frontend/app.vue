@@ -180,14 +180,10 @@ async function submitSearch() {
 
         <!-- Right: Search, Language, Theme, Desk Link -->
         <div class="top-nav-right">
-          <!-- Desktop Search Input -->
-          <form class="ttr-search-box" @submit.prevent="submitSearch">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input v-model="search" :placeholder="t('search_placeholder')" aria-label="뉴스 검색">
-          </form>
+          <!-- Desktop Search Input with Autocomplete -->
+          <div class="ttr-header-search-wrap">
+            <HeaderSearchBar />
+          </div>
 
           <!-- Mobile Search Trigger -->
           <button
@@ -236,20 +232,7 @@ async function submitSearch() {
 
       <!-- Mobile Search Bar Dropdown -->
       <div v-if="isMobileSearchOpen" class="ttr-mobile-search-bar">
-        <form class="ttr-mobile-search-form" @submit.prevent="submitSearch">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            v-model="search"
-            type="search"
-            :placeholder="t('search_placeholder')"
-            aria-label="모바일 뉴스 검색"
-            autofocus
-          >
-          <button type="submit" class="ttr-mobile-search-submit">{{ t('search') }}</button>
-        </form>
+        <HeaderSearchBar :is-mobile="true" @submit="isMobileSearchOpen = false" @select="isMobileSearchOpen = false" />
       </div>
 
       <!-- 2. Real-time Travel Indices & Wire Ticker (Height 34px) -->
@@ -1178,5 +1161,10 @@ async function submitSearch() {
 @media (max-width: 480px) {
   .ttr-desk-btn { display: none; }
   .top-nav-right { gap: 4px; }
+}
+
+.ttr-header-search-wrap {
+  width: 200px;
+  max-width: 240px;
 }
 </style>

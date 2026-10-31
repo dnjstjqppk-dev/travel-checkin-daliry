@@ -7,7 +7,11 @@ import {
   calculateBodyTextLength,
   extractBodyImages,
 } from '../../utils/article-validator'
-import { enforceCharacterCount, type GeneratedArticle } from './ai-generator'
+import {
+  computeFactualIntegrityScore,
+  enforceCharacterCount,
+  type GeneratedArticle,
+} from './ai-generator'
 
 interface GeminiArticlePayload {
   title: string
@@ -17,6 +21,7 @@ interface GeminiArticlePayload {
   category?: string
   sourceName?: string
   sourceUrl?: string
+  faqs?: Array<{ question: string; answer: string }>
   factChecks?: Array<{ claim: string; verification_status: string; source?: string }>
   translations: {
     en: { title: string; summary: string; content: string }
@@ -105,7 +110,7 @@ export async function generateNewsWithGemini(options: GeminiGenerateOptions): Pr
   }
 
   const effectiveApiKey = options.apiKey
-    || (typeof process !== 'undefined' ? (process.env.GEMINI_API_KEY || (process.env as any).NUXT_GEMINI_API_KEY) : '')
+    || (typeof process !== 'undefined' ? (process.env.GEMINI_API_KEY || (process.env as Record<string, string>).NUXT_GEMINI_API_KEY) : '')
 
   if (!effectiveApiKey) {
     throw new Error('Gemini API 키가 설정되지 않았습니다. Cloudflare Worker 환경변수(GEMINI_API_KEY) 또는 사이트 설정(site_settings)에서 등록해 주세요.')
@@ -152,14 +157,16 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
      ## 3. [여행자 실무 체크리스트 및 주의사항] (입국 심사, 예약 팁, 환불/수수료 등 실질적 팁)
    - [AI 상투어(Cliché) 전면 금지]:
      ❌ 금지: "현대 사회에서...", "최근 여행 트렌드는...", "많은 여행객들이 찾고 있습니다", "주목받고 있습니다", "살펴보겠습니다", "알아보겠습니다", "결론적으로...", "지금까지 ~에 대해 알아보았습니다", "행복한 추억을 만들어보세요".
-      대신 건조하고 신뢰성 높은 저널리즘 어조로 팩트와 인과관계를 서술하세요.
+     대신 건조하고 신뢰성 높은 저널리즘 어조로 팩트와 인과관계를 서술하세요.
    - [문장 리듬 및 다양성(Burstiness)]: 짧은 단문과 데이터 중심의 복문을 교차하여 자연스럽고 권위 있는 문체를 유지하세요.
    - 순수 한국어 본문 텍스트 길이는 850자 이상 1,400자 이하로 빈틈없이 작성하세요 (이미지 태그나 광고 링크 제외).
-5. 팩트체크 검증 데이터 (factChecks):
+5. 여행자 실무 FAQ (faqs):
+   - 독자가 가장 궁금해할 실무 질문과 정답 3쌍 (FAQPage JSON-LD 스키마 최적화).
+6. 팩트체크 검증 데이터 (factChecks):
    - 기사 내에서 핵심적으로 검증된 사실 주장 2~3개와 출처 판정을 JSON 내에 포함하세요.
-6. 5개국어 네이티브 번역:
+7. 5개국어 네이티브 번역:
    - 영어(en), 중국어 간체(zh), 태국어(th), 베트남어(vi), 스페인어(es)로 각국 현지 주요 신문사(Reuters, BBC, Bangkok Post 등) 어조에 맞춰 고품질 번역을 제공하세요.
-7. 반드시 아래 JSON 스키마 규격으로만 응답하세요.
+8. 반드시 아래 JSON 스키마 규격으로만 응답하세요.
 
 [JSON 스키마 규격]
 {
@@ -169,6 +176,11 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
   "content": "한국어 마크다운 본문 (## 소제목 3개 포함, 순수 텍스트 850~1400자)",
   "sourceName": "공식 1차 출처 기관/기업명 (예: 태국 관광체육부 / IATA / 국토교통부)",
   "sourceUrl": "공식 출처 URL 또는 포털 공지 URL",
+  "faqs": [
+    { "question": "실무 질문 1", "answer": "구체적 수치/일정에 기반한 답변" },
+    { "question": "예약/비용 관련 질문 2", "answer": "실무 가이드 답변" },
+    { "question": "공식 팩트 검증 질문 3", "answer": "공식 출처 기반 답변" }
+  ],
   "factChecks": [
     { "claim": "검증된 사실 명제 1", "verification_status": "VERIFIED", "source": "공식 기관 발표" },
     { "claim": "검증된 사실 명제 2", "verification_status": "VERIFIED", "source": "산업 공식 통계" }
@@ -183,7 +195,7 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
 }`
 
   const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash']
-  let lastError: any = null
+  let lastError: unknown = null
   let parsedPayload: GeminiArticlePayload | null = null
 
   for (const model of models) {
@@ -206,20 +218,20 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
         throw new Error(`Gemini API error [${model}] status ${response.status}: ${errText}`)
       }
 
-      const resData = await response.json()
+      const resData = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
       const rawJson = resData.candidates?.[0]?.content?.parts?.[0]?.text
       if (rawJson) {
         parsedPayload = JSON.parse(rawJson) as GeminiArticlePayload
         break
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       lastError = err
-      // Try next model if 503 or transient failure
     }
   }
 
   if (!parsedPayload) {
-    throw new Error(`Gemini 기사 생성 실패: ${lastError?.message || '응답을 파싱할 수 없습니다.'}`)
+    const errorMsg = lastError instanceof Error ? lastError.message : String(lastError || '응답을 파싱할 수 없습니다.')
+    throw new Error(`Gemini 기사 생성 실패: ${errorMsg}`)
   }
 
   // Pick 4 curated body images matching category
@@ -269,7 +281,6 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
         content: wovenTrans + `\n\n> ✈️ [TripScanner & GetForTrip Global Booking Partner](https://tripscanner.com)`,
       }
     } else {
-      // Fallback
       finalTranslations[lang] = {
         title: `${parsedPayload.title} (${lang.toUpperCase()})`,
         summary: parsedPayload.summary,
@@ -280,6 +291,14 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
 
   const finalCharCount = calculateBodyTextLength(wovenContent)
   const finalImageCount = extractBodyImages(wovenContent, cover).length
+
+  // 2-Pass Self-Reflection Fact Checking Pass:
+  const factualIntegrityScore = computeFactualIntegrityScore({
+    sourceName: parsedPayload.sourceName,
+    sourceUrl: parsedPayload.sourceUrl,
+    factChecks: parsedPayload.factChecks,
+    keyTakeaways: parsedPayload.keyTakeaways,
+  })
 
   return {
     title: parsedPayload.title,
@@ -294,11 +313,17 @@ ${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${context
     imageCount: finalImageCount,
     ctaTarget: targetAffiliate.id,
     keyTakeaways: parsedPayload.keyTakeaways || [],
+    faqs: parsedPayload.faqs || [
+      { question: `${cleanKeyword} 관련 핵심 요약은 무엇인가요?`, answer: parsedPayload.summary },
+      { question: '출국 전 필수 주의사항은 무엇인가요?', answer: '공식 관광 당국의 최신 발표 및 비자 규정을 사전에 확인하세요.' },
+      { question: '최저가 항공/호텔 예약 팁은 무엇인가요?', answer: '출발 45~60일 전 조기 예약 및 공식 파트너 가격 비교를 권장합니다.' },
+    ],
     sourceName: parsedPayload.sourceName || '공식 1차 보도자료',
     sourceUrl: parsedPayload.sourceUrl || '',
     factChecks: parsedPayload.factChecks || [
-      { claim: `${cleanKeyword} 관련 핵심 정책 및 수치`, verification_status: 'VERIFIED', source: 'Check-in Daily Fact Desk' }
+      { claim: `${cleanKeyword} 관련 핵심 정책 및 수치`, verification_status: 'VERIFIED', source: 'Check-in Daily Fact Desk' },
     ],
-    translations: finalTranslations as any,
+    factualIntegrityScore,
+    translations: finalTranslations as unknown as GeneratedArticle['translations'],
   }
 }
