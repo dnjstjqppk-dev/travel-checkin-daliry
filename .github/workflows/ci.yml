@@ -29,13 +29,13 @@ jobs:
         working-directory: checkin-daily/frontend
         run: npm test
 
-      - name: Type check
-        working-directory: checkin-daily/frontend
-        run: npm run typecheck
-
       - name: Nuxt Production Build
         working-directory: checkin-daily/frontend
         run: npm run build
+
+      - name: Type check
+        working-directory: checkin-daily/frontend
+        run: npm run typecheck
 
   validate-backend:
     name: Backend Go Test & Build

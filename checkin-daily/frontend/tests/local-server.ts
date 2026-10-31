@@ -10,4 +10,5 @@ process.env.NITRO_PORT = '4173'
 process.env.SITE_URL = 'http://127.0.0.1:4173'
 process.env.NUXT_PUBLIC_SITE_URL = process.env.SITE_URL
 sqlite.prepare("UPDATE site_settings SET value = ? WHERE key IN ('site_url', 'site_domain')").run(process.env.SITE_URL)
-await import('../.output/server/index.mjs')
+// @ts-ignore
+await import(String('../.output/server/index.mjs'))
