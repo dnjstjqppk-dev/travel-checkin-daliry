@@ -2,6 +2,7 @@ import { createError } from 'h3'
 import { d1First, type D1Database } from './d1'
 import { assertArticlePublishable } from './publication-gate'
 import { notifySearchEnginesOfPublication } from './indexing-api'
+import { broadcastBreakingNewsPush } from './web-push'
 import { siteConfig } from '../../config/site.config'
 
 /** D1 batch is transactional. The token guards all dependent writes after the CAS. */
@@ -12,8 +13,20 @@ export async function transitionArticle(database: D1Database, input: {
   if (!Number.isSafeInteger(input.articleId) || input.articleId < 1) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid article ID' })
   }
-  const before = await d1First<{ workflow_token: string; updated_at: string; content: string; license_info: string; cover_image: string; category?: string }>(
-    database, 'SELECT workflow_token, updated_at, content, license_info, cover_image, category FROM articles WHERE id = ?', input.articleId,
+  const before = await d1First<{
+    workflow_token: string
+    updated_at: string
+    content: string
+    license_info: string
+    cover_image: string
+    category?: string
+    title: string
+    summary?: string
+    is_breaking?: number
+  }>(
+    database,
+    'SELECT workflow_token, updated_at, content, license_info, cover_image, category, title, summary, is_breaking FROM articles WHERE id = ?',
+    input.articleId,
   )
   if (!before) throw createError({ statusCode: 404, statusMessage: 'Article not found' })
   if (input.decision === 'approve') await assertArticlePublishable(database, input.articleId)
@@ -61,5 +74,15 @@ export async function transitionArticle(database: D1Database, input: {
       (lang) => `${origin}/${lang}/news/${cat}/article/${input.articleId}`,
     )
     notifySearchEnginesOfPublication(canonical, alternateUrls).catch(() => {})
+
+    // Trigger automated Web Push Notification if this article is flagged as breaking news
+    if (before.is_breaking) {
+      broadcastBreakingNewsPush(database, undefined, {
+        id: input.articleId,
+        title: before.title,
+        summary: before.summary,
+        category: cat,
+      }).catch(() => {})
+    }
   }
 }

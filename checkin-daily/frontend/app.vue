@@ -212,6 +212,9 @@ async function submitSearch() {
             </svg>
           </button>
 
+          <!-- Web Push Breaking News Notification Bell -->
+          <PushNotificationBell />
+
           <!-- Dark/Light Theme Toggle -->
           <button
             type="button"

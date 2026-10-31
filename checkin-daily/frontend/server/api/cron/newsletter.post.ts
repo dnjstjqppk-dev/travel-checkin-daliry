@@ -5,6 +5,7 @@ import { createError, defineEventHandler, getRequestHeader } from 'h3'
 import { getD1Database, getWorkerEnvironment, d1All, d1First, d1Run } from '../../utils/d1'
 import { authenticateAdmin } from '../../utils/d1-auth'
 import { siteConfig } from '../../../config/site.config'
+import { dispatchNewsletterBatch } from '../../utils/email-dispatcher'
 
 interface ArticleBrief {
   id: number
@@ -157,13 +158,24 @@ export default defineEventHandler(async (event) => {
   // 2. Fetch Active Subscribers
   const subscribers = await d1All<SubscriberRow>(
     database,
-    'SELECT email, lang FROM newsletter_subscriptions WHERE is_active = 1 LIMIT 500',
+    'SELECT email, lang FROM newsletter_subscriptions WHERE is_active = 1 LIMIT 1000',
   )
 
   const siteUrl = (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
   const emailHtml = buildNewsletterHtml(articles, dateStr, siteUrl)
+  const emailSubject = `[Check-in Daily] ${dateStr} 모닝 여행 인텔리전스 브리핑`
+  const recipientEmails = subscribers.map((s) => s.email)
 
-  // 3. Record in audit_logs
+  // 3. High-Volume Dispatch via Resend / SendGrid / Mock
+  const dispatchResult = await dispatchNewsletterBatch({
+    database,
+    env,
+    subject: emailSubject,
+    html: emailHtml,
+    recipients: recipientEmails,
+  })
+
+  // 4. Record in audit_logs
   await d1Run(
     database,
     'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
@@ -173,6 +185,10 @@ export default defineEventHandler(async (event) => {
     'newsletter:subscribers',
     JSON.stringify({
       dispatchedCount: subscribers.length,
+      successCount: dispatchResult.successCount,
+      failureCount: dispatchResult.failureCount,
+      provider: dispatchResult.provider,
+      status: dispatchResult.status,
       articlesCount: articles.length,
       articleIds: articles.map((a) => a.id),
       timestamp: now.toISOString(),
@@ -181,9 +197,10 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    message: `Morning newsletter briefing generated for ${subscribers.length} subscribers with ${articles.length} articles.`,
+    message: `Morning newsletter briefing processed for ${subscribers.length} subscribers via ${dispatchResult.provider}.`,
     articlesCount: articles.length,
     subscribersCount: subscribers.length,
+    dispatchResult,
     timestamp: now.toISOString(),
     previewSnippet: articles.map((a) => a.title),
   }

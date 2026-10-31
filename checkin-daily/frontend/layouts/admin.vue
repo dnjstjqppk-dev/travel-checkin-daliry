@@ -11,6 +11,7 @@ const navGroups = [
       { label: '뉴스룸 대시보드', to: '/admin/dashboard', icon: '📊' },
       { label: '기사 목록 및 관리', to: '/admin/articles', icon: '📰' },
       { label: '새 기사 / AI 생성', to: '/admin/articles/new', icon: '✍️' },
+      { label: '독자 댓글 모더레이션', to: '/admin/comments', icon: '💬' },
       { label: '편집국 검토 대기열', to: '/admin/review', icon: '⚖️' },
       { label: '예약 발행 큐', to: '/admin/schedules', icon: '⏱️' },
     ],
@@ -20,6 +21,7 @@ const navGroups = [
     items: [
       { label: '뉴스 수집 출처', to: '/admin/sources', icon: '📡' },
       { label: '자동화 정책 설정', to: '/admin/automation', icon: '⚙️' },
+      { label: '뉴스레터 & 푸시 발송', to: '/admin/dispatch', icon: '📬' },
       { label: '다국어 번역 현황', to: '/admin/translations', icon: '🌐' },
       { label: '미디어 & 저작권', to: '/admin/media', icon: '🖼️' },
     ],
@@ -49,6 +51,8 @@ const pageLabel = computed(() => {
   if (route.path === '/admin/dashboard') return '뉴스룸 대시보드'
   if (route.path === '/admin/articles') return '기사 목록 및 관리'
   if (route.path === '/admin/articles/new') return '새 기사 작성 및 AI 생성'
+  if (route.path === '/admin/comments') return '독자 댓글 모더레이션'
+  if (route.path === '/admin/dispatch') return '뉴스레터 & 푸시 발송 센터'
   if (route.path === '/admin/review') return '편집국 검토 대기열'
   if (route.path === '/admin/schedules') return '예약 발행 큐'
   if (route.path === '/admin/sources') return '뉴스 수집 출처'

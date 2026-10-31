@@ -635,6 +635,9 @@ function goBack() {
           </div>
         </div>
 
+        <!-- 독자 댓글 및 스레드 토론 (Article Comments & Discussion) -->
+        <ArticleComments :article-id="article.id" />
+
         <!-- 이전 기사 / 다음 기사 양방향 네비게이션 -->
         <div v-if="(article as any).prevArticle || (article as any).nextArticle" class="bkp-prev-next-nav">
           <NuxtLink

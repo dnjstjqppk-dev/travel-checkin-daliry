@@ -23,6 +23,8 @@ export interface D1Database {
   batch(statements: D1PreparedStatement[]): Promise<D1Result<never>[]>
 }
 
+export type D1DatabaseLike = D1Database
+
 export interface R2BucketLike {
   put(key: string, body: Uint8Array | ArrayBuffer | ReadableStream | string, options?: Record<string, unknown>): Promise<unknown>
   get?(key: string): Promise<unknown>
