@@ -52,15 +52,18 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="bkp-page-container correction-page">
-    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
-      <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
-      <span class="bkp-bc-sep">›</span>
-      <span class="bkp-bc-current">READER CORRECTIONS</span>
+  <div class="ttr-page-container correction-page">
+    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
+      <NuxtLink :to="locUrl('/news')" class="ttr-bc-link">HOME</NuxtLink>
+      <span class="ttr-bc-sep">/</span>
+      <span class="ttr-bc-current">READER CORRECTIONS</span>
     </nav>
 
     <header class="correction-header">
-      <span class="correction-eyebrow">EDITORIAL ACCOUNTABILITY & TRANSPARENCY</span>
+      <div class="ttr-kicker-tag">
+        <span class="ping-dot" />
+        <span>EDITORIAL ACCOUNTABILITY & TRANSPARENCY</span>
+      </div>
       <h1 class="correction-title">독자 고충 처리 및 기사 정정 청구 센터</h1>
       <p class="correction-lead">
         체크인데일리는 신속하고 정확한 저널리즘을 추구하며, 명백한 사실 오류에 대한 독자 여러분의 정정 요청을 열린 자세로 수용합니다.
@@ -73,7 +76,7 @@ useSeoMeta({
       <div class="banner-text">
         <h2>정정 요청이 성공적으로 접수되었습니다.</h2>
         <p>편집국에서 입력해 주신 증빙 자료 및 원문 출처를 대조 검증한 후, 정정 사유가 합당할 경우 본문 상단에 '정정 고지'를 게재하고 기록을 영구 보존합니다.</p>
-        <NuxtLink :to="locUrl('/news')" class="button button-primary">뉴스 홈으로 돌아가기</NuxtLink>
+        <NuxtLink :to="locUrl('/news')" class="ttr-btn-primary">뉴스 홈으로 돌아가기 →</NuxtLink>
       </div>
     </div>
 
@@ -146,8 +149,8 @@ useSeoMeta({
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="button button-primary" :disabled="submitting">
-            {{ submitting ? '접수 처리 중...' : '정정 청구 제출하기' }}
+          <button type="submit" class="ttr-btn-primary" :disabled="submitting">
+            {{ submitting ? '접수 처리 중...' : '정정 청구 공식 제출하기 →' }}
           </button>
         </div>
       </form>
@@ -168,141 +171,252 @@ useSeoMeta({
 
 <style scoped>
 .correction-page {
-  padding: 24px 0 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
 }
-.correction-header {
-  margin-bottom: 36px;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 20px;
-}
-.correction-eyebrow {
-  font-family: 'DM Mono', monospace;
+
+.ttr-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
-  font-weight: 700;
-  color: #D0021B;
-  letter-spacing: 1px;
-  display: block;
-  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 20px;
+  color: #8b949e;
+  letter-spacing: 0.8px;
 }
+
+.ttr-bc-link {
+  color: #8b949e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.ttr-bc-link:hover {
+  color: #00d4aa;
+}
+
+.ttr-bc-sep {
+  color: #383b52;
+}
+
+.ttr-bc-current {
+  color: #00d4aa;
+  font-weight: 700;
+}
+
+.correction-header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 24px;
+}
+
+.ttr-kicker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: #00d4aa;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px #00d4aa;
+}
+
 .correction-title {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 12px;
+  color: #e6edf3;
+  margin: 0 0 14px;
   line-height: 1.3;
+  letter-spacing: -0.6px;
 }
+
 .correction-lead {
   font-size: 15px;
-  color: #4B5563;
+  color: #8b949e;
   line-height: 1.7;
-  max-width: 840px;
+  max-width: 880px;
   margin: 0;
 }
+
 .correction-form-wrap {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 36px;
 }
+
 .correction-form {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  padding: 28px;
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 8px;
+  padding: 32px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
+
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
+
 .form-group label {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
-  color: #1F2937;
+  color: #8b949e;
 }
+
 .form-group input,
 .form-group textarea {
-  border: 1px solid #D1D5DB;
-  border-radius: 4px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: inherit;
+  border: 1px solid #23253a;
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  background: #181927;
+  color: #e6edf3;
+  transition: all 0.15s;
 }
+
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #060D81;
+  border-color: #00d4aa;
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.2);
 }
+
 .form-hint {
   font-size: 11px;
-  color: #6B7280;
+  color: #6e7681;
+  font-family: 'DM Mono', monospace;
 }
+
 .form-actions {
-  margin-top: 10px;
+  margin-top: 12px;
 }
+
+.ttr-btn-primary {
+  background: #00d4aa;
+  color: #0d0e1a;
+  border: 0;
+  padding: 13px 32px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'DM Mono', monospace;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.ttr-btn-primary:hover:not(:disabled) {
+  background: #20eec4;
+  box-shadow: 0 0 16px rgba(0, 212, 170, 0.4);
+}
+
+.ttr-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .error-box {
-  background: #FEF2F2;
-  border: 1px solid #F87171;
-  color: #991B1B;
+  background: #2b1115;
+  border: 1px solid #ff7b72;
+  color: #ff7b72;
   padding: 12px 14px;
   border-radius: 4px;
   font-size: 13px;
 }
+
 .correction-notice {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 8px;
   padding: 24px;
   height: fit-content;
+  position: relative;
+  overflow: hidden;
 }
+
+.correction-notice::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #58a6ff, #00d4aa, transparent);
+}
+
 .correction-notice h3 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: #e6edf3;
   margin: 0 0 16px;
-  border-bottom: 1px solid #E5E7EB;
-  padding-bottom: 8px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 10px;
+  font-family: 'DM Mono', monospace;
 }
+
 .correction-notice ol {
   margin: 0;
   padding-left: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
+
 .correction-notice li {
   font-size: 13px;
-  color: #4B5563;
+  color: #8b949e;
   line-height: 1.6;
 }
+
+.correction-notice strong {
+  color: #c9d1d9;
+}
+
 .success-banner {
-  background: #ECFDF5;
-  border: 1px solid #34D399;
+  background: #0d261e;
+  border: 1px solid #00d4aa;
   border-radius: 8px;
-  padding: 32px;
+  padding: 36px;
   display: flex;
   gap: 20px;
   align-items: flex-start;
 }
+
 .banner-icon {
   font-size: 32px;
-  color: #059669;
+  color: #00d4aa;
   line-height: 1;
 }
+
 .banner-text h2 {
   font-size: 20px;
   font-weight: 800;
-  color: #065F46;
-  margin: 0 0 8px;
+  color: #e6edf3;
+  margin: 0 0 10px;
 }
+
 .banner-text p {
   font-size: 14px;
-  color: #047857;
+  color: #8b949e;
   line-height: 1.7;
   margin: 0 0 20px;
 }
+
 @media (max-width: 800px) {
   .correction-form-wrap {
     grid-template-columns: 1fr;

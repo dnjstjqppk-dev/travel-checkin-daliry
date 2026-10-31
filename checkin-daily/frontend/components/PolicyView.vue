@@ -10,15 +10,18 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="bkp-page-container policy-page">
-    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
-      <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
-      <span class="bkp-bc-sep">›</span>
-      <span class="bkp-bc-current">EDITORIAL POLICY</span>
+  <div class="ttr-page-container policy-page">
+    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
+      <NuxtLink :to="locUrl('/news')" class="ttr-bc-link">HOME</NuxtLink>
+      <span class="ttr-bc-sep">/</span>
+      <span class="ttr-bc-current">EDITORIAL POLICY</span>
     </nav>
 
     <header class="policy-header">
-      <span class="policy-eyebrow">EDITORIAL INTEGRITY & COMPLIANCE</span>
+      <div class="ttr-kicker-tag">
+        <span class="ping-dot" />
+        <span>EDITORIAL INTEGRITY & COMPLIANCE</span>
+      </div>
       <h1 class="policy-title">편집 윤리, 팩트체크 및 저작권 정책</h1>
       <p class="policy-lead">
         체크인데일리는 글로벌 저널리즘 윤리와 저작권 법령을 철저히 준수하며, 신뢰할 수 있는 공식 1차 출처만을 바탕으로 콘텐츠를 생산합니다.
@@ -78,75 +81,148 @@ useSeoMeta({
 
 <style scoped>
 .policy-page {
-  padding: 24px 0 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
 }
-.policy-header {
-  margin-bottom: 36px;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 20px;
-}
-.policy-eyebrow {
-  font-family: 'DM Mono', monospace;
+
+.ttr-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
-  font-weight: 700;
-  color: #D0021B;
-  letter-spacing: 1px;
-  display: block;
-  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 20px;
+  color: #8b949e;
+  letter-spacing: 0.8px;
 }
+
+.ttr-bc-link {
+  color: #8b949e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.ttr-bc-link:hover {
+  color: #00d4aa;
+}
+
+.ttr-bc-sep {
+  color: #383b52;
+}
+
+.ttr-bc-current {
+  color: #00d4aa;
+  font-weight: 700;
+}
+
+.policy-header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 24px;
+}
+
+.ttr-kicker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: #00d4aa;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px #00d4aa;
+}
+
 .policy-title {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 12px;
+  color: #e6edf3;
+  margin: 0 0 14px;
   line-height: 1.3;
+  letter-spacing: -0.6px;
 }
+
 .policy-lead {
   font-size: 15px;
-  color: #4B5563;
+  color: #8b949e;
   line-height: 1.7;
-  max-width: 840px;
+  max-width: 880px;
   margin: 0;
 }
+
 .policy-content {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
+
 .policy-section {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  padding: 24px 28px;
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 8px;
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
 }
+
+.policy-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4aa, transparent);
+}
+
 .policy-section h2 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 12px;
-  border-left: 4px solid #060D81;
+  color: #e6edf3;
+  margin: 0 0 14px;
+  border-left: 3px solid #00d4aa;
   padding-left: 10px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px;
 }
+
 .policy-section p {
   font-size: 14px;
-  color: #374151;
+  color: #8b949e;
   line-height: 1.7;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
 }
+
 .policy-section ul {
   margin: 0;
   padding-left: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
+
 .policy-section li {
-  font-size: 13px;
-  color: #4B5563;
+  font-size: 13.5px;
+  color: #8b949e;
   line-height: 1.6;
 }
+
+.policy-section strong {
+  color: #c9d1d9;
+}
+
 .policy-inline-link {
-  color: #060D81;
+  color: #00d4aa;
   font-weight: 700;
   text-decoration: underline;
 }

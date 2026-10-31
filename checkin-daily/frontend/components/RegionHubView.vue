@@ -163,28 +163,34 @@ function formatViews(views = 0) {
 </script>
 
 <template>
-  <div class="bkp-page-container bkp-region-hub-root">
-    <!-- 상단 브레드크럼 -->
-    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
-      <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
-      <span class="bkp-bc-sep">›</span>
-      <NuxtLink :to="locUrl('/news/region')" class="bkp-bc-link">BY REGION</NuxtLink>
+  <div class="ttr-page-container ttr-region-hub-root">
+    <!-- Terminal Breadcrumb -->
+    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
+      <NuxtLink :to="locUrl('/news')" class="ttr-bc-link">HOME</NuxtLink>
+      <span class="ttr-bc-sep">/</span>
+      <NuxtLink :to="locUrl('/news/region')" class="ttr-bc-link">BY REGION</NuxtLink>
       <template v-if="activeCountry && currentCountryMeta">
-        <span class="bkp-bc-sep">›</span>
-        <span class="bkp-bc-current">{{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}</span>
+        <span class="ttr-bc-sep">/</span>
+        <span class="ttr-bc-current">{{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}</span>
       </template>
       <template v-if="currentCityMeta">
-        <span class="bkp-bc-sep">›</span>
-        <span class="bkp-bc-current">{{ currentCityMeta.nameKo }}</span>
+        <span class="ttr-bc-sep">/</span>
+        <span class="ttr-bc-current">{{ currentCityMeta.nameKo }}</span>
       </template>
     </nav>
 
-    <!-- 섹션 타이틀 헤더 -->
-    <div class="bkp-region-header-banner">
-      <div class="bkp-region-title-wrap">
-        <span class="bkp-region-badge">🌏 EXPLORE BY REGION</span>
-        <h1 class="bkp-region-main-title">{{ pageTitle }}</h1>
-        <p class="bkp-region-sub-title">
+    <!-- Terminal Header Banner -->
+    <div class="ttr-region-header-banner">
+      <div class="ttr-region-title-wrap">
+        <div class="ttr-region-badge-row">
+          <span class="ttr-region-badge">
+            <span class="ping-dot" />
+            REGIONAL RADAR
+          </span>
+          <span class="ttr-geo-coords">LAT/LONG SYNC ACTIVE</span>
+        </div>
+        <h1 class="ttr-region-main-title">{{ pageTitle }}</h1>
+        <p class="ttr-region-sub-title">
           {{ locale === 'en' 
             ? 'Discover in-depth travel, airline, and hotel stories categorized by destination countries and global gateway cities.' 
             : '전 세계 주요 국가와 거점 도시별 최신 항공, 호텔, 여행 트렌드 뉴스를 지역별로 한눈에 탐색하세요.' 
@@ -193,29 +199,29 @@ function formatViews(views = 0) {
       </div>
     </div>
 
-    <!-- 국가별 필터 탭 바 (가로 스크롤 지원) -->
-    <div class="bkp-country-tabs-wrapper">
-      <div class="bkp-country-tabs">
+    <!-- Country Tabs Bar (Horizontal Scroll) -->
+    <div class="ttr-country-tabs-wrapper">
+      <div class="ttr-country-tabs">
         <button
           v-for="c in countryList"
           :key="c.code"
           type="button"
-          class="bkp-country-pill"
+          class="ttr-country-pill"
           :class="{ active: activeCountry === c.code }"
           @click="selectCountry(c.code)"
         >
-          <span class="bkp-country-flag">{{ c.flag }}</span>
-          <span class="bkp-country-name">{{ locale === 'en' ? c.nameEn : c.nameKo }}</span>
+          <span class="ttr-country-flag">{{ c.flag }}</span>
+          <span class="ttr-country-name">{{ locale === 'en' ? c.nameEn : c.nameKo }}</span>
         </button>
       </div>
     </div>
 
-    <!-- 도시별 서브 필터 칩 (국가 선택 시 표시) -->
-    <div v-if="cities.length" class="bkp-city-chips-bar">
-      <span class="bkp-city-label">📍 {{ locale === 'en' ? 'Cities' : '주요 도시' }}:</span>
+    <!-- City Sub-filter Chips -->
+    <div v-if="cities.length" class="ttr-city-chips-bar">
+      <span class="ttr-city-label">📍 {{ locale === 'en' ? 'CITIES' : '주요 도시' }}:</span>
       <button
         type="button"
-        class="bkp-city-chip"
+        class="ttr-city-chip"
         :class="{ active: activeCity === '' }"
         @click="activeCity = ''"
       >
@@ -225,7 +231,7 @@ function formatViews(views = 0) {
         v-for="city in cities"
         :key="city.id"
         type="button"
-        class="bkp-city-chip"
+        class="ttr-city-chip"
         :class="{ active: activeCity === city.id }"
         @click="selectCity(city.id)"
       >
@@ -233,56 +239,59 @@ function formatViews(views = 0) {
       </button>
     </div>
 
-    <!-- 2단 레이아웃 (기사 카드 68% : 사이드바 32%) -->
-    <div class="bkp-highlight-row">
-      <!-- 좌측: 기사 리스트 -->
-      <section class="bkp-col-main">
-        <div class="bkp-region-results-count">
-          <span>총 <strong>{{ store.articles.length }}</strong>개의 지역별 취재 기사</span>
-          <span v-if="activeCountry && currentCountryMeta" class="bkp-filter-indicator">
-            (필터: {{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}<span v-if="currentCityMeta"> · {{ currentCityMeta.nameKo }}</span>)
+    <!-- 2-Column Terminal Layout -->
+    <div class="ttr-highlight-row">
+      <!-- Left: Article list -->
+      <section class="ttr-col-main">
+        <div class="ttr-region-results-count">
+          <span><span class="count-badge">COUNT</span> <strong>{{ store.articles.length }}</strong> ARTICLES</span>
+          <span v-if="activeCountry && currentCountryMeta" class="ttr-filter-indicator">
+            ACTIVE FILTER: {{ currentCountryMeta.flag }} {{ currentCountryMeta.nameKo }}<span v-if="currentCityMeta"> / {{ currentCityMeta.nameKo }}</span>
           </span>
         </div>
 
-        <div v-if="!store.articles.length" class="bkp-empty-state">
-          선택하신 지역에 등록된 기사가 없습니다. 다른 국가 또는 도시를 선택해 주세요.
+        <div v-if="!store.articles.length" class="ttr-empty-state">
+          <span class="empty-icon">🌏</span>
+          <p>선택하신 지역에 등록된 기사가 없습니다. 다른 국가 또는 도시를 선택해 주세요.</p>
         </div>
-        <div v-else class="bkp-card-grid-2">
+        <div v-else class="ttr-card-grid-2">
           <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
         </div>
 
-        <!-- 더보기 버튼 -->
-        <div v-if="canLoadMore" class="bkp-load-more-wrap">
-          <button class="bkp-load-more-btn" type="button" @click="loadMore">
-            LOAD MORE STORIES (더보기) ↓
+        <!-- Load More Button -->
+        <div v-if="canLoadMore" class="ttr-load-more-wrap">
+          <button class="ttr-load-more-btn" type="button" @click="loadMore">
+            LOAD MORE WIRE ARCHIVES ↓
           </button>
         </div>
       </section>
 
-      <!-- 우측: TOP STORIES & 환율 사이드바 -->
-      <aside class="bkp-col-side">
-        <div class="bkp-side-widget bkp-topstories-widget">
-          <div class="bkp-widget-header">
-            <span class="bkp-widget-indicator" />
-            <h3>TOP STORIES</h3>
-            <NuxtLink :to="locUrl('/news/realtime')" class="bkp-widget-more">MORE ↗</NuxtLink>
+      <!-- Right: Sidebar -->
+      <aside class="ttr-col-side">
+        <div class="ttr-side-widget ttr-topstories-widget">
+          <div class="ttr-widget-header">
+            <div class="ttr-widget-title-wrap">
+              <span class="ttr-widget-indicator" />
+              <h3>TOP READ WIRE</h3>
+            </div>
+            <NuxtLink :to="locUrl('/news/realtime')" class="ttr-widget-more">MORE ↗</NuxtLink>
           </div>
-          <ol class="bkp-rank-ordered-list">
-            <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="bkp-rank-line">
-              <span class="bkp-rank-number" :class="{ 'red': idx < 3 }">{{ idx + 1 }}</span>
-              <div class="bkp-rank-body">
+          <ol class="ttr-rank-ordered-list">
+            <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="ttr-rank-line">
+              <span class="ttr-rank-number" :class="{ 'accent': idx < 3 }">{{ idx + 1 }}</span>
+              <div class="ttr-rank-body">
                 <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)">
-                  <strong class="bkp-rank-text">{{ art.title }}</strong>
+                  <strong class="ttr-rank-text">{{ art.title }}</strong>
                 </NuxtLink>
-                <div class="bkp-rank-submeta">
-                  <span>{{ formatViews(art.viewCount) }} views</span>
+                <div class="ttr-rank-submeta">
+                  <span class="ttr-rank-views">{{ formatViews(art.viewCount) }} VIEWS</span>
                 </div>
               </div>
             </li>
           </ol>
         </div>
 
-        <div class="bkp-side-widget">
+        <div class="ttr-side-widget">
           <CurrencyRates />
         </div>
       </aside>
@@ -291,311 +300,470 @@ function formatViews(views = 0) {
 </template>
 
 <style scoped>
-.bkp-region-hub-root {
-  padding-top: 14px;
-  padding-bottom: 40px;
+.ttr-region-hub-root {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
 }
 
-.bkp-region-header-banner {
-  background: linear-gradient(135deg, #060D81 0%, #0F172A 100%);
-  color: #FFFFFF;
-  border-radius: 8px;
-  padding: 24px 28px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(6, 13, 129, 0.12);
-}
-
-.bkp-region-badge {
-  display: inline-block;
-  background: #D0021B;
-  color: #FFFFFF;
-  font-size: 10.5px;
+.ttr-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
   font-family: 'DM Mono', monospace;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 3px;
-  margin-bottom: 10px;
+  color: #8b949e;
+  margin-bottom: 18px;
   letter-spacing: 0.8px;
 }
 
-.bkp-region-main-title {
-  margin: 0 0 8px;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  line-height: 1.25;
+.ttr-bc-link {
+  color: #8b949e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
 }
 
-.bkp-region-sub-title {
+.ttr-bc-link:hover {
+  color: #00d4aa;
+}
+
+.ttr-bc-sep {
+  color: #383b52;
+}
+
+.ttr-bc-current {
+  color: #00d4aa;
+  font-weight: 700;
+}
+
+.ttr-region-header-banner {
+  background: linear-gradient(135deg, #13141f 0%, #181927 100%);
+  border: 1px solid #23253a;
+  border-radius: 8px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ttr-region-header-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4aa, #58a6ff, transparent);
+}
+
+.ttr-region-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ttr-region-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #181927;
+  border: 1px solid #23253a;
+  color: #00d4aa;
+  font-size: 10.5px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.8px;
+}
+
+.ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px #00d4aa;
+}
+
+.ttr-geo-coords {
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: #6e7681;
+  letter-spacing: 1px;
+}
+
+.ttr-region-main-title {
+  margin: 0 0 10px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 1.25;
+  color: #e6edf3;
+}
+
+.ttr-region-sub-title {
   margin: 0;
-  font-size: 13px;
-  color: #E2E8F0;
-  line-height: 1.5;
+  font-size: 13.5px;
+  color: #8b949e;
+  line-height: 1.6;
   max-width: 800px;
 }
 
 /* Country Tabs Bar */
-.bkp-country-tabs-wrapper {
-  margin-bottom: 16px;
+.ttr-country-tabs-wrapper {
+  margin-bottom: 20px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
 }
 
-.bkp-country-tabs {
+.ttr-country-tabs-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ttr-country-tabs-wrapper::-webkit-scrollbar-thumb {
+  background: #23253a;
+  border-radius: 2px;
+}
+
+.ttr-country-tabs {
   display: flex;
   gap: 8px;
   min-width: max-content;
 }
 
-.bkp-country-pill {
+.ttr-country-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: #F1F5F9;
-  border: 1px solid #CBD5E1;
+  gap: 8px;
+  background: #13141f;
+  border: 1px solid #23253a;
   border-radius: 20px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #334155;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #8b949e;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-.bkp-country-pill:hover {
-  background: #E2E8F0;
-  border-color: #94A3B8;
-  color: #060D81;
+.ttr-country-pill:hover {
+  background: #181927;
+  border-color: #383b52;
+  color: #e6edf3;
 }
 
-.bkp-country-pill.active {
-  background: #060D81;
-  border-color: #060D81;
-  color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(6, 13, 129, 0.25);
+.ttr-country-pill.active {
+  background: #00d4aa;
+  border-color: #00d4aa;
+  color: #0d0e1a;
+  font-weight: 800;
+  box-shadow: 0 0 14px rgba(0, 212, 170, 0.35);
 }
 
-.bkp-country-flag {
+.ttr-country-flag {
   font-size: 15px;
   line-height: 1;
 }
 
 /* City Filter Chips */
-.bkp-city-chips-bar {
+.ttr-city-chips-bar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #13141f;
+  border: 1px solid #23253a;
   border-radius: 6px;
-  padding: 10px 14px;
-  margin-bottom: 20px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
 }
 
-.bkp-city-label {
-  font-size: 11.5px;
+.ttr-city-label {
+  font-size: 11px;
   font-family: 'DM Mono', monospace;
   font-weight: 800;
-  color: #64748B;
-  margin-right: 4px;
+  color: #00d4aa;
+  margin-right: 6px;
+  letter-spacing: 0.8px;
 }
 
-.bkp-city-chip {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+.ttr-city-chip {
+  background: #181927;
+  border: 1px solid #23253a;
   border-radius: 4px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #334155;
+  color: #8b949e;
   cursor: pointer;
   transition: all 0.12s ease;
+  font-family: 'DM Mono', monospace;
 }
 
-.bkp-city-chip:hover {
-  border-color: #060D81;
-  color: #060D81;
+.ttr-city-chip:hover {
+  border-color: #00d4aa;
+  color: #e6edf3;
 }
 
-.bkp-city-chip.active {
-  background: #D0021B;
-  border-color: #D0021B;
-  color: #FFFFFF;
+.ttr-city-chip.active {
+  background: rgba(0, 212, 170, 0.12);
+  border-color: #00d4aa;
+  color: #00d4aa;
+  font-weight: 700;
 }
 
-.bkp-region-results-count {
+.ttr-region-results-count {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 8px;
-  margin-bottom: 20px;
-  font-size: 12.5px;
-  color: #475569;
-}
-
-.bkp-filter-indicator {
-  font-size: 11.5px;
-  color: #060D81;
-  font-weight: 700;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+  font-size: 12px;
+  color: #8b949e;
   font-family: 'DM Mono', monospace;
 }
 
-.bkp-highlight-row {
+.count-badge {
+  background: #181927;
+  border: 1px solid #23253a;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #00d4aa;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.ttr-filter-indicator {
+  font-size: 11px;
+  color: #58a6ff;
+  font-weight: 700;
+}
+
+.ttr-highlight-row {
   display: grid;
   grid-template-columns: 1.45fr 0.55fr;
   gap: 32px;
 }
 
-.bkp-card-grid-2 {
+.ttr-col-main {
+  min-width: 0;
+}
+
+.ttr-col-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.ttr-card-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 }
 
-.bkp-load-more-wrap {
+.ttr-load-more-wrap {
   text-align: center;
-  margin-top: 32px;
+  margin-top: 36px;
 }
 
-.bkp-load-more-btn {
-  background: #FFFFFF;
-  border: 2px solid #060D81;
-  color: #060D81;
-  font-size: 12.5px;
+.ttr-load-more-btn {
+  background: #13141f;
+  border: 1px solid #23253a;
+  color: #e6edf3;
+  padding: 13px 36px;
+  font-size: 12px;
+  font-weight: 700;
   font-family: 'DM Mono', monospace;
-  font-weight: 800;
-  padding: 12px 28px;
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.15s ease;
+  transition: all 0.2s;
+  letter-spacing: 0.8px;
 }
 
-.bkp-load-more-btn:hover {
-  background: #060D81;
-  color: #FFFFFF;
+.ttr-load-more-btn:hover {
+  border-color: #00d4aa;
+  color: #00d4aa;
+  background: #181927;
+  box-shadow: 0 0 16px rgba(0, 212, 170, 0.2);
 }
 
-.bkp-empty-state {
-  padding: 40px 20px;
+.ttr-empty-state {
+  padding: 60px 20px;
   text-align: center;
-  color: #64748B;
+  color: #8b949e;
   font-size: 14px;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
+  background: #13141f;
+  border: 1px dashed #23253a;
   border-radius: 6px;
 }
 
+.ttr-empty-state .empty-icon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+}
+
 /* Sidebar Styles */
-.bkp-col-side {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.ttr-side-widget {
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 6px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
 }
 
-.bkp-side-widget {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  padding: 16px;
+.ttr-side-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4aa, transparent);
 }
 
-.bkp-topstories-widget {
-  border-top: 3px solid #D0021B;
-}
-
-.bkp-widget-header {
+.ttr-widget-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #F3F4F6;
-  padding-bottom: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 12px;
 }
 
-.bkp-widget-header h3 {
+.ttr-widget-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ttr-widget-header h3 {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
-  color: #111827;
-  letter-spacing: 0.5px;
-}
-
-.bkp-widget-indicator {
-  width: 4px;
-  height: 14px;
-  background: #D0021B;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-.bkp-widget-more {
-  font-size: 10.5px;
+  color: #e6edf3;
+  letter-spacing: 0.6px;
   font-family: 'DM Mono', monospace;
-  font-weight: 800;
-  color: #060D81;
-  text-decoration: none;
 }
 
-.bkp-rank-ordered-list {
+.ttr-widget-indicator {
+  width: 3px;
+  height: 14px;
+  background: #00d4aa;
+  border-radius: 1px;
+}
+
+.ttr-widget-more {
+  color: #8b949e;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  font-family: 'DM Mono', monospace;
+  transition: color 0.15s;
+}
+
+.ttr-widget-more:hover {
+  color: #00d4aa;
+}
+
+.ttr-rank-ordered-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.bkp-rank-line {
-  display: flex;
+.ttr-rank-line {
+  display: grid;
+  grid-template-columns: 28px 1fr;
   gap: 12px;
-  align-items: flex-start;
-  padding: 10px 0;
-  border-bottom: 1px solid #F3F4F6;
+  padding: 12px 0;
+  border-bottom: 1px solid #1c1d2e;
+  align-items: baseline;
 }
 
-.bkp-rank-number {
+.ttr-rank-line:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ttr-rank-number {
   font-size: 18px;
   font-family: 'DM Mono', monospace;
-  font-weight: 900;
-  color: #9CA3AF;
+  font-weight: 800;
+  color: #484f58;
   line-height: 1;
+  text-align: center;
 }
 
-.bkp-rank-number.red {
-  color: #D0021B;
+.ttr-rank-number.accent {
+  color: #00d4aa;
 }
 
-.bkp-rank-text {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.35;
+.ttr-rank-body {
+  min-width: 0;
+}
+
+.ttr-rank-body a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.ttr-rank-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9d1d9;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.15s;
 }
 
-.bkp-rank-submeta {
-  font-size: 10.5px;
-  color: #6B7280;
+.ttr-rank-line:hover .ttr-rank-text {
+  color: #00d4aa;
+}
+
+.ttr-rank-submeta {
+  font-size: 10px;
+  color: #6e7681;
   font-family: 'DM Mono', monospace;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 @media (max-width: 900px) {
-  .bkp-highlight-row {
+  .ttr-highlight-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 640px) {
-  .bkp-card-grid-2 {
-    grid-template-columns: 1fr;
+  .ttr-region-hub-root {
+    padding: 16px 12px 48px;
   }
-  .bkp-region-main-title {
-    font-size: 20px;
+  .ttr-region-header-banner {
+    padding: 20px;
+  }
+  .ttr-card-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .ttr-region-main-title {
+    font-size: 22px;
+  }
+  .ttr-load-more-btn {
+    width: 100%;
+    padding: 12px 0;
   }
 }
 </style>

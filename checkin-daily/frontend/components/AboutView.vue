@@ -10,15 +10,18 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="bkp-page-container about-page">
-    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
-      <NuxtLink :to="locUrl('/news')" class="bkp-bc-link">HOME</NuxtLink>
-      <span class="bkp-bc-sep">›</span>
-      <span class="bkp-bc-current">ABOUT US</span>
+  <div class="ttr-page-container about-page">
+    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
+      <NuxtLink :to="locUrl('/news')" class="ttr-bc-link">HOME</NuxtLink>
+      <span class="ttr-bc-sep">/</span>
+      <span class="ttr-bc-current">ABOUT US</span>
     </nav>
 
     <header class="about-header">
-      <span class="about-eyebrow">THE WORLD'S WINDOW ON TRAVEL JOURNALISM</span>
+      <div class="ttr-kicker-tag">
+        <span class="ping-dot" />
+        <span>THE WORLD'S WINDOW ON TRAVEL JOURNALISM</span>
+      </div>
       <h1 class="about-title">글로벌 여행 인텔리전스 디지털 뉴스룸, 체크인데일리</h1>
       <p class="about-lead">
         체크인데일리(Check-in Daily)는 전 세계 항공, 호텔, 여행 정책, 그리고 관광 거시경제 데이터를 가장 신속하고 정확하게 분석하여 전달하는 글로벌 여행 전문 디지털 미디어 플랫폼입니다.
@@ -65,94 +68,177 @@ useSeoMeta({
 
 <style scoped>
 .about-page {
-  padding: 24px 0 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
 }
-.about-header {
-  margin-bottom: 36px;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 20px;
-}
-.about-eyebrow {
-  font-family: 'DM Mono', monospace;
+
+.ttr-breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 11px;
-  font-weight: 700;
-  color: #D0021B;
-  letter-spacing: 1px;
-  display: block;
-  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 20px;
+  color: #8b949e;
+  letter-spacing: 0.8px;
 }
+
+.ttr-bc-link {
+  color: #8b949e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.ttr-bc-link:hover {
+  color: #00d4aa;
+}
+
+.ttr-bc-sep {
+  color: #383b52;
+}
+
+.ttr-bc-current {
+  color: #00d4aa;
+  font-weight: 700;
+}
+
+.about-header {
+  margin-bottom: 40px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 24px;
+}
+
+.ttr-kicker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: #00d4aa;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px #00d4aa;
+}
+
 .about-title {
   font-size: 28px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 12px;
+  color: #e6edf3;
+  margin: 0 0 14px;
   line-height: 1.3;
+  letter-spacing: -0.6px;
 }
+
 .about-lead {
   font-size: 15px;
-  color: #4B5563;
+  color: #8b949e;
   line-height: 1.7;
-  max-width: 840px;
+  max-width: 880px;
   margin: 0;
 }
+
 .about-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   margin-bottom: 40px;
 }
+
 .about-card {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 8px;
   padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
 }
+
+.about-card:hover {
+  border-color: #00d4aa;
+}
+
+.about-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4aa, transparent);
+}
+
 .card-icon {
   font-size: 32px;
   margin-bottom: 12px;
 }
+
 .about-card h2 {
   font-size: 17px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 8px;
+  color: #e6edf3;
+  margin: 0 0 10px;
 }
+
 .about-card p {
   font-size: 13px;
-  color: #4B5563;
+  color: #8b949e;
   line-height: 1.6;
   margin: 0;
 }
+
 .about-legal-section {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 8px;
   padding: 24px 28px;
 }
+
 .about-legal-section h2 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  color: #111827;
+  color: #e6edf3;
   margin: 0 0 16px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.5px;
 }
+
+.legal-table-wrap {
+  overflow-x: auto;
+}
+
 .legal-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
+
 .legal-table th {
   width: 180px;
   text-align: left;
-  padding: 10px 14px;
-  background: #F3F4F6;
-  color: #374151;
-  border-bottom: 1px solid #E5E7EB;
+  padding: 12px 16px;
+  background: #181927;
+  color: #8b949e;
+  border-bottom: 1px solid #23253a;
+  font-weight: 700;
 }
+
 .legal-table td {
-  padding: 10px 14px;
-  color: #111827;
-  border-bottom: 1px solid #E5E7EB;
+  padding: 12px 16px;
+  color: #c9d1d9;
+  border-bottom: 1px solid #23253a;
 }
+
 @media (max-width: 800px) {
   .about-grid {
     grid-template-columns: 1fr;

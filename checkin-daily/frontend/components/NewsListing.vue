@@ -140,41 +140,46 @@ function formatViews(views = 0) {
 </script>
 
 <template>
-  <div class="bkp-page-container bkp-listing-root">
-    <!-- 방콕포스트 스타일 상단 브레드크럼 -->
-    <nav class="bkp-breadcrumb-nav" aria-label="현재 위치">
+  <div class="ttr-page-container ttr-listing-root">
+    <!-- Tetherrock Terminal Breadcrumb -->
+    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
       <template v-for="(item, index) in breadcrumbs" :key="item.label">
-        <span v-if="index" class="bkp-bc-sep">›</span>
-        <NuxtLink :to="item.to" class="bkp-bc-link">{{ item.label }}</NuxtLink>
+        <span v-if="index" class="ttr-bc-sep">/</span>
+        <NuxtLink :to="item.to" class="ttr-bc-link">{{ item.label }}</NuxtLink>
       </template>
     </nav>
 
-    <!-- 섹션 헤더 바 -->
-    <div class="bkp-list-header-bar">
-      <div class="bkp-list-title-group">
-        <span class="bkp-color-bar default" :class="{ realtime: isRealtime }" />
+    <!-- Terminal Section Header Bar -->
+    <div class="ttr-list-header-bar">
+      <div class="ttr-list-title-group">
+        <span class="ttr-color-bar" :class="{ realtime: isRealtime }" />
         <div>
-          <h1 class="bkp-list-page-title">
+          <div class="ttr-kicker-tag">
+            <span class="ping-dot" />
+            <span>WIRE INTELLIGENCE</span>
+          </div>
+          <h1 class="ttr-list-page-title">
             {{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span>
           </h1>
-          <p v-if="isRealtime" class="bkp-realtime-sublabel">
+          <p v-if="isRealtime" class="ttr-realtime-sublabel">
             ⚡ 독자 실시간 최다 조회순 및 트렌딩 랭킹 (조회수 기준 자동 집계)
           </p>
         </div>
       </div>
-      <div class="bkp-list-count">
-        총 {{ store.totalCount || store.articles.length }}개의 보도 기사
+      <div class="ttr-list-count">
+        <span class="count-badge">COUNT</span> {{ store.totalCount || store.articles.length }} ARTICLES
       </div>
     </div>
 
-    <!-- 방콕포스트 2단 레이아웃 (좌측 리스트 68% : 우측 사이드바 32%) -->
-    <div class="bkp-highlight-row">
-      <!-- 좌측: 기사 카드 그리드 -->
-      <section class="bkp-col-main">
-        <div v-if="!store.articles.length" class="bkp-empty-state">
-          등록된 뉴스가 없습니다.
+    <!-- Tetherrock 2-Column Terminal Layout (Left 68% : Right 32%) -->
+    <div class="ttr-highlight-row">
+      <!-- Left: Article cards grid -->
+      <section class="ttr-col-main">
+        <div v-if="!store.articles.length" class="ttr-empty-state">
+          <span class="empty-icon">📡</span>
+          <p>등록된 뉴스가 없습니다. 새 기사가 동기화되면 즉시 표시됩니다.</p>
         </div>
-        <div v-else class="bkp-card-grid-2">
+        <div v-else class="ttr-card-grid-2">
           <NewsArticleCard
             v-for="(article, idx) in store.articles"
             :key="article.id"
@@ -184,38 +189,40 @@ function formatViews(views = 0) {
         </div>
 
         <!-- 더보기 버튼 -->
-        <div v-if="canLoadMore" class="bkp-load-more-wrap">
-          <button class="bkp-load-more-btn" type="button" @click="loadMore">
-            LOAD MORE STORIES (더보기) ↓
+        <div v-if="canLoadMore" class="ttr-load-more-wrap">
+          <button class="ttr-load-more-btn" type="button" @click="loadMore">
+            LOAD MORE WIRE ARCHIVES ↓
           </button>
         </div>
       </section>
 
-      <!-- 우측: 방콕포스트 TOP STORIES & 환율 사이드바 -->
-      <aside class="bkp-col-side">
-        <div class="bkp-side-widget bkp-topstories-widget">
-          <div class="bkp-widget-header">
-            <span class="bkp-widget-indicator" />
-            <h3>TOP STORIES</h3>
-            <NuxtLink :to="locUrl('/news/realtime')" class="bkp-widget-more">MORE ↗</NuxtLink>
+      <!-- Right: Tetherrock TOP 5 & FX Rates Sidebar -->
+      <aside class="ttr-col-side">
+        <div class="ttr-side-widget ttr-topstories-widget">
+          <div class="ttr-widget-header">
+            <div class="ttr-widget-title-wrap">
+              <span class="ttr-widget-indicator" />
+              <h3>TOP READ WIRE</h3>
+            </div>
+            <NuxtLink :to="locUrl('/news/realtime')" class="ttr-widget-more">MORE ↗</NuxtLink>
           </div>
-          <ol class="bkp-rank-ordered-list">
-            <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="bkp-rank-line">
-              <span class="bkp-rank-number" :class="{ 'red': idx < 3 }">{{ idx + 1 }}</span>
-              <div class="bkp-rank-body">
+          <ol class="ttr-rank-ordered-list">
+            <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="ttr-rank-line">
+              <span class="ttr-rank-number" :class="{ 'accent': idx < 3 }">{{ idx + 1 }}</span>
+              <div class="ttr-rank-body">
                 <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)">
-                  <strong class="bkp-rank-text">{{ art.title }}</strong>
+                  <strong class="ttr-rank-text">{{ art.title }}</strong>
                 </NuxtLink>
-                <div class="bkp-rank-submeta">
-                  <span class="bkp-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
-                  <span>{{ formatViews(art.viewCount) }} views</span>
+                <div class="ttr-rank-submeta">
+                  <span class="ttr-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
+                  <span class="ttr-rank-views">{{ formatViews(art.viewCount) }} VIEWS</span>
                 </div>
               </div>
             </li>
           </ol>
         </div>
 
-        <div class="bkp-side-widget">
+        <div class="ttr-side-widget">
           <CurrencyRates />
         </div>
       </aside>
@@ -224,131 +231,204 @@ function formatViews(views = 0) {
 </template>
 
 <style scoped>
-.bkp-listing-root {
-  padding: 20px 0 60px;
+.ttr-listing-root {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
 }
 
-.bkp-breadcrumb-nav {
+.ttr-breadcrumb-nav {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 11px;
   font-family: 'DM Mono', monospace;
-  color: #6B7280;
-  margin-bottom: 14px;
+  color: #8b949e;
+  margin-bottom: 18px;
+  letter-spacing: 0.8px;
 }
 
-.bkp-bc-link {
-  color: #4B5563;
+.ttr-bc-link {
+  color: #8b949e;
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.15s ease;
 }
 
-.bkp-bc-link:hover {
-  color: #060D81;
+.ttr-bc-link:hover {
+  color: #00d4aa;
 }
 
-.bkp-bc-sep {
-  color: #9CA3AF;
+.ttr-bc-sep {
+  color: #383b52;
 }
 
-.bkp-list-header-bar {
+.ttr-list-header-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 10px;
-  margin-bottom: 24px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 18px;
+  margin-bottom: 28px;
 }
 
-.bkp-list-title-group {
+.ttr-list-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ttr-color-bar {
+  width: 4px;
+  height: 48px;
+  background: #00d4aa;
+  border-radius: 2px;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(0, 212, 170, 0.4);
+}
+
+.ttr-color-bar.realtime {
+  background: #ff5252;
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.5);
+}
+
+.ttr-kicker-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 700;
+  color: #00d4aa;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px #00d4aa;
+}
+
+.ttr-list-page-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #e6edf3;
+  letter-spacing: -0.6px;
+}
+
+.ttr-realtime-sublabel {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #ff7b72;
+  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+}
+
+.ttr-list-count {
+  font-size: 12px;
+  color: #8b949e;
+  font-family: 'DM Mono', monospace;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-.bkp-list-page-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.5px;
-}
-
-.bkp-realtime-sublabel {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #D0021B;
+.count-badge {
+  background: #181927;
+  border: 1px solid #23253a;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #00d4aa;
+  font-size: 10px;
   font-weight: 700;
-  font-family: 'DM Mono', monospace;
 }
 
-.bkp-list-count {
-  font-size: 12px;
-  color: #6B7280;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-highlight-row {
+.ttr-highlight-row {
   display: grid;
   grid-template-columns: 1.45fr 0.55fr;
   gap: 32px;
   align-items: start;
 }
 
-.bkp-col-main {
+.ttr-col-main {
   min-width: 0;
 }
 
-.bkp-col-side {
+.ttr-col-side {
   display: flex;
   flex-direction: column;
   gap: 24px;
   min-width: 0;
 }
 
-.bkp-side-widget {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-top: 3px solid #060D81;
+.ttr-side-widget {
+  background: #13141f;
+  border: 1px solid #23253a;
+  border-radius: 6px;
   padding: 20px;
-  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
 }
 
-.bkp-widget-header {
+.ttr-side-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00d4aa, transparent);
+}
+
+.ttr-widget-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #E5E7EB;
-  padding-bottom: 10px;
+  border-bottom: 1px solid #23253a;
+  padding-bottom: 12px;
   margin-bottom: 16px;
 }
 
-.bkp-widget-indicator {
-  width: 4px;
-  height: 16px;
-  background: #D0021B;
-  margin-right: 8px;
-  display: inline-block;
+.ttr-widget-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.bkp-widget-header h3 {
+.ttr-widget-indicator {
+  width: 3px;
+  height: 14px;
+  background: #00d4aa;
+  border-radius: 1px;
+}
+
+.ttr-widget-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
-  color: #060D81;
-  letter-spacing: 0.5px;
-  flex: 1;
-}
-
-.bkp-widget-more {
-  color: #6B7280;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
+  color: #e6edf3;
+  letter-spacing: 0.6px;
   font-family: 'DM Mono', monospace;
 }
 
-.bkp-rank-ordered-list {
+.ttr-widget-more {
+  color: #8b949e;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  font-family: 'DM Mono', monospace;
+  transition: color 0.15s;
+}
+
+.ttr-widget-more:hover {
+  color: #00d4aa;
+}
+
+.ttr-rank-ordered-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -356,135 +436,153 @@ function formatViews(views = 0) {
   flex-direction: column;
 }
 
-.bkp-rank-line {
+.ttr-rank-line {
   display: grid;
   grid-template-columns: 28px 1fr;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px solid #1c1d2e;
   align-items: baseline;
 }
 
-.bkp-rank-line:last-child {
+.ttr-rank-line:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
 
-.bkp-rank-number {
+.ttr-rank-number {
   font-family: 'DM Mono', monospace;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
-  color: #9CA3AF;
+  color: #484f58;
   line-height: 1;
   text-align: center;
 }
 
-.bkp-rank-number.red {
-  color: #D0021B;
+.ttr-rank-number.accent {
+  color: #00d4aa;
 }
 
-.bkp-rank-body {
+.ttr-rank-body {
   min-width: 0;
 }
 
-.bkp-rank-body a {
+.ttr-rank-body a {
   text-decoration: none;
   color: inherit;
   display: block;
 }
 
-.bkp-rank-text {
+.ttr-rank-text {
   font-size: 13px;
   line-height: 1.45;
-  color: #111827;
+  color: #c9d1d9;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 600;
+  transition: color 0.15s;
 }
 
-.bkp-rank-line:hover .bkp-rank-text {
-  color: #060D81;
+.ttr-rank-line:hover .ttr-rank-text {
+  color: #00d4aa;
 }
 
-.bkp-rank-submeta {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #6B7280;
+.ttr-rank-submeta {
+  margin-top: 5px;
+  font-size: 10px;
+  color: #8b949e;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   font-family: 'DM Mono', monospace;
 }
 
-.bkp-rank-tag {
-  color: #060D81;
+.ttr-rank-tag {
+  color: #58a6ff;
   font-weight: 700;
+  text-transform: uppercase;
 }
 
-.bkp-empty-state {
-  padding: 40px 0;
-  color: #6B7280;
+.ttr-rank-views {
+  color: #6e7681;
+}
+
+.ttr-empty-state {
+  padding: 60px 20px;
+  color: #8b949e;
   text-align: center;
   font-size: 14px;
+  background: #13141f;
+  border: 1px dashed #23253a;
+  border-radius: 6px;
 }
 
-.bkp-card-grid-2 {
+.ttr-empty-state .empty-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.ttr-card-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
+  gap: 20px;
 }
 
-.bkp-load-more-wrap {
+.ttr-load-more-wrap {
   display: flex;
   justify-content: center;
-  margin-top: 36px;
+  margin-top: 40px;
 }
 
-.bkp-load-more-btn {
-  background: #FFFFFF;
-  border: 1px solid #060D81;
-  color: #060D81;
-  padding: 12px 32px;
-  font-size: 13px;
-  font-weight: 800;
+.ttr-load-more-btn {
+  background: #13141f;
+  border: 1px solid #23253a;
+  color: #e6edf3;
+  padding: 13px 36px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
   cursor: pointer;
   border-radius: 4px;
   transition: all 0.2s;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
-.bkp-load-more-btn:hover {
-  background: #060D81;
-  color: #FFFFFF;
+.ttr-load-more-btn:hover {
+  border-color: #00d4aa;
+  color: #00d4aa;
+  background: #181927;
+  box-shadow: 0 0 16px rgba(0, 212, 170, 0.2);
 }
 
 @media (max-width: 900px) {
-  .bkp-highlight-row {
+  .ttr-highlight-row {
     grid-template-columns: 1fr;
     gap: 24px;
   }
 }
 
 @media (max-width: 640px) {
-  .bkp-listing-root {
-    padding: 12px 0 40px;
+  .ttr-listing-root {
+    padding: 16px 12px 48px;
   }
-  .bkp-list-header-bar {
+  .ttr-list-header-bar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 20px;
   }
-  .bkp-list-page-title {
+  .ttr-list-page-title {
     font-size: 20px;
   }
-  .bkp-card-grid-2 {
+  .ttr-card-grid-2 {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 14px;
   }
-  .bkp-load-more-btn {
+  .ttr-load-more-btn {
     width: 100%;
     padding: 12px 0;
   }
