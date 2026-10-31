@@ -186,7 +186,7 @@ export async function broadcastPushNotification(
   if (expiredIds.length > 0) {
     for (const id of expiredIds) {
       try {
-        await d1Run(database, 'UPDATE push_subscriptions SET is_active = 0, updated_at = datetime("now") WHERE id = ?', id)
+        await d1Run(database, "UPDATE push_subscriptions SET is_active = 0, updated_at = datetime('now') WHERE id = ?", id)
       } catch {}
     }
   }

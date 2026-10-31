@@ -1136,21 +1136,21 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
   try {
     const latestRev = await d1First<{ max_rev: number | null }>(
       database,
-      'SELECT MAX(revision_number) AS max_rev FROM article_revisions WHERE article_id = ?',
+      'SELECT MAX(revision_num) AS max_rev FROM article_revisions WHERE article_id = ?',
       id,
     )
     const nextRevNumber = (latestRev?.max_rev ?? 0) + 1
     await d1Run(
       database,
-      `INSERT INTO article_revisions (article_id, revision_number, title, summary, content, author_id, change_summary, created_at)
+      `INSERT INTO article_revisions (article_id, revision_num, title, summary, content, author_id, editor_note, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       id,
       nextRevNumber,
       existing.title,
       existing.summary,
       existing.content,
-      username,
-      'Editorial update via CMS',
+      null,
+      `Editorial update via CMS (${username || 'editor'})`,
       now,
     )
   } catch {
