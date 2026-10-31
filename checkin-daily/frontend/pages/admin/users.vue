@@ -1,103 +1,55 @@
 <script setup lang="ts">
+import { staffRoles } from '~/server/utils/staff-permissions'
 definePageMeta({ layout: 'admin' })
-
-const roles = [
-  { id: 'super_admin', name: 'Super Admin (최고 관리자)', desc: '전체 시스템 인프라, DB 마이그레이션, 킬스위치 제어' },
-  { id: 'editor_in_chief', name: 'Editor in Chief (편집국장)', desc: '기사 최종 승인, 기사 철회 및 정정 공고 승인 권한' },
-  { id: 'editor', name: 'Editor (데스크 에디터)', desc: '기사 사실 검증, 초안 편집, 발행 예약 승인' },
-  { id: 'reporter', name: 'Reporter (취재 기자)', desc: '기사 작성, 원문 출처 및 팩트체크 증빙 입력' },
-  { id: 'translator', name: 'Translator (글로벌 번역가)', desc: '6개 국어 다국어 번역 감수 및 고유명사 검증' },
-  { id: 'auditor', name: 'Auditor (감사관)', desc: '감사 로그 열람 및 저작권 준수 상태 모니터링' },
-]
+interface Staff { id: number; username: string; role: string; is_active: number }
+const { data: users, error, refresh } = await useFetch<Staff[]>('/api/admin/users')
+const form = reactive({ username: '', password: '', role: 'reporter' })
+const message = ref('')
+const pending = ref(false)
+async function createStaff() {
+  pending.value = true; message.value = ''
+  try {
+    await $fetch('/api/admin/users', { method: 'POST', body: form })
+    form.username = ''; form.password = ''; await refresh(); message.value = 'Account created.'
+  } catch (error: any) { message.value = error?.data?.statusMessage || 'Unable to create account.' }
+  finally { pending.value = false }
+}
+async function saveStaff(user: Staff) {
+  pending.value = true; message.value = ''
+  try {
+    await $fetch('/api/admin/users/' + user.id, { method: 'PATCH', body: { role: user.role, active: !!user.is_active } })
+    await refresh(); message.value = 'Permissions updated. Existing sessions revoked.'
+  } catch (error: any) { message.value = error?.data?.statusMessage || 'Unable to update account.'; await refresh() }
+  finally { pending.value = false }
+}
 </script>
-
 <template>
-  <section class="admin-wrap">
-    <div class="admin-page-heading">
-      <div>
-        <p class="admin-overline">GOVERNANCE & SECURITY / RBAC</p>
-        <h1>편집국 계정 및 역할 기반 접근 제어 (RBAC)</h1>
-        <p class="admin-heading-copy">기사 발행, 수정, 철회 권한을 엄격히 분리하여 무단 발행 및 보안 사고를 방지합니다.</p>
-      </div>
-    </div>
-
-    <div class="roles-table-panel">
-      <h2>편집국 직무별 접근 권한 매트릭스</h2>
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>역할 ID</th>
-            <th>직책 명칭</th>
-            <th>주요 권한 및 통제 범위</th>
-            <th>보안 수준</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="r in roles" :key="r.id">
-            <td class="text-mono">{{ r.id }}</td>
-            <td><strong>{{ r.name }}</strong></td>
-            <td>{{ r.desc }}</td>
-            <td><span class="badge badge-success">ENFORCED</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="security-standards-box">
-      <h3>🛡️ 관리자 보안 및 세션 정책</h3>
-      <ul>
-        <li><strong>비밀번호 암호화:</strong> PBKDF2-SHA256 (100,000회 반복 해싱) 적용</li>
-        <li><strong>브루트포스 차단:</strong> 로그인 5회 연속 실패 시 15분간 IP 자동 차단 (HTTP 429)</li>
-        <li><strong>세션 보안:</strong> SameSite=Strict, HttpOnly 보안 쿠키 적용 및 CSRF 방어</li>
-      </ul>
-    </div>
+  <section class="staff-page">
+    <h1>Newsroom accounts and permissions</h1>
+    <p>Reporters create drafts. Editors edit drafts. Chief editors approve and schedule publication. Auditors have read access to logs. Translators can review translation records. Administrators manage access.</p>
+    <p v-if="error" role="alert">Account administration requires an administrator account.</p>
+    <template v-else>
+      <p v-if="message" role="status">{{ message }}</p>
+      <form @submit.prevent="createStaff">
+        <h2>Create staff account</h2>
+        <label>Username<input v-model="form.username" required minlength="3" maxlength="100" autocomplete="off"></label>
+        <label>Temporary password<input v-model="form.password" type="password" required minlength="12" maxlength="1024" autocomplete="new-password"></label>
+        <label>Role<select v-model="form.role"><option v-for="role in staffRoles" :key="role" :value="role">{{ role }}</option></select></label>
+        <button :disabled="pending" type="submit">Create account</button>
+      </form>
+      <div class="table-scroll"><table><caption>Active and disabled staff accounts</caption><thead><tr><th>Username</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody>
+        <tr v-for="user in users || []" :key="user.id"><td>{{ user.username }}</td><td><select v-model="user.role" :aria-label="'Role for ' + user.username"><option v-for="role in staffRoles" :key="role">{{ role }}</option></select></td>
+        <td><input v-model="user.is_active" type="checkbox" :true-value="1" :false-value="0" :aria-label="'Active status for ' + user.username"></td><td><button :disabled="pending" @click="saveStaff(user)">Save</button></td></tr>
+      </tbody></table></div>
+    </template>
   </section>
 </template>
-
 <style scoped>
-.roles-table-panel {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-.roles-table-panel h2 {
-  font-size: 16px;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 16px;
-}
-.text-mono {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-}
-.badge {
-  font-size: 10px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'DM Mono', monospace;
-}
-.badge-success { background: #DCFCE7; color: #16A34A; }
-.security-standards-box {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
-  padding: 20px 24px;
-}
-.security-standards-box h3 {
-  font-size: 15px;
-  font-weight: 800;
-  margin: 0 0 10px;
-  color: #111827;
-}
-.security-standards-box ul {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  color: #4B5563;
-  line-height: 1.8;
-}
+.staff-page { max-width: 1100px; margin: auto; padding: 24px; color: #172131; }
+form { display: flex; flex-wrap: wrap; gap: 20px; padding: 24px 0; align-items: end; }
+h2 { flex-basis: 100%; }
+label { display: grid; gap: 8px; }
+input, select, button { padding: 10px; min-height: 44px; border: 1px solid #64748b; border-radius: 4px; background: white; color: #172131; }
+button { cursor: pointer; font-weight: 600; } button:disabled { opacity: .6; cursor: wait; }
+.table-scroll { overflow-x: auto; } table { width: 100%; text-align: left; border-collapse: collapse; } th, td { padding: 14px; border-bottom: 1px solid #cbd5e1; } caption { text-align: left; padding: 12px 0; }
 </style>
-

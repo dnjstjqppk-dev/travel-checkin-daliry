@@ -1,7 +1,7 @@
+import { transitionArticle } from './editorial-workflow'
 // checkin-daily/frontend/server/utils/cron-runner.ts
 import { d1All, d1First, d1Run, type D1Database } from './d1'
 import { parseRssOrAtomXml } from './feed-parser'
-import { generateNewsStory } from './ai-generator'
 import { assertSafeExternalUrl } from './ssrf-guard'
 
 interface NewsSourceRow {
@@ -43,42 +43,19 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
   try {
     const dueJobs = await d1All<ScheduledJobRow>(
       database,
-      `SELECT id, article_id, scheduled_at FROM publish_jobs
-       WHERE status = 'pending' AND scheduled_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`,
+      `SELECT j.id, j.article_id, j.scheduled_at FROM publish_jobs j
+       JOIN articles a ON a.id = j.article_id
+       WHERE j.status = 'pending' AND a.status = 'draft' AND a.review_status = 'scheduled'
+         AND julianday(j.scheduled_at) <= julianday('now')`,
     )
 
     for (const job of dueJobs) {
-      await d1Run(
-        database,
-        `UPDATE articles SET
-           status = 'published',
-           published_at = COALESCE(published_at, ?),
-           review_status = 'approved',
-           updated_at = ?
-         WHERE id = ?`,
-        now,
-        now,
-        job.article_id,
-      )
-
-      await d1Run(
-        database,
-        "UPDATE publish_jobs SET status = 'published', published_at = ? WHERE id = ?",
-        now,
-        job.id,
-      )
-
-      await d1Run(
-        database,
-        'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
-        'system',
-        'cron-scheduler',
-        'scheduled_auto_publish',
-        `article:${job.article_id}`,
-        JSON.stringify({ jobId: job.id, scheduled_at: job.scheduled_at, published_at: now }),
-      )
-
-      totalScheduledPublished++
+      try {
+        await transitionArticle(database, { articleId: job.article_id, decision: 'approve', actor: 'cron-scheduler', jobId: job.id })
+        totalScheduledPublished++
+      } catch (error) {
+        console.error('[CronRunner] Publication blocked', job.id, error instanceof Error ? error.message : 'unknown')
+      }
     }
   } catch (err) {
     console.error('[CronRunner] Error processing scheduled publish jobs:', err)
@@ -105,17 +82,17 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
   const policiesList = await d1All<AutomationPolicyRow>(database, 'SELECT key, value FROM automation_policies')
   const policies = Object.fromEntries(policiesList.map((p) => [p.key, p.value]))
   const autoDraft = policies.auto_draft_enabled === '1'
-  const autoPublish = policies.auto_publish_enabled === '1'
   const restrictedKeywords = (policies.restricted_keywords || '사망,테러,추락,사고,전쟁,비상사태,폭탄,피랍,의혹')
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean)
 
   // 4. Fetch Active Sources
-  const sources = await d1All<NewsSourceRow>(database, 'SELECT * FROM news_sources WHERE is_active = 1')
+  const sources = await d1All<NewsSourceRow>(database, "SELECT * FROM news_sources WHERE is_active = 1 AND (last_fetched_at IS NULL OR julianday(last_fetched_at) + fetch_interval_minutes / 1440.0 <= julianday('now'))")
   let totalFetched = 0
   let totalDuplicates = 0
   let totalDrafts = 0
+  let totalSourceFailures = 0
 
   for (const source of sources) {
     let runId = 0
@@ -150,7 +127,23 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
         throw new Error(`HTTP ${res.status} from ${source.endpoint_url}`)
       }
 
-      const xmlText = await res.text()
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('Feed response body missing')
+      const chunks: Uint8Array[] = []
+      let size = 0
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          size += value.byteLength
+          if (size > 2 * 1024 * 1024) throw new Error('Feed exceeds 2 MiB limit')
+          chunks.push(value)
+        }
+      } finally { await reader.cancel() }
+      const bytes = new Uint8Array(size)
+      let offset = 0
+      for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+      const xmlText = new TextDecoder().decode(bytes)
       const items = await parseRssOrAtomXml(xmlText)
 
       let sourceFetched = 0
@@ -181,12 +174,13 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
         if (containsRestricted) {
           await d1Run(
             database,
-            `INSERT INTO feed_ingestion_items (source_id, guid, title, link, summary, category, status, raw_payload)
-             VALUES (?, ?, ?, ?, ?, ?, 'rejected', ?)`,
+            `INSERT INTO feed_ingestion_items (source_id, guid, title, link, pub_date, summary, category, status, raw_payload)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'rejected', ?)`,
             source.id,
             item.guid,
             item.title,
             item.link,
+            item.pubDate,
             item.summary,
             item.category,
             JSON.stringify(item),
@@ -197,12 +191,13 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
         // Record as ingested item
         await d1Run(
           database,
-          `INSERT INTO feed_ingestion_items (source_id, guid, title, link, summary, category, status, raw_payload)
-           VALUES (?, ?, ?, ?, ?, ?, 'ingested', ?)`,
+          `INSERT INTO feed_ingestion_items (source_id, guid, title, link, pub_date, summary, category, status, raw_payload)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'ingested', ?)`,
           source.id,
           item.guid,
           item.title,
           item.link,
+          item.pubDate,
           item.summary,
           item.category,
           JSON.stringify(item),
@@ -210,52 +205,21 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
 
         // If autoDraft is enabled, generate editorial article
         if (autoDraft) {
-          const generated = generateNewsStory(item.title, item.category)
-          const articleStatus = autoPublish ? 'published' : 'draft'
-          const reviewStatus = autoPublish ? 'approved' : 'needs_review'
-
-          const insertArticleSql = `INSERT INTO articles (
+          // Feed access does not grant republication rights. Preserve provenance and
+          // create a review-only draft; never invent body text, imagery, cities or translations.
+          const articleStatus = 'draft'
+          const articleRow = await database.prepare(`INSERT INTO articles (
             title, slug, summary, content, category, author, cover_image,
-            status, review_status, view_count, published_at, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?) RETURNING id;`
-
-          const articleRow = await database.prepare(insertArticleSql)
-            .bind(
-              generated.title,
-              generated.slug,
-              generated.summary,
-              generated.content,
-              generated.category,
-              generated.author,
-              generated.coverImage,
-              articleStatus,
-              reviewStatus,
-              autoPublish ? now : null,
-              now,
-              now,
-            )
+            status, review_status, source_name, source_url, license_info,
+            view_count, published_at, created_at, updated_at
+          ) VALUES (?, ?, ?, '', ?, '', '', 'draft', 'needs_review', ?, ?, ?, 0, NULL, ?, ?)
+          RETURNING id`)
+            .bind(item.title, crypto.randomUUID(), '', item.category || 'major',
+              source.name, item.link, source.license_info || '', now, now)
             .first<{ id: number }>()
 
           if (articleRow?.id) {
             const articleId = articleRow.id
-
-            // Map cities
-            await d1Run(database, 'INSERT OR IGNORE INTO article_cities (article_id, city_id) VALUES (?, ?)', articleId, 'bkk')
-
-            // Insert translations
-            const translationStatements = [
-              database.prepare('INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, ?, ?, ?, ?)')
-                .bind(articleId, 'en', generated.translations.en.title, generated.translations.en.summary, generated.translations.en.content),
-              database.prepare('INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, ?, ?, ?, ?)')
-                .bind(articleId, 'zh', generated.translations.zh.title, generated.translations.zh.summary, generated.translations.zh.content),
-              database.prepare('INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, ?, ?, ?, ?)')
-                .bind(articleId, 'th', generated.translations.th.title, generated.translations.th.summary, generated.translations.th.content),
-              database.prepare('INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, ?, ?, ?, ?)')
-                .bind(articleId, 'vi', generated.translations.vi.title, generated.translations.vi.summary, generated.translations.vi.content),
-              database.prepare('INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, ?, ?, ?, ?)')
-                .bind(articleId, 'es', generated.translations.es.title, generated.translations.es.summary, generated.translations.es.content),
-            ]
-            await database.batch(translationStatements)
 
             // Link ingestion item to created article
             await d1Run(
@@ -292,6 +256,7 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
         )
       }
     } catch (err: unknown) {
+      totalSourceFailures++
       const errMsg = err instanceof Error ? err.message : String(err)
       await d1Run(
         database,
@@ -327,7 +292,7 @@ export async function executeCronTasks(database: D1Database): Promise<CronExecut
   )
 
   return {
-    success: true,
+    success: totalSourceFailures === 0,
     message: `Ingestion & Scheduled Publishing completed. Scheduled Published: ${totalScheduledPublished}, Fetched: ${totalFetched}, Duplicates: ${totalDuplicates}, Drafts: ${totalDrafts}.`,
     totalFetched,
     totalDuplicates,

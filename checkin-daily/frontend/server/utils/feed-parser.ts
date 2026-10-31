@@ -54,7 +54,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
       const title = cleanCdataAndXml(titleMatch?.[1] || '')
       const link = linkMatch?.[1] || ''
       const guid = cleanCdataAndXml(idMatch?.[1] || link || title)
-      const pubDate = cleanCdataAndXml(updatedMatch?.[1] || new Date().toISOString())
+      const pubDate = cleanCdataAndXml(updatedMatch?.[1] || '')
       const summary = cleanCdataAndXml(summaryMatch?.[1] || title).slice(0, 500)
       const category = cleanCdataAndXml(categoryMatch?.[1] || 'destination')
 
@@ -79,7 +79,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
       const title = cleanCdataAndXml(titleMatch?.[1] || '')
       const link = cleanCdataAndXml(linkMatch?.[1] || '')
       const guid = cleanCdataAndXml(guidMatch?.[1] || link || title)
-      const pubDate = cleanCdataAndXml(pubDateMatch?.[1] || new Date().toISOString())
+      const pubDate = cleanCdataAndXml(pubDateMatch?.[1] || '')
       const summary = cleanCdataAndXml(descMatch?.[1] || title).slice(0, 500)
       const category = cleanCdataAndXml(categoryMatch?.[1] || 'major')
 

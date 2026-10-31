@@ -1,5 +1,6 @@
+import { canAccessStaff, isStaffRole, type StaffRole } from './staff-permissions'
 import type { H3Event } from 'h3'
-import { deleteCookie, getCookie, getRequestHeader, getRequestURL, setCookie } from 'h3'
+import { createError, deleteCookie, getCookie, getRequestHeader, getRequestURL, setCookie } from 'h3'
 import { d1First, d1Run, type D1Database } from './d1'
 
 export const adminCookieName = 'checkin_admin_session'
@@ -19,7 +20,7 @@ interface AdminAccount {
 export interface AdminIdentity {
   id: number
   username: string
-  role: 'admin'
+  role: StaffRole
 }
 
 interface LoginAttempt {
@@ -65,9 +66,8 @@ export async function clearLoginAttempts(event: H3Event, database: D1Database): 
 export async function findAdminAccount(database: D1Database, username: string): Promise<AdminAccount | null> {
   return d1First<AdminAccount>(
     database,
-    'SELECT id, username, password_hash, role, is_active FROM admin_accounts WHERE username = ? COLLATE NOCASE AND role = ? AND is_active = 1',
+    'SELECT id, username, password_hash, role, is_active FROM admin_accounts WHERE username = ? COLLATE NOCASE AND is_active = 1',
     username.trim(),
-    'admin',
   )
 }
 
@@ -139,11 +139,11 @@ export async function authenticateAdmin(
     `SELECT a.id, a.username, a.role, s.expires_at
      FROM admin_sessions s
      JOIN admin_accounts a ON a.id = s.account_id
-     WHERE s.token_hash = ? AND s.expires_at > ? AND a.role = 'admin' AND a.is_active = 1`,
+     WHERE s.token_hash = ? AND s.expires_at > ? AND a.is_active = 1`,
     await sha256Hex(token),
     nowSeconds(),
   )
-  if (!session) {
+  if (!session || !isStaffRole(session.role)) {
     deleteCookie(event, adminCookieName, {
       path: '/',
       httpOnly: true,
@@ -152,8 +152,12 @@ export async function authenticateAdmin(
     })
     return { identity: null, invalidSession: true }
   }
+  if (!canAccessStaff(session.role, getRequestURL(event).pathname, event.method)) {
+    throw createError({ statusCode: 403, statusMessage: 'Insufficient staff permissions' })
+  }
+  event.context.staffRole = session.role
   return {
-    identity: { id: session.id, username: session.username, role: 'admin' },
+    identity: { id: session.id, username: session.username, role: session.role },
     expiresAt: session.expires_at,
     invalidSession: false,
   }

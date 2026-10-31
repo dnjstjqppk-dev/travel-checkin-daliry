@@ -1,3 +1,4 @@
+import { isStaffRole } from './staff-permissions'
 import {
   createError,
   getRequestHeader,
@@ -191,7 +192,7 @@ async function handleAuth(event: H3Event, database: D1Database, path: string[]) 
 
     const account = await findAdminAccount(database, username)
     const validPassword = await verifyPassword(password, account?.password_hash ?? dummyPasswordHash)
-    if (!account || !validPassword) {
+    if (!account || !isStaffRole(account.role) || !validPassword) {
       await recordFailedLogin(event, database)
       return respond(event, { error: 'invalid username or password' }, 401)
     }
@@ -199,11 +200,11 @@ async function handleAuth(event: H3Event, database: D1Database, path: string[]) 
     await createAdminSession(event, database, {
       id: account.id,
       username: account.username,
-      role: 'admin',
+      role: account.role,
     })
     return respond(event, {
       username: account.username,
-      role: 'admin',
+      role: account.role,
       expiresIn: adminSessionTtlSeconds,
     })
   }
@@ -979,6 +980,9 @@ function parseCityInput(input: JsonObject | null) {
 async function createArticle(event: H3Event, database: D1Database) {
   const input = parseArticleInput(await readJsonObject(event))
   if (!input) return respond(event, { error: 'invalid article request' }, 400)
+  if (['editor', 'reporter'].includes(event.context.staffRole) && (input.status !== 'draft' || !['draft', 'needs_review'].includes(input.reviewStatus || 'needs_review'))) {
+    return respond(event, { error: 'Editorial approval is required to publish' }, 403)
+  }
   if (!await categoryExists(database, input.category)) {
     return respond(event, { error: 'unknown article category' }, 400)
   }
@@ -988,6 +992,9 @@ async function createArticle(event: H3Event, database: D1Database) {
 
   // Strict validation for public publishing (drafts bypass these rules)
   if (input.status === 'published') {
+    if (!input.licenseInfo?.trim() || input.licenseInfo === 'Editorial Fair Citation') {
+      return respond(event, { error: 'Document explicit content usage rights before publishing' }, 422)
+    }
     const validation = validateArticleForPublish({
       content: input.content,
       coverImage: input.coverImage,
@@ -1061,8 +1068,12 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
   if (!Number.isSafeInteger(id) || id < 1) return respond(event, { error: 'article not found' }, 404)
   const existing = await d1First<ArticleRow>(database, 'SELECT * FROM articles WHERE id = ?', id)
   if (!existing) return respond(event, { error: 'article not found' }, 404)
+  if (event.context.staffRole === 'editor' && existing.status === 'published') return respond(event, { error: 'Published articles require chief editor approval' }, 403)
   const input = parseArticleInput(await readJsonObject(event))
   if (!input) return respond(event, { error: 'invalid article request' }, 400)
+  if (['editor', 'reporter'].includes(event.context.staffRole) && (input.status !== 'draft' || !['draft', 'needs_review'].includes(input.reviewStatus || 'needs_review'))) {
+    return respond(event, { error: 'Editorial approval is required to publish' }, 403)
+  }
   if (!await categoryExists(database, input.category)) {
     return respond(event, { error: 'unknown article category' }, 400)
   }
@@ -1072,6 +1083,9 @@ async function updateArticle(event: H3Event, database: D1Database, idValue: stri
 
   // Strict validation for public publishing (drafts bypass these rules)
   if (input.status === 'published') {
+    if (!input.licenseInfo?.trim() || input.licenseInfo === 'Editorial Fair Citation') {
+      return respond(event, { error: 'Document explicit content usage rights before publishing' }, 422)
+    }
     const validation = validateArticleForPublish({
       content: input.content,
       coverImage: input.coverImage,

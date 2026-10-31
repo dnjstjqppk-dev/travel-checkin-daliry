@@ -10,7 +10,7 @@ database_id = "db85821f-36a0-4af2-aadf-418e8aa39839"
 migrations_dir = "checkin-daily/frontend/migrations"
 
 [build]
-command = "npm --prefix checkin-daily/frontend run build"
+command = "npm --prefix checkin-daily/frontend install && npm --prefix checkin-daily/frontend run build"
 
 [assets]
 directory = "checkin-daily/frontend/.output/public"

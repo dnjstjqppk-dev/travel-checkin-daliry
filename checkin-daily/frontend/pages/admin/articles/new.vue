@@ -34,7 +34,10 @@ const form = reactive({
   category: categories[0]?.slug || '',
   author: '체크인데일리 편집팀',
   coverImage: '',
-  status: 'published' as 'draft' | 'published',
+  sourceName: '',
+  sourceUrl: '',
+  licenseInfo: '',
+  status: 'draft' as 'draft' | 'published',
   cityIds: [] as string[],
 })
 const saving = ref(false)
@@ -57,7 +60,7 @@ const isImageCountValid = computed(
     bodyImageCount.value <= ARTICLE_RULES.MAX_BODY_IMAGES
 )
 
-const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value)
+const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.value && !!form.licenseInfo.trim())
 
 // Dirty state tracking for navigation protection
 const isDirty = computed(() => {
@@ -138,33 +141,11 @@ async function generateAiDraft() {
 
 // 2. AI 기사 즉시 발행 (1클릭 D1 배포)
 async function generateAndPublishNow() {
-  if (!aiKeyword.value.trim()) {
-    aiError.value = '발행할 기사의 키워드를 입력해 주세요.'
-    return
-  }
   publishing.value = true
-  aiError.value = ''
-  aiMessage.value = ''
   try {
-    const res = await $fetch<any>('/api/admin/generate-article', {
-      method: 'POST',
-      body: {
-        keyword: aiKeyword.value.trim(),
-        contextText: aiContextText.value.trim() || undefined,
-        category: aiCategory.value,
-        publishNow: true,
-      },
-    })
-    aiMessage.value = res.message
-    isSubmittedSuccessfully.value = true
-    setTimeout(() => {
-      router.push('/admin/dashboard')
-    }, 1500)
-  } catch (err: any) {
-    aiError.value = err?.data?.statusMessage || err?.message || '즉시 발행에 실패했습니다.'
-  } finally {
-    publishing.value = false
-  }
+    await generateAiDraft()
+    if (aiResult.value) loadAiResultToForm()
+  } finally { publishing.value = false }
 }
 
 // 3. AI 결과를 수동 편집 폼으로 가져오기
@@ -177,8 +158,11 @@ function loadAiResultToForm() {
   form.category = aiResult.value.category
   form.author = aiResult.value.author
   form.coverImage = aiResult.value.coverImage
-  form.status = 'published'
-  form.cityIds = ['bkk']
+  form.status = 'draft'
+  form.cityIds = []
+  form.sourceName = aiResult.value.sourceName || ''
+  form.sourceUrl = aiResult.value.sourceUrl || ''
+  form.licenseInfo = ''
   activeTab.value = 'manual'
 }
 
@@ -224,7 +208,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
     <div class="admin-top">
       <div>
         <p class="eyebrow">EDITORIAL NEWSROOM / STORY CREATOR</p>
-        <h1>기사 작성 및 AI 자동 발행 파이프라인</h1>
+        <h1>기사 작성 및 편집 검토</h1>
       </div>
       <NuxtLink class="button" to="/admin/dashboard">대시보드로 복귀</NuxtLink>
     </div>
@@ -254,7 +238,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
       <div class="ai-card">
         <div class="ai-card-header">
           <h2>키워드 기반 원클릭 뉴스 기사 생성 파이프라인</h2>
-          <span class="spec-badge">상용 자동 발행 규격: 본문 텍스트 300~1,000자 & 본문 이미지 4~10장 엄격 검증</span>
+          <span class="spec-badge">발행 규격: 본문 800~2,000자 · 이미지 4~10장 · 사용권 확인 · 편집 승인</span>
         </div>
         <p class="ai-desc">
           핵심 키워드를 입력하면 메이저 언론사 문체의 300~1,000자 심층 보도 기사, 
@@ -299,7 +283,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             :disabled="generating || publishing"
             @click="generateAndPublishNow"
           >
-            {{ publishing ? 'D1 및 다국어 번역 즉시 발행 중...' : '🚀 AI 생성 & 즉시 실서버 발행' }}
+            {{ publishing ? '초안 준비 중...' : '초안 생성 후 편집하기' }}
           </button>
           <button
             class="button action-btn-secondary"
@@ -413,6 +397,9 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
           작성자 바이라인
           <input v-model="form.author">
         </label>
+        <label class="field">출처 이름<input v-model="form.sourceName" maxlength="120"></label>
+        <label class="field">원문 URL<input v-model="form.sourceUrl" type="url" placeholder="https://..."></label>
+        <label class="field">본문·이미지 사용권 근거<input v-model="form.licenseInfo" maxlength="120" placeholder="권리자, 허가 범위, 계약·동의 기록 위치"></label>
         <label class="field">
           대표 커버 이미지 URL (헤더 및 카드용)
           <input v-model="form.coverImage" placeholder="https://... 또는 /api/media/...">

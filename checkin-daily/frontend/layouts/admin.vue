@@ -2,6 +2,7 @@
 const route = useRoute()
 const router = useRouter()
 const logoutError = ref('')
+const { data: staffSession } = await useFetch<{ username: string; role: string }>('/api/auth/session')
 
 const navGroups = [
   {
@@ -119,7 +120,7 @@ async function logout() {
           <a class="admin-view-site" href="/news" target="_blank" rel="noreferrer">사이트 보기 <span aria-hidden="true">↗</span></a>
           <span class="admin-toolbar-divider" aria-hidden="true"></span>
           <span class="admin-avatar" aria-hidden="true">E</span>
-          <span class="admin-account">편집자 (Editor)</span>
+          <span class="admin-account">{{ staffSession?.username }} · {{ staffSession?.role }}</span>
           <button class="admin-logout" type="button" @click="logout">로그아웃</button>
         </div>
       </header>

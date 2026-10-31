@@ -1,4 +1,6 @@
-import { defineEventHandler, setResponseHeader } from 'h3'
+import { publicArticleSql, sitemapPage } from '../utils/sitemap-data'
+import { escapeXml, isRecentPublication, publicationDate } from '../utils/syndication'
+import { createError, defineEventHandler, setResponseHeader } from 'h3'
 import { d1All, d1First, getD1Database } from '../utils/d1'
 import { resolveBaseUrl } from '../utils/site-domain'
 
@@ -10,23 +12,12 @@ interface GoogleNewsRow {
   updated_at: string
 }
 
-function escapeXml(unsafe: string): string {
-  return (unsafe || '').replace(/[<>&'"]/g, (c) => {
-    switch (c) {
-      case '<': return '&lt;'
-      case '>': return '&gt;'
-      case '&': return '&amp;'
-      case '\'': return '&apos;'
-      case '"': return '&quot;'
-      default: return c
-    }
-  })
-}
 
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=900, s-maxage=1800')
+  setResponseHeader(event, 'Cache-Control', 'no-cache')
 
+  const page = sitemapPage(event)
   const baseUrl = await resolveBaseUrl(event)
   const database = getD1Database(event)
 
@@ -43,41 +34,33 @@ export default defineEventHandler(async (event) => {
     } catch {}
   }
 
+  if (!database) throw createError({ statusCode: 503, statusMessage: 'News database unavailable' })
   let articles: GoogleNewsRow[] = []
   if (database) {
     try {
       // 1. Prioritize articles published within 48 hours
       articles = await d1All<GoogleNewsRow>(
         database,
-        `SELECT id, title, category, published_at, updated_at
-         FROM articles
-         WHERE status = 'published' AND published_at >= datetime('now', '-48 hours')
+        `SELECT a.id, a.title, a.category, a.published_at, a.updated_at
+         FROM articles a
+         WHERE ${publicArticleSql} AND julianday(published_at) >= julianday('now', '-48 hours') AND julianday(published_at) <= julianday('now')
          ORDER BY id DESC
-         LIMIT 100`,
+         LIMIT 1000 OFFSET ?`,
+        (page - 1) * 1000,
       )
 
-      // 2. Fallback to latest 20 published articles if none within 48h (ensures valid news feed for Google review)
-      if (!articles.length) {
-        articles = await d1All<GoogleNewsRow>(
-          database,
-          `SELECT id, title, category, published_at, updated_at
-           FROM articles
-           WHERE status = 'published'
-           ORDER BY id DESC
-           LIMIT 20`,
-        )
-      }
     } catch {
-      articles = []
+      throw createError({ statusCode: 503, statusMessage: 'News sitemap unavailable' })
     }
   }
 
-  const urlNodes = articles.map((a) => {
-    const pubDate = a.published_at ? new Date(a.published_at).toISOString() : new Date().toISOString()
+  if (page > 1 && !articles.length) throw createError({ statusCode: 404, statusMessage: 'Sitemap page not found' })
+  const urlNodes = articles.filter(a => isRecentPublication(a.published_at)).map((a) => {
+    const pubDate = publicationDate(a.published_at)!.toISOString()
     const loc = `${baseUrl}/news/${encodeURIComponent(a.category || 'major')}/article/${a.id}`
 
     return `  <url>
-    <loc>${loc}</loc>
+    <loc>${escapeXml(loc)}</loc>
     <news:news>
       <news:publication>
         <news:name>${escapeXml(publicationName)}</news:name>

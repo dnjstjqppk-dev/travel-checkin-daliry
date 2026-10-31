@@ -38,9 +38,9 @@ function renderMarkdown(raw: string): string {
     if (typeof sanitizeFn === 'function') {
       return sanitizeFn(parsed)
     }
-    return parsed
+    return DOMPurify.sanitize(parsed)
   } catch {
-    return raw || ''
+    return (raw || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
 }
 
@@ -56,7 +56,7 @@ const tocItems = computed<TocItem[]>(() => {
   const items: TocItem[] = []
   for (const line of lines) {
     const match = line.match(/^(#{2,3})\s+(.+)$/)
-    if (match) {
+    if (match?.[1] && match[2]) {
       const level = match[1].length
       const text = match[2].trim().replace(/\*\*/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1')
       const id = 'sec-' + text.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/(^-|-$)/g, '')
@@ -108,26 +108,8 @@ const categoryNames = computed(() => ({
 
 const categoryDisplayName = computed(() => getCategoryName(category))
 
-const displayAuthor = computed(() => {
-  if (locale.value === 'ko') return article.author || '체크인데일리 편집국'
-  if (locale.value === 'en') return 'Check-in Daily Editorial Desk'
-  if (locale.value === 'zh') return 'Check-in Daily 编辑部'
-  if (locale.value === 'th') return 'กองบรรณาธิการ Check-in Daily'
-  if (locale.value === 'vi') return 'Ban Biên tập Check-in Daily'
-  if (locale.value === 'es') return 'Redacción de Check-in Daily'
-  return article.author || 'Check-in Daily Editorial Desk'
-})
-
-const photoCaptionPrefix = computed(() => {
-  switch (locale.value) {
-    case 'en': return '[Photo: Unsplash Editorial License / Reference image]'
-    case 'zh': return '[图片来源：Unsplash 编辑版权 / 新闻报道参考]'
-    case 'th': return '[ภาพถ่าย: ลิขสิทธิ์ Unsplash Editorial / ภาพประกอบข่าว]'
-    case 'vi': return '[Hình ảnh: Bản quyền Biên tập Unsplash / Ảnh minh họa]'
-    case 'es': return '[Foto: Licencia Editorial Unsplash / Imagen de referencia]'
-    default: return '[자료 사진: Unsplash 에디토리얼 라이선스 / 기사 보도 참고용]'
-  }
-})
+const displayAuthor = computed(() => article.author || 'Check-in Daily')
+const photoCaptionPrefix = computed(() => '')
 
 const readingTimeLabel = computed(() => {
   const m = (article as any).readingTimeMinutes || 3
@@ -145,9 +127,9 @@ const { data: reactionsData } = await useAsyncData(
   `reactions-${article.id}`,
   () => apiFetch<{ counts: { helpful: number; insightful: number; recommend: number }; userReactions: string[] }>(`/api/reactions/${article.id}`).catch(() => ({
     counts: { helpful: 0, insightful: 0, recommend: 0 },
-    userReactions: [],
+    userReactions: [] as string[],
   })),
-  { default: () => ({ counts: { helpful: 0, insightful: 0, recommend: 0 }, userReactions: [] }) },
+  { default: () => ({ counts: { helpful: 0, insightful: 0, recommend: 0 }, userReactions: [] as string[] }) },
 )
 
 const reactionCounts = computed(() => reactionsData.value?.counts || { helpful: 0, insightful: 0, recommend: 0 })
@@ -440,20 +422,20 @@ function goBack() {
           <!-- 사실 검증 및 1차 출처 인증 박스 (Fact-Check & Citation Box) -->
           <div v-if="article.sourceName || (article.factChecks && article.factChecks.length)" class="bkp-factcheck-card">
             <div class="bkp-fc-header">
-              <span class="bkp-fc-badge">✓ FACT CHECKED</span>
+              <span class="bkp-fc-badge">SOURCE RECORD</span>
               <span class="bkp-fc-desk">CHECK-IN DAILY EDITORIAL INTEGRITY DESK</span>
             </div>
             <div class="bkp-fc-body">
               <p v-if="article.sourceName" class="bkp-fc-source">
-                <strong>1차 공식 출처:</strong>
+                <strong>출처:</strong>
                 <a v-if="article.sourceUrl" :href="article.sourceUrl" target="_blank" rel="noopener noreferrer nofollow" class="bkp-fc-link">{{ article.sourceName }} ↗</a>
                 <span v-else>{{ article.sourceName }}</span>
-                <span class="bkp-fc-lic">({{ article.licenseInfo || 'Official PR / Fair Citation' }})</span>
+                <span v-if="article.licenseInfo" class="bkp-fc-lic">({{ article.licenseInfo }})</span>
               </p>
               <div v-if="article.factChecks && article.factChecks.length" class="bkp-fc-claims">
                 <div v-for="(fc, idx) in article.factChecks" :key="idx" class="bkp-fc-item">
                   <span class="bkp-fc-check-icon">✓</span>
-                  <span class="bkp-fc-claim-text">{{ fc.claim }} — <em class="bkp-fc-verdict">{{ (fc.verification_status || 'VERIFIED').toUpperCase() }}</em></span>
+                  <span class="bkp-fc-claim-text">{{ fc.claim }} — <em class="bkp-fc-verdict">{{ (fc.verification_status || 'UNREVIEWED').toUpperCase() }}</em></span>
                 </div>
               </div>
             </div>
@@ -572,7 +554,6 @@ function goBack() {
             <div class="author-meta-row">
               <h4 class="author-name">{{ displayAuthor }}</h4>
               <span class="author-role-badge">공인 에디터</span>
-              <span class="author-fc-verified">🛡️ FACT-CHECKED</span>
             </div>
             <p class="author-bio">
               체크인데일리 글로벌 뉴스룸 에디터. 국제항공운송협회(IATA), 정부 관광청(TAT 등), 글로벌 호텔 체인의 공식 데이터를 검증 보도합니다.

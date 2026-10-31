@@ -1,8 +1,24 @@
+import { createRequire } from 'node:module'
+import { dirname } from 'node:path'
+import { useNuxt } from '@nuxt/kit'
+const configRequire = createRequire(import.meta.url)
+const routerTypePlugin = configRequire.resolve('vue-router/volar/sfc-route-blocks', {
+  paths: [dirname(configRequire.resolve('nuxt/package.json'))],
+})
+
 export default defineNuxtConfig({
+  hooks: {
+    'modules:done'() {
+      useNuxt().hook('prepare:types', ({ tsConfig }) => {
+        const options = (tsConfig.vueCompilerOptions ||= {}) as { plugins?: string[] }
+        options.plugins = (options.plugins || []).map(plugin => plugin === 'vue-router/volar/sfc-route-blocks' ? routerTypePlugin : plugin)
+      })
+    },
+  },
   srcDir: '.',
   compatibilityDate: '2025-02-01',
   devtools: { enabled: false },
-  nitro: { preset: process.env.NITRO_PRESET || (process.env.BUILD_TARGET === 'node' ? 'node-server' : 'cloudflare_module') },
+  nitro: { externals: { inline: ['nuxt'] }, preset: process.env.NITRO_PRESET || (process.env.BUILD_TARGET === 'node' ? 'node-server' : 'cloudflare_module') },
   modules: ['@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   routeRules: {
@@ -17,20 +33,18 @@ export default defineNuxtConfig({
       },
     },
     '/news/**/article/**': {
-      swr: 300,
       headers: {
-        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+        'Cache-Control': 'no-store',
       },
     },
     '/[lang]/news/**/article/**': {
-      swr: 300,
       headers: {
-        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
+        'Cache-Control': 'no-store',
       },
     },
-    '/sitemap*.xml': { headers: { 'Cache-Control': 'public, max-age=3600, s-maxage=86400' } },
-    '/news-sitemap.xml': { headers: { 'Cache-Control': 'public, max-age=900, s-maxage=1800' } },
-    '/rss.xml': { headers: { 'Cache-Control': 'public, max-age=1800, s-maxage=3600' } },
+    '/sitemap*.xml': { headers: { 'Cache-Control': 'no-cache' } },
+    '/news-sitemap.xml': { headers: { 'Cache-Control': 'no-cache' } },
+    '/rss.xml': { headers: { 'Cache-Control': 'no-cache' } },
     '/ads.txt': { headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } },
   },
   runtimeConfig: {
@@ -48,7 +62,7 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover' },
         { name: 'description', content: '글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어' },
-        { name: 'theme-color', content: '#060D81' },
+        { name: 'theme-color', content: '#0d0e1a' },
         { property: 'og:site_name', content: 'Check-in Daily' },
         { property: 'og:type', content: 'website' },
         { property: 'og:image', content: '/images/og-default.png' },
@@ -57,6 +71,7 @@ export default defineNuxtConfig({
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'alternate', type: 'application/rss+xml', title: 'Check-in Daily Global RSS Feed', href: '/rss.xml' },
       ],

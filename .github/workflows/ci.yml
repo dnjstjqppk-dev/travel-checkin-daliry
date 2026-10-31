@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: checkin-daily/frontend/package-lock.json
 
@@ -28,6 +28,10 @@ jobs:
       - name: Run Unit Tests
         working-directory: checkin-daily/frontend
         run: npm test
+
+      - name: Type check
+        working-directory: checkin-daily/frontend
+        run: npm run typecheck
 
       - name: Nuxt Production Build
         working-directory: checkin-daily/frontend
@@ -64,21 +68,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Validate SQLite Migrations
-        run: |
-          node -e "
-          const fs = require('fs');
-          const path = require('path');
-          const migrationsDir = path.join('checkin-daily', 'frontend', 'migrations');
-          const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-          console.log('Validating ' + files.length + ' migration files...');
-          for (const file of files) {
-            const p = path.join(migrationsDir, file);
-            const sql = fs.readFileSync(p, 'utf8');
-            if (!sql.trim()) throw new Error('Empty migration: ' + file);
-            console.log('✓ ' + file + ' (' + sql.length + ' bytes)');
-          }
-          console.log('All migrations syntax & file integrity verified successfully.');
-          "
+        run: node scripts/verify_migrations.cjs

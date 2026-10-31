@@ -1,5 +1,6 @@
+import { transitionArticle } from '../../utils/editorial-workflow'
 import { createError, defineEventHandler, readBody } from 'h3'
-import { d1Run, getD1Database } from '../../utils/d1'
+import { d1First, d1Run, getD1Database } from '../../utils/d1'
 import { authenticateAdmin, isSameOriginRequest } from '../../utils/d1-auth'
 
 export default defineEventHandler(async (event) => {
@@ -30,24 +31,11 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === 'publish_now' && jobId) {
-    const now = new Date().toISOString()
-    await d1Run(
-      database,
-      `UPDATE articles SET status = 'published', published_at = COALESCE(published_at, ?), review_status = 'approved'
-       WHERE id = (SELECT article_id FROM publish_jobs WHERE id = ?)`,
-      now,
-      jobId,
-    )
-    await d1Run(database, "UPDATE publish_jobs SET status = 'published', published_at = ? WHERE id = ?", now, jobId)
-    await d1Run(
-      database,
-      'INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json) VALUES (?, ?, ?, ?, ?)',
-      'admin',
-      session.identity.username,
-      'instant_publish_job',
-      `publish_job:${jobId}`,
-      JSON.stringify({ jobId, published_at: now }),
-    )
+    const job = await d1First<{ article_id: number }>(database, "SELECT article_id FROM publish_jobs WHERE id = ? AND status = 'pending'", jobId)
+    if (!job) throw createError({ statusCode: 409, statusMessage: 'Pending job not found' })
+    await transitionArticle(database, {
+      articleId: job.article_id, decision: 'approve', actor: session.identity.username, jobId: Number(jobId),
+    })
     return { success: true, message: 'Article published' }
   }
 

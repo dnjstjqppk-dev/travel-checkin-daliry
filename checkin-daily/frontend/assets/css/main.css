@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 :root {
   color-scheme: light;
   --ink: #192824;
@@ -771,7 +772,7 @@ html[data-theme="dark"] .ads-slot-preview { border-color: var(--line); backgroun
    UX/UI 3 DESIGNS LIVE SWITCHER SYSTEM (안 1 / 안 2 / 안 3 스타일 시스템)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 
 /* 공통 헤더 확장 */
 .header-main-row {

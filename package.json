@@ -1,0 +1,12 @@
+{
+  "name": "travel-checkin-daily",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm --prefix checkin-daily/frontend install",
+    "build": "npm --prefix checkin-daily/frontend install && npm --prefix checkin-daily/frontend run build",
+    "test": "npm --prefix checkin-daily/frontend test",
+    "deploy": "npx wrangler deploy"
+  }
+}
+

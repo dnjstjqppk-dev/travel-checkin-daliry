@@ -21,6 +21,10 @@ export interface GeneratedArticle {
   charCount: number
   imageCount: number
   ctaTarget: string
+  keyTakeaways?: string[]
+  sourceName?: string
+  sourceUrl?: string
+  factChecks?: Array<{ claim: string; verification_status: string; source?: string }>
   translations: {
     en: { title: string; summary: string; content: string }
     zh: { title: string; summary: string; content: string }

@@ -17,14 +17,14 @@ const settingsMap = computed<Record<string, string>>(() => (settings.value as Re
 
 const companyName = computed(() => settingsMap.value.company_name || siteConfig.publisher.name)
 const representative = computed(() => settingsMap.value.representative || siteConfig.publisher.editorInChief)
-const businessNumber = computed(() => settingsMap.value.business_number || '2026-04-52914')
-const mailOrderNumber = computed(() => settingsMap.value.mail_order_number || '2026-서울중구-0123')
-const newspaperNumber = computed(() => settingsMap.value.newspaper_number || siteConfig.publisher.registrationNumber)
+const businessNumber = computed(() => settingsMap.value.business_number || '')
+const mailOrderNumber = computed(() => settingsMap.value.mail_order_number || '')
+const newspaperNumber = computed(() => settingsMap.value.newspaper_number || '')
 const youthProtectionOfficer = computed(() => settingsMap.value.youth_protection_officer || representative.value)
 const publisher = computed(() => settingsMap.value.publisher || representative.value)
 const address = computed(() => settingsMap.value.address || siteConfig.publisher.address)
 const contactEmail = computed(() => settingsMap.value.contact_email || siteConfig.publisher.email)
-const contactPhone = computed(() => settingsMap.value.contact_phone || '02-738-2026')
+const contactPhone = computed(() => settingsMap.value.contact_phone || '')
 </script>
 
 <template>
@@ -92,4 +92,97 @@ const contactPhone = computed(() => settingsMap.value.contact_phone || '02-738-2
     </div>
   </footer>
 </template>
+
+<style scoped>
+.bkp-site-footer {
+  background: var(--bg-secondary, #13141f);
+  border-top: 1px solid var(--border, #23253a);
+  color: var(--text-muted, #8e99aa);
+  font-size: 12px;
+}
+
+.bkp-footer-main {
+  padding: 40px 0 30px;
+}
+
+.bkp-footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.bkp-fcol h4 {
+  margin: 0 0 16px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-primary, #f0f4f8);
+  letter-spacing: 0.8px;
+}
+
+.bkp-fcol ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bkp-fcol ul a {
+  color: var(--text-muted, #8e99aa);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.bkp-fcol ul a:hover {
+  color: var(--accent, #00d4aa);
+}
+
+.brand-col .bkp-footer-logo {
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.brand-col .bkp-footer-summary {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--text-secondary, #d2d9e3);
+  line-height: 1.6;
+}
+
+.brand-col .bkp-footer-meta-tags {
+  display: flex;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--text-dim, #7d8696);
+  font-weight: 700;
+}
+
+.bkp-footer-bottom {
+  border-top: 1px solid var(--border, #23253a);
+  padding: 20px 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.bkp-footer-legal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim, #7d8696);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .bkp-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .bkp-footer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 

@@ -5,7 +5,7 @@ const props = defineProps<{
   articles?: Article[]
 }>()
 
-const { locUrl } = useI18n()
+const { locale, locUrl } = useI18n()
 
 interface TrendingResponse {
   success: boolean
@@ -19,199 +19,154 @@ interface TrendingResponse {
   }>
 }
 
-interface CurrencyRate {
-  code: string
-  country: string
-  currency: string
-  currencyName: string
-  per1000Krw: number
-}
-
-interface ExchangeRates {
-  rates: CurrencyRate[]
-}
-
-const { data: fxData } = await useFetch<ExchangeRates>('/api/exchange-rates', {
-  key: 'ticker-fx-rates',
-  default: () => ({ rates: [] }),
-})
-
 const { data: trendingData } = await useFetch<TrendingResponse>('/api/trending', {
   key: 'ticker-trending-articles',
   default: () => ({ success: true, articles: [] }),
 })
 
-const tickerItems = computed(() => {
+const dynamicTrendingItems = computed(() => {
   if (trendingData.value?.articles?.length) {
-    return trendingData.value.articles.map((a) => ({
+    return trendingData.value.articles.slice(0, 5).map((a) => ({
       id: a.id,
       category: a.category,
       isBreaking: a.isBreaking,
-      title: `${a.isBreaking ? '⚡ [속보] ' : '🔥 [인기] '}${a.title}`,
+      title: a.title,
     }))
   }
-  if (props.articles?.length) {
-    return props.articles.slice(0, 5).map((a) => ({
-      id: a.id,
-      category: a.category,
-      isBreaking: false,
-      title: `📰 ${a.title}`,
-    }))
-  }
-  return [
-    { id: 1, category: 'airline', isBreaking: true, title: '⚡ [속보] 글로벌 항공사 동계 정기 노선 증편 발표' },
-    { id: 2, category: 'hotel', isBreaking: false, title: '🏨 주요 럭셔리 리조트 멤버십 포인트 적립 정책 개편' },
-  ]
-})
-
-const activeIndex = ref(0)
-let timer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  timer = setInterval(() => {
-    if (tickerItems.value.length > 0) {
-      activeIndex.value = (activeIndex.value + 1) % tickerItems.value.length
-    }
-  }, 4500)
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
+  return []
 })
 </script>
 
 <template>
-  <div class="news-ticker-bar" aria-label="실시간 속보 및 지표">
-    <div class="page-wrap ticker-wrap">
-      <div class="ticker-left">
-        <span class="ticker-badge">FLASH NEWS</span>
-        <div class="ticker-content">
-          <transition name="ticker-slide" mode="out-in">
-            <NuxtLink
-              v-if="tickerItems.length"
-              :key="activeIndex"
-              :to="locUrl(`/news/${tickerItems[activeIndex]?.category}/article/${tickerItems[activeIndex]?.id}`)"
-              class="ticker-headline"
-            >
-              {{ tickerItems[activeIndex]?.title }}
-            </NuxtLink>
-          </transition>
-        </div>
-      </div>
-      <div v-if="fxData?.rates?.length" class="ticker-right">
-        <div v-for="rate in fxData.rates.slice(0, 3)" :key="rate.code" class="ticker-fx-item">
-          <span class="fx-code">{{ rate.currency }}</span>
-          <span class="fx-val">{{ rate.per1000Krw.toFixed(rate.currency === 'VND' ? 0 : 2) }}</span>
-        </div>
-      </div>
+  <div class="ticker-bar" aria-label="실시간 여행 지표 및 속보 레이더">
+    <div class="ticker-scroll" id="ticker-scroll">
+      <!-- First set of items -->
+
+
+      <!-- Dynamic breaking news wire inside ticker -->
+      <template v-for="news in dynamicTrendingItems" :key="`n1-${news.id}`">
+        <NuxtLink :to="locUrl(`/news/${news.category}/article/${news.id}`)" class="ticker-item news-item">
+          <span class="badge" :class="news.isBreaking ? 'red-badge' : 'mint-badge'">
+            {{ news.isBreaking ? 'FLASH' : 'HOT' }}
+          </span>
+          <span class="news-text">{{ news.title }}</span>
+        </NuxtLink>
+      </template>
+
+      <!-- Seamless duplicated set for infinite loop -->
+
+
+      <template v-for="news in dynamicTrendingItems" :key="`n2-${news.id}`">
+        <NuxtLink :to="locUrl(`/news/${news.category}/article/${news.id}`)" class="ticker-item news-item">
+          <span class="badge" :class="news.isBreaking ? 'red-badge' : 'mint-badge'">
+            {{ news.isBreaking ? 'FLASH' : 'HOT' }}
+          </span>
+          <span class="news-text">{{ news.title }}</span>
+        </NuxtLink>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
-.news-ticker-bar {
-  background: #090d16;
-  color: #e2e8f0;
-  border-bottom: 1px solid #1e293b;
-  font-size: 11px;
-  height: 36px;
+.ticker-bar {
+  height: 34px;
+  background: var(--bg-secondary, #13141f);
+  border-bottom: 1px solid var(--border, #23253a);
   display: flex;
   align-items: center;
   overflow: hidden;
-}
-
-.ticker-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-shrink: 0;
   width: 100%;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 16px;
-  gap: 20px;
 }
 
-.ticker-left {
+.ticker-scroll {
   display: flex;
+  gap: 28px;
+  animation: tickerScroll 42s linear infinite;
+  padding: 0 20px;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-item {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
-}
-
-.ticker-badge {
-  background: #d97706;
-  color: #ffffff;
-  font-family: 'DM Mono', monospace;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 3px;
-  letter-spacing: 0.8px;
-  white-space: nowrap;
-}
-
-.ticker-content {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.ticker-headline {
-  display: inline-block;
-  color: #cbd5e1;
+  gap: 7px;
   font-size: 12px;
+  color: var(--text-muted, #8e99aa);
   text-decoration: none;
-  transition: color 0.15s ease;
 }
 
-.ticker-headline:hover {
+.ticker-item .sym {
   color: #ffffff;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: -0.2px;
+}
+
+.ticker-item .price {
+  color: var(--text-secondary, #d2d9e3);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+.ticker-item .green {
+  color: var(--green, #00d4aa);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.ticker-item .red {
+  color: var(--red, #f6465d);
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+.ticker-item.news-item {
+  cursor: pointer;
+}
+
+.ticker-item.news-item:hover .news-text {
+  color: var(--accent, #00d4aa);
   text-decoration: underline;
 }
 
-.ticker-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
+.news-text {
+  color: var(--text-primary, #f0f4f8);
+  font-size: 11.5px;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ticker-fx-item {
-  display: flex;
-  gap: 6px;
-  color: #94a3b8;
+.badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
 }
 
-.fx-code {
-  color: #64748b;
-  font-weight: 600;
+.mint-badge {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent, #00d4aa);
+  border: 1px solid rgba(0, 212, 170, 0.3);
 }
 
-.fx-val {
-  color: #f1f5f9;
-  font-weight: 700;
-}
-
-.ticker-slide-enter-active,
-.ticker-slide-leave-active {
-  transition: all 0.35s ease;
-}
-
-.ticker-slide-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.ticker-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-12px);
-}
-
-@media (max-width: 768px) {
-  .ticker-right { display: none; }
+.red-badge {
+  background: rgba(246, 70, 93, 0.15);
+  color: var(--red, #f6465d);
+  border: 1px solid rgba(246, 70, 93, 0.3);
 }
 </style>

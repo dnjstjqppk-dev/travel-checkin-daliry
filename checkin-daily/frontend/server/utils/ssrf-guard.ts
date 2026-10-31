@@ -5,7 +5,7 @@ function isPrivateIp(ip: string): boolean {
   // IPv4 check
   const ipv4Parts = ip.split('.').map(Number)
   if (ipv4Parts.length === 4 && ipv4Parts.every((p) => !isNaN(p) && p >= 0 && p <= 255)) {
-    const [b0, b1] = ipv4Parts
+    const [b0 = 0, b1 = 0] = ipv4Parts
     // 0.0.0.0/8
     if (b0 === 0) return true
     // 10.0.0.0/8
@@ -58,7 +58,14 @@ export function assertSafeExternalUrl(rawUrl: string): URL {
     })
   }
 
-  const hostname = parsed.hostname.toLowerCase().trim()
+  const hostname = parsed.hostname.toLowerCase().replace(/\.$/, '')
+  if (parsed.username || parsed.password || (parsed.port && parsed.port !== '443')) {
+    throw createError({ statusCode: 400, statusMessage: 'Credentials and custom ports forbidden' })
+  }
+  // News providers must use a public DNS name. Block every IP literal, including IPv4-mapped IPv6.
+  if (hostname.includes(':') || /^[0-9.]+$/.test(hostname) || !hostname.includes('.')) {
+    throw createError({ statusCode: 400, statusMessage: 'A public provider DNS name is required' })
+  }
 
   // 2. Reject localhost and local domain aliases
   if (

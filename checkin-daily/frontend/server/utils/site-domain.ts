@@ -1,4 +1,4 @@
-import { type H3Event, getRequestHeader, getRequestURL } from 'h3'
+import { type H3Event } from 'h3'
 import { d1First, getD1Database } from './d1'
 import { siteConfig } from '../../config/site.config'
 
@@ -24,15 +24,7 @@ export async function resolveBaseUrl(event: H3Event): Promise<string> {
     } catch {}
   }
 
-  // 2. Check Request headers (Host / X-Forwarded-Host)
-  try {
-    const reqUrl = getRequestURL(event)
-    const host = getRequestHeader(event, 'x-forwarded-host') || getRequestHeader(event, 'host') || reqUrl.host
-    const protocol = getRequestHeader(event, 'x-forwarded-proto') || reqUrl.protocol.replace(':', '') || 'https'
-    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
-      return `${protocol}://${host}`
-    }
-  } catch {}
+  // Canonical origins come from operator configuration, never untrusted Host headers.
 
   // 3. Fallback to siteConfig or environment
   const envUrl = process.env.SITE_URL || process.env.NUXT_PUBLIC_SITE_URL

@@ -10,9 +10,12 @@ const categoryNames = computed<Record<string, string>>(() => ({
   major: t('major'),
   airline: t('airline'),
   hotel: t('hotel'),
-  destination: t('places'),
+  destination: t('destination'),
   realtime: t('realtime'),
 }))
+
+const activeTab = ref<'all' | 'major' | 'airline' | 'hotel' | 'destination' | 'realtime'>('all')
+const radarFilter = ref<'all' | 'airline' | 'hotel'>('all')
 
 const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
 const searchPage = computed(() => {
@@ -29,6 +32,7 @@ await useAsyncData(
     lang: locale.value,
   })
 )
+
 const { data: popularArticles, error: popularLoadError } = await useAsyncData<Article[]>(
   `news-home-popular-${locale.value}`,
   () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
@@ -44,19 +48,35 @@ watch([searchQuery, searchPage], async ([search, page]) => {
   })
 })
 
-const featuredArticle = computed(() => store.articles[0])
-const subLeadArticles = computed(() => store.articles.slice(1, 3))
-const airlineArticles = computed(() => store.articles.filter((a) => a.category === 'airline').slice(0, 3))
-const hotelArticles = computed(() => store.articles.filter((a) => a.category === 'hotel').slice(0, 3))
-const destinationArticles = computed(() => store.articles.filter((a) => a.category === 'destination').slice(0, 3))
-const remainingArticles = computed(() => store.articles.slice(3, 12))
+// Tabbed & Category-filtered views
+const filteredTabArticles = computed(() => {
+  if (activeTab.value === 'all') return store.articles
+  return store.articles.filter((a) => a.category === activeTab.value)
+})
+
+const featuredArticle = computed(() => filteredTabArticles.value[0] || store.articles[0])
+const subLeadArticles = computed(() => filteredTabArticles.value.slice(1, 3))
+
+// Radar Column articles (Airlines & Hotels feed)
+const radarArticles = computed(() => {
+  if (radarFilter.value === 'airline') {
+    return store.articles.filter((a) => a.category === 'airline').slice(0, 6)
+  }
+  if (radarFilter.value === 'hotel') {
+    return store.articles.filter((a) => a.category === 'hotel').slice(0, 6)
+  }
+  return store.articles.filter((a) => a.category === 'airline' || a.category === 'hotel').slice(0, 6)
+})
+
+// Bottom stream articles
+const bottomStreamArticles = computed(() => store.articles.slice(3, 15))
 
 function hasCoverImage(article: Article | undefined) {
-  return Boolean(article?.coverImage && /^https:\/\//i.test(article.coverImage))
+  return Boolean(article?.coverImage && (/^https?:\/\//i.test(article.coverImage) || article.coverImage.startsWith('/')))
 }
 
 function formatDate(date: string | null) {
-  if (!date) return 'LATEST NEWS'
+  if (!date) return 'LATEST WIRE'
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -69,15 +89,40 @@ function formatViews(views = 0) {
   return new Intl.NumberFormat('ko-KR').format(views)
 }
 
+// Newsletter state
+const newsletterEmail = ref('')
+const newsletterSubmitting = ref(false)
+const newsletterMessage = ref('')
+const newsletterSuccess = ref(false)
+
+async function handleNewsletterSubmit() {
+  if (!newsletterEmail.value) return
+  newsletterSubmitting.value = true
+  try {
+    const res = await $fetch<{ success: boolean; message: string }>('/api/newsletter/subscribe', {
+      method: 'POST',
+      body: { email: newsletterEmail.value },
+    })
+    newsletterSuccess.value = true
+    newsletterMessage.value = res.message || '인텔리전스 뉴스레터 구독이 완료되었습니다.'
+    newsletterEmail.value = ''
+  } catch {
+    newsletterSuccess.value = false
+    newsletterMessage.value = '구독 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+  } finally {
+    newsletterSubmitting.value = false
+  }
+}
+
 const { origin: siteOrigin } = useSiteDomain()
 const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
 const homeCanonicalUrl = computed(() => `${siteOrigin.value}${currentLangPrefix.value}/news`)
 
 useSeoMeta({
   title: computed(() => locale.value === 'en'
-    ? 'Check-in Daily | The World’s Window on Travel Journalism'
-    : '체크인데일리 | 글로벌 항공·호텔·여행지 전문 뉴스룸'),
-  ogTitle: computed(() => 'Check-in Daily — The World’s Window on Travel Journalism'),
+    ? 'Check-in Daily | Global Travel Intelligence & Newsroom'
+    : '체크인데일리 | 글로벌 항공·호텔·여행지 전문 인텔리전스 뉴스룸'),
+  ogTitle: computed(() => 'Check-in Daily — Global Travel Intelligence & Newsroom'),
   description: computed(() => t('footer_tagline')),
   ogDescription: computed(() => t('footer_tagline')),
   ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
@@ -146,52 +191,38 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="bkp-page-container bkp-home-root">
-    <!-- 0. 실시간 브레이킹 뉴스 티커 (Breaking News Ticker) -->
-    <BreakingNewsTicker />
-
-    <!-- 실시간 인기 토픽 클라우드 바 -->
-    <div class="bkp-topic-cloud-bar">
-      <span class="topic-label">TRENDING TOPICS:</span>
-      <NuxtLink :to="locUrl('/news?q=방콕')" class="topic-chip">#방콕 수완나품</NuxtLink>
-      <NuxtLink :to="locUrl('/news?q=항공')" class="topic-chip">#항공권 특가</NuxtLink>
-      <NuxtLink :to="locUrl('/news?q=비자')" class="topic-chip">#DTV 디지털노마드</NuxtLink>
-      <NuxtLink :to="locUrl('/news?q=호텔')" class="topic-chip">#럭셔리 풀빌라</NuxtLink>
-      <NuxtLink :to="locUrl('/news?q=축제')" class="topic-chip">#러이끄라통</NuxtLink>
-      <NuxtLink :to="locUrl('/news?q=철도')" class="topic-chip">#로열 블라섬</NuxtLink>
-    </div>
-
-    <!-- 검색 모드 -->
-    <section v-if="searchQuery" class="bkp-search-view">
-      <div class="bkp-sec-header">
-        <div class="bkp-sec-title-wrap">
-          <span class="bkp-color-bar default" />
+  <div class="ttr-page-wrap">
+    <!-- 0. Search Mode Overlay View -->
+    <section v-if="searchQuery" class="ttr-search-view">
+      <div class="ttr-section-header">
+        <div class="title-left">
+          <span class="bar-indicator" />
           <h2>SEARCH RESULTS: “{{ searchQuery }}”</h2>
         </div>
-        <span class="bkp-search-meta-badge">총 {{ store.totalCount }}건 ({{ store.currentPage }} / {{ store.totalPages }} 페이지)</span>
+        <span class="count-badge">총 {{ store.totalCount }}건 ({{ store.currentPage }} / {{ store.totalPages }} 페이지)</span>
       </div>
-      <p v-if="store.error" class="bkp-empty-state">{{ store.error }}</p>
-      <p v-else-if="!store.articles.length" class="bkp-empty-state">검색 결과가 없습니다.</p>
+
+      <p v-if="store.error" class="ttr-empty">{{ store.error }}</p>
+      <p v-else-if="!store.articles.length" class="ttr-empty">검색 결과가 없습니다.</p>
       <div v-else>
-        <div class="bkp-card-grid-3">
+        <div class="ttr-card-grid-3">
           <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
         </div>
 
-        <!-- 검색 결과 페이지네이션 UI -->
-        <nav v-if="store.totalPages > 1" class="bkp-pagination-bar" aria-label="Search Pagination">
+        <nav v-if="store.totalPages > 1" class="ttr-pagination-bar" aria-label="Search Pagination">
           <NuxtLink
             v-if="store.currentPage > 1"
             :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage - 1 } }"
-            class="bkp-page-btn prev"
+            class="ttr-page-btn prev"
           >
             ← 이전
           </NuxtLink>
-          <div class="bkp-page-numbers">
+          <div class="ttr-page-numbers">
             <NuxtLink
               v-for="p in store.totalPages"
               :key="p"
               :to="{ path: locUrl('/news'), query: { q: searchQuery, page: p } }"
-              class="bkp-page-num"
+              class="ttr-page-num"
               :class="{ active: p === store.currentPage }"
             >
               {{ p }}
@@ -200,7 +231,7 @@ useHead(() => ({
           <NuxtLink
             v-if="store.currentPage < store.totalPages"
             :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage + 1 } }"
-            class="bkp-page-btn next"
+            class="ttr-page-btn next"
           >
             다음 →
           </NuxtLink>
@@ -208,98 +239,291 @@ useHead(() => ({
       </div>
     </section>
 
-    <!-- 방콕포스트 스타일 정통 뉴스 메인 홈 -->
+    <!-- 1. Tetherrock Style Main Intelligence Terminal -->
     <template v-else>
-      <AdSlot placement-id="main_top" />
+      <!-- NEWS PAGE HEADER (Tetherrock Style) -->
+      <div class="ttr-terminal-header">
+        <div class="header-left">
+          <div class="title-row">
+            <span class="pulse-icon">📡</span>
+            <h1 class="main-title">TRAVEL INTELLIGENCE FEED</h1>
+          </div>
+          <p class="sub-title">글로벌 항공 · 호텔 · 여행지 · 여행 정책 뉴스</p>
+        </div>
+        <div class="header-right">
+          <span class="live-pulse-dot" />
+          <span class="live-status-text">최신 게시 기사</span>
+        </div>
+      </div>
 
-      <!-- ======================================================== -->
-      <!-- 1. TOP HIGHLIGHT & SIDEBAR (좌 68% : 우 32%)             -->
-      <!-- ======================================================== -->
-      <section class="bkp-highlight-row">
-        <!-- 좌측: 메인 하이라이트 + 2열 서브 뉴스 -->
-        <div class="bkp-col-main">
-          <!-- 대형 메인 탑 기사 -->
-          <article v-if="featuredArticle" class="bkp-hero-lead-card">
-            <NuxtLink :to="locUrl(`/news/${featuredArticle.category}/article/${featuredArticle.id}`)" class="bkp-hero-lead-link">
-              <div class="bkp-hero-img-wrap">
+      <!-- NEWS SECTION TABS (Tetherrock .news-tab-btn style) -->
+      <div class="ttr-tabs-bar">
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'all' }"
+          @click="activeTab = 'all'"
+        >
+          전체 <span class="tab-count">{{ store.totalCount || 66 }}</span>
+        </button>
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'major' }"
+          @click="activeTab = 'major'"
+        >
+          ⭐ 주요뉴스 <span class="tab-count">15</span>
+        </button>
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'airline' }"
+          @click="activeTab = 'airline'"
+        >
+          ✈️ 항공·노선 <span class="tab-count">18</span>
+        </button>
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'hotel' }"
+          @click="activeTab = 'hotel'"
+        >
+          🏨 호텔·스테이 <span class="tab-count">16</span>
+        </button>
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'destination' }"
+          @click="activeTab = 'destination'"
+        >
+          🗺️ 여행지·비자 <span class="tab-count">17</span>
+        </button>
+        <button
+          type="button"
+          class="news-tab-btn"
+          :class="{ active: activeTab === 'realtime' }"
+          @click="activeTab = 'realtime'"
+        >
+          🔥 실시간속보 <span class="tab-count">12</span>
+        </button>
+      </div>
+
+      <!-- 3 COLUMN INTELLIGENCE GRID (Tetherrock Terminal Structure) -->
+      <div class="ttr-3col-grid">
+        <!-- ── COLUMN 1: TOP LEAD STORY & IN-DEPTH WIRE ── -->
+        <div class="col-lead">
+          <!-- Featured Big Lead Story -->
+          <article v-if="featuredArticle" class="ttr-hero-card">
+            <NuxtLink :to="locUrl(`/news/${featuredArticle.category}/article/${featuredArticle.id}`)" class="hero-link">
+              <div class="hero-image-wrap">
                 <img
                   v-if="hasCoverImage(featuredArticle)"
                   :src="featuredArticle.coverImage"
                   :alt="featuredArticle.title"
                   fetchpriority="high"
                 >
-                <div v-else class="bkp-hero-fallback">
+                <div v-else class="hero-fallback">
                   <span>{{ categoryNames[featuredArticle.category] || featuredArticle.category }}</span>
                 </div>
-                <span class="bkp-cat-badge">
-                  {{ (categoryNames[featuredArticle.category] || featuredArticle.category).toUpperCase() }}
-                </span>
-              </div>
-              <div class="bkp-hero-info">
-                <div class="bkp-hero-meta">
-                  <span class="bkp-pub-date">{{ formatDate(featuredArticle.publishedAt) }}</span>
-                  <span v-if="featuredArticle.viewCount" class="bkp-pub-views">· {{ formatViews(featuredArticle.viewCount) }} VIEWS</span>
+                <div class="hero-badges">
+                  <span class="cat-badge">
+                    {{ (categoryNames[featuredArticle.category] || featuredArticle.category).toUpperCase() }}
+                  </span>
                 </div>
-                <h1 class="bkp-hero-headline">{{ featuredArticle.title }}</h1>
-                <p class="bkp-hero-summary">{{ featuredArticle.summary }}</p>
-                <span class="bkp-hero-cta">{{ locale === 'en' ? 'READ MORE →' : '자세히 보기 →' }}</span>
+              </div>
+
+              <div class="hero-body">
+                <div class="hero-meta">
+                  <span class="meta-date">{{ formatDate(featuredArticle.publishedAt) }}</span>
+                  <span class="meta-sep">·</span>
+                  <span class="meta-author">취재 데스크: <strong>{{ (featuredArticle.author || 'Senior Editor').toUpperCase() }}</strong></span>
+                  <span v-if="featuredArticle.viewCount" class="meta-sep">·</span>
+                  <span v-if="featuredArticle.viewCount" class="meta-views">{{ formatViews(featuredArticle.viewCount) }} VIEWS</span>
+                </div>
+
+                <h2 class="hero-headline">{{ featuredArticle.title }}</h2>
+                <p class="hero-summary">{{ featuredArticle.summary }}</p>
+
+                <!-- AI Key Takeaways Box (Tetherrock Card) -->
+                <div v-if="(featuredArticle as any).keyTakeaways?.length" class="hero-takeaways">
+                  <div class="takeaways-header">
+                    <span class="icon">⚡</span>
+                    <span class="label">KEY INTELLIGENCE 3-LINE TAKEAWAYS</span>
+                  </div>
+                  <ul class="takeaways-points">
+                    <li v-for="(pt, pIdx) in (featuredArticle as any).keyTakeaways" :key="pIdx">
+                      {{ pt }}
+                    </li>
+                  </ul>
+                </div>
+
+                <span class="hero-read-cta">
+                  {{ locale === 'en' ? 'READ FULL INVESTIGATION →' : '심층 보도 본문 읽기 →' }}
+                </span>
               </div>
             </NuxtLink>
           </article>
 
-          <!-- 서브 하이라이트 2열 -->
-          <div v-if="subLeadArticles.length" class="bkp-sublead-row">
-            <article v-for="sub in subLeadArticles" :key="sub.id" class="bkp-sublead-item">
+          <!-- Sub-lead 2-Card Row -->
+          <div v-if="subLeadArticles.length" class="sublead-grid">
+            <article v-for="sub in subLeadArticles" :key="sub.id" class="sublead-card">
               <NuxtLink :to="locUrl(`/news/${sub.category}/article/${sub.id}`)">
-                <div class="bkp-sublead-img">
+                <div class="sublead-thumb">
                   <img v-if="hasCoverImage(sub)" :src="sub.coverImage" :alt="sub.title" loading="lazy">
-                  <div v-else class="bkp-hero-fallback small" />
-                  <span class="bkp-sub-cat">{{ categoryNames[sub.category] || sub.category }}</span>
+                  <div v-else class="hero-fallback" />
+                  <span class="sublead-cat">{{ categoryNames[sub.category] || sub.category }}</span>
                 </div>
-                <h3 class="bkp-sublead-title">{{ sub.title }}</h3>
-                <p class="bkp-sublead-desc">{{ sub.summary }}</p>
-                <span class="bkp-sublead-date">{{ formatDate(sub.publishedAt) }}</span>
+                <div class="sublead-body">
+                  <div class="sublead-meta">{{ formatDate(sub.publishedAt) }}</div>
+                  <h3 class="sublead-title">{{ sub.title }}</h3>
+                  <p class="sublead-desc">{{ sub.summary }}</p>
+                </div>
               </NuxtLink>
             </article>
           </div>
         </div>
 
-        <!-- 우측: 방콕포스트 TOP STORIES & 환율 사이드바 -->
-        <aside class="bkp-col-side">
-          <div class="bkp-side-widget bkp-topstories-widget">
-            <div class="bkp-widget-header">
-              <span class="bkp-widget-indicator" />
-              <h3>TOP STORIES</h3>
-              <NuxtLink :to="locUrl('/news/realtime')" class="bkp-widget-more">MORE ↗</NuxtLink>
+        <!-- ── COLUMN 2: AVIATION & HOTEL RADAR PANEL (Tetherrock .news-section-panel) ── -->
+        <div class="col-radar">
+          <div class="news-section-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-icon">📰</span>
+                <span>실시간 항공 &amp; 호텔 레이더</span>
+              </div>
+              <span class="panel-live-tag">
+                <span class="pulse-mini" />
+                <span>NEWS FEED</span>
+              </span>
             </div>
-            <p v-if="popularLoadError" class="bkp-side-note">랭킹을 불러올 수 없습니다.</p>
-            <ol v-else class="bkp-rank-ordered-list">
-              <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="bkp-rank-line">
-                <span class="bkp-rank-number" :class="{ 'red': idx < 3 }">{{ idx + 1 }}</span>
-                <div class="bkp-rank-body">
-                  <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)">
-                    <strong class="bkp-rank-text">{{ art.title }}</strong>
+
+            <!-- Filter Chips -->
+            <div class="filter-chips">
+              <button
+                type="button"
+                class="nf-chip"
+                :class="{ on: radarFilter === 'all' }"
+                @click="radarFilter = 'all'"
+              >
+                전체
+              </button>
+              <button
+                type="button"
+                class="nf-chip"
+                :class="{ on: radarFilter === 'airline' }"
+                @click="radarFilter = 'airline'"
+              >
+                ✈️ 항공·노선
+              </button>
+              <button
+                type="button"
+                class="nf-chip"
+                :class="{ on: radarFilter === 'hotel' }"
+                @click="radarFilter = 'hotel'"
+              >
+                🏨 호텔·스테이
+              </button>
+            </div>
+
+            <!-- High-Density Feed Items -->
+            <div class="radar-feed-list">
+              <div v-for="item in radarArticles" :key="item.id" class="radar-feed-item">
+                <NuxtLink :to="locUrl(`/news/${item.category}/article/${item.id}`)" class="radar-feed-link">
+                  <div class="radar-feed-text">
+                    <div class="radar-feed-meta">
+                      <span class="cat-pill" :class="item.category">{{ categoryNames[item.category] || item.category }}</span>
+                      <span class="time">{{ formatDate(item.publishedAt) }}</span>
+                    </div>
+                    <h4 class="radar-feed-title">{{ item.title }}</h4>
+                    <p class="radar-feed-snippet">{{ item.summary }}</p>
+                  </div>
+                  <div v-if="hasCoverImage(item)" class="radar-feed-thumb">
+                    <img :src="item.coverImage" :alt="item.title" loading="lazy">
+                  </div>
+                </NuxtLink>
+              </div>
+            </div>
+
+            <div class="panel-footer">
+              <NuxtLink :to="locUrl('/news/airline')" class="panel-more-link">
+                항공·호텔 전문 피드 전체 보기 ↗
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── COLUMN 3: TERMINAL SIDEBAR (FX, TOP RANKING, PARTNER ADS) ── -->
+        <div class="col-sidebar">
+          <!-- Widget 1: 실시간 여행 환율 지표 (Live FX Rates) -->
+          <div class="side-panel-wrap">
+            <CurrencyRates />
+          </div>
+
+          <!-- Widget 2: 🏆 실시간 랭킹 (Top Stories 1~5) -->
+          <div class="side-panel-wrap top-stories-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-icon">🏆</span>
+                <span>실시간 인기 기사 TOP 5</span>
+              </div>
+              <NuxtLink :to="locUrl('/news/realtime')" class="panel-more-link">MORE ↗</NuxtLink>
+            </div>
+            <ol class="rank-list">
+              <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="rank-item">
+                <span class="rank-badge" :class="{ 'top-three': idx < 3 }">{{ idx + 1 }}</span>
+                <div class="rank-info">
+                  <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)" class="rank-title">
+                    {{ art.title }}
                   </NuxtLink>
-                  <div class="bkp-rank-submeta">
-                    <span class="bkp-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
-                    <span>{{ formatViews(art.viewCount) }} views</span>
+                  <div class="rank-meta">
+                    <span class="cat-tag">{{ categoryNames[art.category] || art.category }}</span>
+                    <span class="views">{{ formatViews(art.viewCount) }} views</span>
                   </div>
                 </div>
               </li>
             </ol>
           </div>
 
-          <!-- 환율 위젯 -->
-          <div class="bkp-side-widget bkp-newsletter-widget">
-            <div class="bkp-widget-header">
-              <span class="bkp-widget-indicator" />
-              <h3>DAILY NEWSLETTER</h3>
+          <!-- Widget 3: 💡 여행자 공식 제휴 혜택 (Partners CTA) -->
+          <div class="side-panel-wrap partner-cta-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-icon">💡</span>
+                <span>여행자 공식 혜택 레이더</span>
+              </div>
+            </div>
+            <div class="partner-cards">
+              <a href="https://tripscanner.com" target="_blank" rel="sponsored noopener noreferrer" class="partner-card">
+                <div class="partner-info">
+                  <span class="p-badge">최저가 검색</span>
+                  <strong>TripScanner</strong>
+                  <p>전 세계 항공권 &amp; 5성급 호텔 실시간 가격 비교</p>
+                </div>
+                <span class="p-cta">비교하기 ↗</span>
+              </a>
+
+              <a href="https://getfortrip.com" target="_blank" rel="sponsored noopener noreferrer" class="partner-card getfortrip">
+                <div class="partner-info">
+                  <span class="p-badge tour">투어·패스</span>
+                  <strong>GetForTrip</strong>
+                  <p>태국 DTV 비자 · 공항 패스트트랙 · eSIM 즉시 발급</p>
+                </div>
+                <span class="p-cta">예약하기 ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Widget 4: 뉴스레터 구독 위젯 -->
+          <div class="side-panel-wrap newsletter-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-icon">📬</span>
+                <span>INTELLIGENCE BRIEFING</span>
+              </div>
             </div>
             <div class="newsletter-body">
-              <p class="newsletter-copy">
-                전 세계 항공권 특가, 신규 취항, 비자 및 호텔 인텔리전스를 매주 가장 먼저 이메일로 받아보세요.
-              </p>
-              <div v-if="newsletterSuccess" class="newsletter-success-box">
+              <p class="desc">글로벌 항공 노선, 호텔 특가, 비자 규정 변경 알림을 매주 가장 먼저 전달합니다.</p>
+              <div v-if="newsletterSuccess" class="success-box">
                 ✓ {{ newsletterMessage }}
               </div>
               <form v-else class="newsletter-form" @submit.prevent="handleNewsletterSubmit">
@@ -311,141 +535,179 @@ useHead(() => ({
                   aria-label="이메일 주소"
                 >
                 <button type="submit" :disabled="newsletterSubmitting">
-                  {{ newsletterSubmitting ? '구독 신청 중...' : '구독하기 →' }}
+                  {{ newsletterSubmitting ? '신청 중...' : '구독 ↗' }}
                 </button>
               </form>
             </div>
           </div>
-
-          <div class="bkp-side-widget">
-            <CurrencyRates />
-          </div>
-        </aside>
-      </section>
-
-      <!-- 전략적 트래픽 유도 제휴 CTA 카드 (TripScanner / GetForTrip) -->
-      <ArticleAffiliateCTA variant="card" />
-
-      <AdSlot placement-id="main_mid" />
-
-      <!-- ======================================================== -->
-      <!-- 2. AIRLINES & MILES 섹션                                 -->
-      <!-- ======================================================== -->
-      <section v-if="airlineArticles.length" class="bkp-category-section">
-        <div class="bkp-sec-header">
-          <div class="bkp-sec-title-wrap">
-            <span class="bkp-color-bar airline" />
-            <h2>AIRLINES & MILES</h2>
-          </div>
-          <NuxtLink :to="locUrl('/news/airline')" class="bkp-sec-more">{{ locale === 'en' ? 'VIEW ALL AIRLINE NEWS →' : '항공 뉴스 전체보기 →' }}</NuxtLink>
         </div>
-        <div class="bkp-card-grid-3">
-          <NewsArticleCard v-for="article in airlineArticles" :key="article.id" :article="article" />
+      </div>
+
+      <!-- ── BOTTOM STREAM: ALL CATEGORIES COMPACT ARCHIVE ── -->
+      <section v-if="bottomStreamArticles.length" class="ttr-bottom-stream">
+        <div class="stream-header">
+          <div class="title-left">
+            <span class="stream-bar" />
+            <h3>LATEST INVESTIGATIVE ARCHIVES</h3>
+          </div>
+          <NuxtLink :to="locUrl('/news/major')" class="stream-more">
+            전체 아카이브 더보기 →
+          </NuxtLink>
+        </div>
+
+        <div class="ttr-card-grid-3">
+          <NewsArticleCard v-for="art in bottomStreamArticles" :key="art.id" :article="art" />
         </div>
       </section>
-
-      <!-- ======================================================== -->
-      <!-- 3. HOTELS & STAY 섹션                                   -->
-      <!-- ======================================================== -->
-      <section v-if="hotelArticles.length" class="bkp-category-section">
-        <div class="bkp-sec-header">
-          <div class="bkp-sec-title-wrap">
-            <span class="bkp-color-bar hotel" />
-            <h2>HOTELS & STAY</h2>
-          </div>
-          <NuxtLink :to="locUrl('/news/hotel')" class="bkp-sec-more">{{ locale === 'en' ? 'VIEW ALL HOTEL NEWS →' : '호텔 뉴스 전체보기 →' }}</NuxtLink>
-        </div>
-        <div class="bkp-card-grid-3">
-          <NewsArticleCard v-for="article in hotelArticles" :key="article.id" :article="article" />
-        </div>
-      </section>
-
-      <!-- ======================================================== -->
-      <!-- 4. DESTINATIONS & TRAVEL 섹션                           -->
-      <!-- ======================================================== -->
-      <section v-if="destinationArticles.length" class="bkp-category-section">
-        <div class="bkp-sec-header">
-          <div class="bkp-sec-title-wrap">
-            <span class="bkp-color-bar destination" />
-            <h2>DESTINATIONS & TRAVEL</h2>
-          </div>
-          <NuxtLink :to="locUrl('/news/destination')" class="bkp-sec-more">{{ locale === 'en' ? 'VIEW ALL DESTINATIONS →' : '여행지 뉴스 전체보기 →' }}</NuxtLink>
-        </div>
-        <div class="bkp-card-grid-3">
-          <NewsArticleCard v-for="article in destinationArticles" :key="article.id" :article="article" />
-        </div>
-      </section>
-
-      <!-- ======================================================== -->
-      <!-- 5. LATEST STORIES 전체 아카이브                          -->
-      <!-- ======================================================== -->
-      <section v-if="remainingArticles.length" class="bkp-category-section">
-        <div class="bkp-sec-header">
-          <div class="bkp-sec-title-wrap">
-            <span class="bkp-color-bar default" />
-            <h2>LATEST STORIES</h2>
-          </div>
-          <NuxtLink :to="locUrl('/news/major')" class="bkp-sec-more">{{ locale === 'en' ? 'MORE STORIES →' : '주요 보도 더보기 →' }}</NuxtLink>
-        </div>
-        <div class="bkp-card-grid-3">
-          <NewsArticleCard v-for="article in remainingArticles" :key="article.id" :article="article" />
-        </div>
-      </section>
-
-      <AdSlot placement-id="main_bottom" />
     </template>
   </div>
 </template>
 
 <style scoped>
-.bkp-home-root {
-  padding: 20px 0 60px;
+.ttr-page-wrap {
+  width: 100%;
 }
 
-.bkp-highlight-row {
-  display: grid;
-  grid-template-columns: 1.45fr 0.55fr;
-  gap: 32px;
-  align-items: start;
-  margin-top: 16px;
-  margin-bottom: 44px;
-}
-
-.bkp-col-main {
-  min-width: 0;
-}
-
-.bkp-col-side {
+/* 0. Header Status Banner (Tetherrock Style) */
+.ttr-terminal-header {
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 12px;
+  margin-bottom: 14px;
 }
 
-/* 1. 메인 탑 리드 기사 (16:9 와이드 화보형) */
-.bkp-hero-lead-card {
-  background: #FFFFFF;
-  border-bottom: 2px solid #E5E7EB;
-  padding-bottom: 24px;
-  margin-bottom: 24px;
+.header-left .title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.bkp-hero-lead-link {
+.pulse-icon {
+  font-size: 18px;
+}
+
+.main-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.sub-title {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted, #8e99aa);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #8e99aa);
+}
+
+.live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, #00d4aa);
+  box-shadow: 0 0 8px var(--accent, #00d4aa);
+  animation: blink 2s infinite;
+}
+
+/* Section Tabs (.news-tab-btn) */
+.ttr-tabs-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border, #23253a);
+  margin-bottom: 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ttr-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.news-tab-btn {
+  padding: 9px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted, #8e99aa);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.news-tab-btn:hover {
+  color: #ffffff;
+}
+
+.news-tab-btn.active {
+  border-bottom-color: var(--accent, #00d4aa);
+  color: var(--accent, #00d4aa);
+  font-weight: 700;
+}
+
+.tab-count {
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent, #00d4aa);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* 3-Column Intelligence Grid */
+.ttr-3col-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Col 1: Lead Hero Card */
+.ttr-hero-card {
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: border-color 0.2s;
+}
+
+.ttr-hero-card:hover {
+  border-color: var(--accent, #00d4aa);
+}
+
+.hero-link {
   display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.bkp-hero-img-wrap {
-  height: 420px;
-  width: 100%;
+.hero-image-wrap {
   position: relative;
+  height: 380px;
+  width: 100%;
   overflow: hidden;
-  border-radius: 4px;
-  background: #060D81;
+  background: var(--bg-input, #11121d);
 }
 
-.bkp-hero-img-wrap img {
+.hero-image-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -453,138 +715,215 @@ useHead(() => ({
   transition: transform 0.4s ease;
 }
 
-.bkp-hero-lead-card:hover .bkp-hero-img-wrap img {
-  transform: scale(1.02);
+.ttr-hero-card:hover .hero-image-wrap img {
+  transform: scale(1.03);
 }
 
-.bkp-hero-fallback {
+.hero-fallback {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #060D81 0%, #1E3A8A 100%);
   display: grid;
   place-items: center;
-  color: #FFFFFF;
-  font-size: 24px;
+  background: linear-gradient(135deg, #13141f 0%, #1c2138 100%);
+  color: var(--text-dim, #7d8696);
+  font-size: 16px;
   font-weight: 800;
 }
 
-.bkp-hero-fallback.small {
-  height: 100%;
-}
-
-.bkp-cat-badge {
+.hero-badges {
   position: absolute;
   top: 14px;
   left: 14px;
-  background: #060D81;
-  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.cat-badge {
+  background: rgba(13, 14, 26, 0.85);
+  backdrop-filter: blur(4px);
+  color: var(--accent, #00d4aa);
+  border: 1px solid rgba(0, 212, 170, 0.35);
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
-  border-radius: 2px;
+  border-radius: 4px;
   letter-spacing: 0.5px;
 }
 
-.bkp-hero-info {
-  padding-top: 16px;
+.eeat-badge {
+  background: rgba(13, 14, 26, 0.85);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  border: 1px solid var(--border, #23253a);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-.bkp-hero-meta {
-  font-size: 12px;
-  color: #6B7280;
-  font-family: 'DM Mono', monospace;
+.hero-body {
+  padding: 20px 22px;
+}
+
+.hero-meta {
+  font-size: 11.5px;
+  color: var(--text-muted, #8e99aa);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.meta-sep {
+  color: var(--text-dim, #5a6474);
+}
+
+.hero-headline {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--text-primary, #f0f4f8);
+  letter-spacing: -0.3px;
+  transition: color 0.15s;
+}
+
+.ttr-hero-card:hover .hero-headline {
+  color: var(--accent, #00d4aa);
+}
+
+.hero-summary {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  color: var(--text-secondary, #d2d9e3);
+  line-height: 1.65;
+}
+
+.hero-takeaways {
+  background: var(--bg-input, #11121d);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.takeaways-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--accent, #00d4aa);
+  letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
 
-.bkp-hero-headline {
-  font-size: clamp(24px, 3.2vw, 34px);
-  font-weight: 900;
-  line-height: 1.25;
-  color: #111827;
-  margin: 0 0 10px;
+.takeaways-points {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.bkp-hero-lead-card:hover .bkp-hero-headline {
-  color: #060D81;
-}
-
-.bkp-hero-summary {
-  font-size: 15px;
-  color: #4B5563;
-  line-height: 1.65;
-  margin: 0 0 14px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bkp-hero-cta {
-  display: inline-block;
-  color: #060D81;
+.takeaways-points li {
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+  color: var(--text-secondary, #d2d9e3);
+  line-height: 1.5;
+  position: relative;
+  padding-left: 14px;
 }
 
-/* 2. 서브 하이라이트 2열 카드 */
-.bkp-sublead-row {
+.takeaways-points li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent, #00d4aa);
+  font-weight: 900;
+}
+
+.hero-read-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent, #00d4aa);
+}
+
+/* Sub-lead 2-Card Grid */
+.sublead-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 14px;
 }
 
-.bkp-sublead-item {
-  min-width: 0;
+.sublead-card {
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s;
 }
 
-.bkp-sublead-item a {
+.sublead-card:hover {
+  border-color: var(--accent, #00d4aa);
+  transform: translateY(-2px);
+}
+
+.sublead-card a {
   display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.bkp-sublead-img {
-  height: 170px;
-  width: 100%;
+.sublead-thumb {
+  height: 135px;
   position: relative;
   overflow: hidden;
-  border-radius: 4px;
-  background: #E5E7EB;
-  margin-bottom: 10px;
+  background: var(--bg-input, #11121d);
 }
 
-.bkp-sublead-img img {
+.sublead-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s ease;
 }
 
-.bkp-sublead-item:hover .bkp-sublead-img img {
-  transform: scale(1.03);
-}
-
-.bkp-sub-cat {
+.sublead-cat {
   position: absolute;
   bottom: 8px;
   left: 8px;
-  background: rgba(6, 13, 129, 0.9);
-  color: #FFFFFF;
+  background: rgba(13, 14, 26, 0.85);
+  color: var(--accent, #00d4aa);
+  border: 1px solid rgba(0, 212, 170, 0.3);
   font-size: 10px;
   font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-.bkp-sublead-title {
-  font-size: 16px;
+.sublead-body {
+  padding: 12px 14px;
+}
+
+.sublead-meta {
+  font-size: 10.5px;
+  color: var(--text-muted, #8e99aa);
+  margin-bottom: 4px;
+}
+
+.sublead-title {
+  margin: 0 0 6px;
+  font-size: 13.5px;
   font-weight: 700;
+  color: var(--text-primary, #f0f4f8);
   line-height: 1.4;
-  color: #111827;
-  margin: 0 0 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -592,422 +931,488 @@ useHead(() => ({
   overflow: hidden;
 }
 
-.bkp-sublead-item:hover .bkp-sublead-title {
-  color: #060D81;
-}
-
-.bkp-sublead-desc {
-  font-size: 13px;
-  color: #6B7280;
-  line-height: 1.55;
-  margin: 0 0 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.bkp-sublead-date {
-  font-size: 11px;
-  color: #9CA3AF;
-  font-family: 'DM Mono', monospace;
-}
-
-/* 3. 우측 사이드바: TOP STORIES */
-.bkp-side-widget {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-top: 3px solid #060D81;
-  padding: 20px;
-  border-radius: 2px;
-}
-
-.bkp-widget-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 2px solid #E5E7EB;
-  padding-bottom: 10px;
-  margin-bottom: 16px;
-}
-
-.bkp-widget-indicator {
-  width: 4px;
-  height: 16px;
-  background: #D0021B;
-  margin-right: 8px;
-  display: inline-block;
-}
-
-.bkp-widget-header h3 {
+.sublead-desc {
   margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: #060D81;
-  letter-spacing: 0.5px;
-  flex: 1;
-}
-
-.bkp-widget-more {
-  color: #6B7280;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-side-note {
   font-size: 12px;
-  color: #9CA3AF;
-  padding: 12px 0;
+  color: var(--text-secondary, #d2d9e3);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.bkp-rank-ordered-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* Col 2: Aviation & Hotel Radar Panel */
+.news-section-panel {
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 12px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.bkp-rank-line {
-  display: grid;
-  grid-template-columns: 28px 1fr;
+.panel-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border, #23253a);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.2px;
+}
+
+.panel-live-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: var(--accent, #00d4aa);
+  font-weight: 700;
+}
+
+.pulse-mini {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, #00d4aa);
+  animation: blink 2s infinite;
+}
+
+.filter-chips {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border, #23253a);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nf-chip {
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border, #23253a);
+  background: var(--bg-input, #11121d);
+  color: var(--text-muted, #8e99aa);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nf-chip.on {
+  border-color: var(--accent, #00d4aa);
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent, #00d4aa);
+}
+
+.radar-feed-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.radar-feed-item {
+  border-bottom: 1px solid var(--border, #23253a);
+  transition: background 0.15s;
+}
+
+.radar-feed-item:last-child {
+  border-bottom: none;
+}
+
+.radar-feed-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.radar-feed-link {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #F3F4F6;
-  align-items: baseline;
+  text-decoration: none;
+  color: inherit;
 }
 
-.bkp-rank-line:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-
-.bkp-rank-number {
-  font-family: 'DM Mono', monospace;
-  font-size: 20px;
-  font-weight: 800;
-  color: #9CA3AF;
-  line-height: 1;
-  text-align: center;
-}
-
-.bkp-rank-number.red {
-  color: #D0021B;
-}
-
-.bkp-rank-body {
+.radar-feed-text {
+  flex: 1;
   min-width: 0;
 }
 
-.bkp-rank-body a {
-  text-decoration: none;
-  color: inherit;
-  display: block;
+.radar-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-muted, #8e99aa);
+  margin-bottom: 4px;
 }
 
-.bkp-rank-text {
+.cat-pill {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 700;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.cat-pill.airline {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent, #00d4aa);
+}
+
+.cat-pill.hotel {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.radar-feed-title {
+  margin: 0 0 4px;
   font-size: 13px;
-  line-height: 1.45;
-  color: #111827;
+  font-weight: 700;
+  color: var(--text-primary, #f0f4f8);
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.radar-feed-link:hover .radar-feed-title {
+  color: var(--accent, #00d4aa);
+}
+
+.radar-feed-snippet {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted, #8e99aa);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.radar-feed-thumb {
+  width: 68px;
+  height: 52px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.radar-feed-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.panel-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border, #23253a);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.panel-more-link {
+  color: var(--accent, #00d4aa);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Col 3: Terminal Sidebar */
+.col-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.side-panel-wrap {
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Top 5 Ranking Panel */
+.rank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rank-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #23253a);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rank-item:last-child {
+  border-bottom: none;
+}
+
+.rank-badge {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text-muted, #8e99aa);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--bg-input, #11121d);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.rank-badge.top-three {
+  color: var(--accent, #00d4aa);
+  background: rgba(0, 212, 170, 0.15);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+}
+
+.rank-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-title {
+  font-size: 12.5px;
   font-weight: 600;
+  color: var(--text-primary, #f0f4f8);
+  line-height: 1.4;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.bkp-rank-line:hover .bkp-rank-text {
-  color: #060D81;
+.rank-title:hover {
+  color: var(--accent, #00d4aa);
 }
 
-.bkp-rank-submeta {
+.rank-meta {
   margin-top: 4px;
-  font-size: 11px;
-  color: #6B7280;
+  font-size: 10.5px;
+  color: var(--text-dim, #7d8696);
   display: flex;
   gap: 8px;
-  font-family: 'DM Mono', monospace;
 }
 
-.bkp-rank-tag {
-  color: #060D81;
-  font-weight: 700;
+.cat-tag {
+  color: var(--accent, #00d4aa);
 }
 
-/* 4. 섹션 스트립 */
-.bkp-category-section,
-.bkp-search-view {
-  margin-bottom: 48px;
+/* Partner Benefits Panel */
+.partner-cards {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.bkp-sec-header {
+.partner-card {
+  background: var(--bg-input, #11121d);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 8px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #060D81;
-  padding-bottom: 10px;
-  margin-bottom: 22px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.15s;
 }
 
-.bkp-sec-title-wrap {
+.partner-card:hover {
+  border-color: var(--accent, #00d4aa);
+  transform: translateY(-1px);
+}
+
+.partner-info {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.bkp-color-bar {
-  width: 5px;
-  height: 20px;
-  margin-right: 10px;
-  display: inline-block;
+.p-badge {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--accent, #00d4aa);
+  background: rgba(0, 212, 170, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  width: fit-content;
 }
 
-.bkp-color-bar.airline { background: #0284C7; }
-.bkp-color-bar.hotel { background: #D97706; }
-.bkp-color-bar.destination { background: #10B981; }
-.bkp-color-bar.default { background: #D0021B; }
+.p-badge.tour {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
 
-.bkp-sec-header h2 {
+.partner-info strong {
+  font-size: 13px;
+  color: var(--text-primary, #f0f4f8);
+}
+
+.partner-info p {
   margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: 0.5px;
-}
-
-.bkp-sec-more {
-  color: #060D81;
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-sec-more:hover {
-  text-decoration: underline;
-}
-
-.bkp-card-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-}
-
-.bkp-empty-state {
-  padding: 40px 0;
-  color: #6B7280;
-  text-align: center;
-  font-size: 14px;
-}
-
-@media (max-width: 900px) {
-  .bkp-highlight-row {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  .bkp-card-grid-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .bkp-home-root {
-    padding: 12px 0 40px;
-  }
-  .bkp-highlight-row {
-    margin-top: 8px;
-    margin-bottom: 28px;
-  }
-  .bkp-hero-lead-card {
-    padding-bottom: 16px;
-    margin-bottom: 16px;
-  }
-  .bkp-hero-img-wrap {
-    height: 200px;
-  }
-  .bkp-hero-headline {
-    font-size: 20px;
-    line-height: 1.3;
-    margin-bottom: 6px;
-  }
-  .bkp-hero-summary {
-    font-size: 13.5px;
-    line-height: 1.5;
-    margin-bottom: 10px;
-  }
-  .bkp-sublead-row {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .bkp-card-grid-3 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .bkp-sec-header {
-    margin-bottom: 14px;
-  }
-  .bkp-sec-header h2 {
-    font-size: 17px;
-  }
-  .bkp-category-section,
-  .bkp-search-view {
-    margin-bottom: 32px;
-  }
-}
-
-.bkp-topic-cloud-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  overflow-x: auto;
-  white-space: nowrap;
-  font-size: 13px;
-}
-
-.topic-label {
-  font-weight: 800;
-  color: #176B52;
   font-size: 11px;
-  letter-spacing: 0.5px;
+  color: var(--text-muted, #8e99aa);
 }
 
-.topic-chip {
-  padding: 4px 10px;
-  background: #f1f5f9;
-  border-radius: 16px;
-  color: #334155;
-  text-decoration: none;
-  font-weight: 600;
+.p-cta {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent, #00d4aa);
+  background: rgba(0, 212, 170, 0.12);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Newsletter Panel */
+.newsletter-body {
+  padding: 14px 16px;
+}
+
+.newsletter-body .desc {
+  margin: 0 0 10px;
   font-size: 12px;
-  transition: all 0.2s;
+  color: var(--text-muted, #8e99aa);
+  line-height: 1.5;
 }
 
-.topic-chip:hover {
-  background: #176B52;
-  color: #ffffff;
-}
-
-.bkp-search-meta-badge {
-  font-size: 13px;
-  font-weight: 700;
-  color: #4B5563;
-  background: #F3F4F6;
-  padding: 4px 12px;
-  border-radius: 4px;
-}
-
-.bkp-pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 36px;
-  padding-top: 20px;
-  border-top: 1px solid #E5E7EB;
-}
-
-.bkp-page-btn {
-  padding: 8px 18px;
-  background: #F3F4F6;
-  color: #111827;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.bkp-page-btn:hover {
-  background: #060D81;
-  color: #FFFFFF;
-}
-
-.bkp-page-numbers {
+.newsletter-form {
   display: flex;
   gap: 6px;
 }
 
-.bkp-page-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #4B5563;
-  text-decoration: none;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  transition: all 0.2s;
-}
-
-.bkp-page-num:hover,
-.bkp-page-num.active {
-  background: #060D81;
-  color: #FFFFFF;
-  border-color: #060D81;
-}
-
-.bkp-newsletter-widget {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  overflow: hidden;
-}
-.newsletter-body {
-  padding: 16px;
-}
-.newsletter-copy {
-  font-size: 13px;
-  color: #4B5563;
-  line-height: 1.5;
-  margin: 0 0 14px;
-}
-.newsletter-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 .newsletter-form input {
-  padding: 10px 12px;
-  border: 1px solid #D1D5DB;
+  flex: 1;
+  background: var(--bg-input, #11121d);
+  border: 1px solid var(--border, #23253a);
   border-radius: 6px;
-  font-size: 13px;
+  padding: 8px 10px;
+  color: var(--text-primary, #f0f4f8);
+  font-size: 12px;
   outline: none;
 }
+
 .newsletter-form input:focus {
-  border-color: #060D81;
+  border-color: var(--accent, #00d4aa);
 }
+
 .newsletter-form button {
-  background: #060D81;
-  color: #FFFFFF;
-  border: 0;
-  padding: 10px;
+  background: var(--accent, #00d4aa);
+  color: #0d0e1a;
+  border: none;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s ease;
+  white-space: nowrap;
 }
-.newsletter-form button:hover {
-  background: #040959;
-}
-.newsletter-success-box {
-  background: #F0FDF4;
-  border: 1px solid #86EFAC;
-  color: #166534;
-  font-size: 13px;
-  padding: 12px;
+
+.success-box {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent, #00d4aa);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  padding: 8px 12px;
   border-radius: 6px;
-  line-height: 1.5;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Bottom Stream Section */
+.ttr-bottom-stream {
+  margin-top: 40px;
+}
+
+.stream-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border, #23253a);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.stream-header .title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stream-bar {
+  width: 4px;
+  height: 16px;
+  background: var(--accent, #00d4aa);
+  border-radius: 2px;
+}
+
+.stream-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+}
+
+.stream-more {
+  font-size: 12px;
+  color: var(--accent, #00d4aa);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ttr-card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Responsive Rules */
+@media (max-width: 1200px) {
+  .ttr-3col-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .col-sidebar {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .ttr-3col-grid {
+    grid-template-columns: 1fr;
+  }
+  .col-sidebar {
+    grid-template-columns: 1fr;
+  }
+  .sublead-grid {
+    grid-template-columns: 1fr;
+  }
+  .ttr-card-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .hero-image-wrap {
+    height: 240px;
+  }
 }
 </style>
-
