@@ -23,11 +23,17 @@ export interface D1Database {
   batch(statements: D1PreparedStatement[]): Promise<D1Result<never>[]>
 }
 
+export interface R2BucketLike {
+  put(key: string, body: Uint8Array | ArrayBuffer | ReadableStream | string, options?: Record<string, unknown>): Promise<unknown>
+  get?(key: string): Promise<unknown>
+  delete?(key: string): Promise<unknown>
+}
+
 export interface WorkerEnvironment {
   DB?: D1Database
   ADMIN_BOOTSTRAP_TOKEN?: string
-  IMAGES_BUCKET?: unknown
-  R2_IMAGES?: unknown
+  IMAGES_BUCKET?: R2BucketLike | unknown
+  R2_IMAGES?: R2BucketLike | unknown
   R2_PUBLIC_DOMAIN?: string
 }
 
