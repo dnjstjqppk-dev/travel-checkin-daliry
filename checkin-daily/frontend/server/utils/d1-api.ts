@@ -510,18 +510,50 @@ async function getArticle(
       // Fallback if citations/factChecks table not populated
     }
 
-    // Auto-calculate Reading Time and AI Key Takeaways
+    // Auto-calculate Reading Time and Non-Duplicate AI Key Takeaways (3~4 distinct body facts)
     const contentStr = String((article as Record<string, unknown>).content || '')
     const cleanChars = contentStr.replace(/!\[.*?\]\(.*?\)/g, '').replace(/#+\s/g, '').trim().length
     const readingTimeMinutes = Math.max(1, Math.ceil(cleanChars / 500))
     ;(article as Record<string, unknown>).readingTimeMinutes = readingTimeMinutes
 
-    const summaryText = String((article as Record<string, unknown>).summary || '')
-    const summarySentences = summaryText.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 5)
-    const leadParagraph = contentStr.split('\n\n').find((p) => !p.startsWith('#') && !p.startsWith('!') && p.length > 20) || ''
-    const leadSentences = leadParagraph.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 5)
-    const takeaways = Array.from(new Set([...summarySentences, ...leadSentences])).slice(0, 3)
-    ;(article as Record<string, unknown>).keyTakeaways = takeaways.length ? takeaways : [summaryText]
+    const titleText = String((article as Record<string, unknown>).title || '').trim()
+    const summaryText = String((article as Record<string, unknown>).summary || '').trim()
+    const summarySentenceSet = new Set(
+      summaryText
+        .split(/(?<=[.!?])\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+
+    // Extract first substantive sentence from each body paragraph, excluding duplicates of summary/title
+    const bodyParagraphs = contentStr
+      .split(/\n{2,}/)
+      .map((p) => p.replace(/\*\*/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').trim())
+      .filter((p) => p && !p.startsWith('#') && !p.startsWith('!') && !p.startsWith('>') && p.length > 25)
+
+    const extractedTakeaways: string[] = []
+    for (const para of bodyParagraphs) {
+      const sentences = para
+        .split(/(?<=[.!?])\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length >= 20 && s.length <= 180)
+      for (const s of sentences) {
+        if (
+          !summarySentenceSet.has(s)
+          && !summaryText.includes(s)
+          && s !== titleText
+          && !extractedTakeaways.includes(s)
+        ) {
+          extractedTakeaways.push(s)
+          break
+        }
+      }
+      if (extractedTakeaways.length >= 4) break
+    }
+
+    ;(article as Record<string, unknown>).keyTakeaways = extractedTakeaways.length >= 2
+      ? extractedTakeaways.slice(0, 4)
+      : Array.from(summarySentenceSet).slice(0, 3)
   }
   return article
 }
@@ -547,7 +579,7 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
         sourceFirstPublishedAt: row.source_first_published_at,
         sourceUpdatedAt: row.source_updated_at,
         ingestedAt: row.ingested_at,
-        factCheckedAt: row.fact_checked_at || row.created_at,
+        factCheckedAt: row.fact_checked_at || null,
         scheduledAt: row.scheduled_at,
         retractedAt: row.retracted_at,
         retractionReason: row.retraction_reason,

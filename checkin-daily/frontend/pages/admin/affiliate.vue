@@ -63,8 +63,8 @@ const affiliates = siteConfig.affiliates
   margin-bottom: 28px;
 }
 .target-card {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-top: 4px solid #0052CC;
   border-radius: 6px;
   padding: 24px;
@@ -78,31 +78,31 @@ const affiliates = siteConfig.affiliates
 .card-head h2 {
   font-size: 18px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 6px 0 0;
 }
 .ext-link {
   font-size: 12px;
   font-weight: 700;
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: underline;
 }
 .tagline {
   font-size: 13px;
   font-weight: 700;
-  color: #4B5563;
+  color: var(--admin-text);
   margin: 0 0 8px;
 }
 .desc {
   font-size: 13px;
-  color: #6B7280;
+  color: var(--admin-muted);
   line-height: 1.6;
   margin: 0 0 16px;
 }
 .meta-section h4, .cta-preview h4 {
   font-size: 11px;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--admin-muted);
   font-family: 'DM Mono', monospace;
   margin: 0 0 8px;
 }
@@ -113,37 +113,37 @@ const affiliates = siteConfig.affiliates
   margin-bottom: 16px;
 }
 .kw-tag {
-  background: #F3F4F6;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text);
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
 .cta-box {
-  background: #F9FAFB;
-  border: 1px dashed #D1D5DB;
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-border);
   border-radius: 4px;
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .clone-architecture-box {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 20px 24px;
 }
 .clone-architecture-box h3 {
   margin: 0 0 8px;
   font-size: 15px;
-  color: #166534;
+  color: #10b981;
 }
 .clone-architecture-box p {
   margin: 0;
   font-size: 13px;
-  color: #374151;
+  color: var(--admin-text);
   line-height: 1.6;
 }
 .badge {

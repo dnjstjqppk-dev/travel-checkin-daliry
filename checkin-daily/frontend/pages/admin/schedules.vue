@@ -121,8 +121,8 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
 
 <style scoped>
 .empty-box {
-  background: #F9FAFB;
-  border: 1px dashed #D1D5DB;
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-border);
   border-radius: 6px;
   padding: 60px 20px;
   text-align: center;
@@ -137,11 +137,11 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
 }
 .table-link {
   font-weight: 700;
-  color: #111827;
+  color: var(--admin-heading);
   text-decoration: none;
 }
 .table-link:hover {
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: underline;
 }
 .job-actions {
@@ -163,9 +163,9 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 3px;
-  border: 1px solid #D1D5DB;
-  background: #FFFFFF;
-  color: #DC2626;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  color: #f87171;
   cursor: pointer;
 }
 .badge {
@@ -176,19 +176,19 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: #DCFCE7; color: #16A34A; }
-.badge-warning { background: #FEF3C7; color: #D97706; }
-.badge-danger { background: #FEE2E2; color: #DC2626; }
-.badge-default { background: #F3F4F6; color: #4B5563; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-default { background: var(--admin-surface); color: var(--admin-text); }
 .tag-cat {
   font-size: 11px;
-  background: #F3F4F6;
+  background: var(--admin-surface);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
 .text-sub {
-  color: #9CA3AF;
+  color: var(--admin-muted);
   font-size: 11px;
 }
 </style>

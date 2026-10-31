@@ -2,7 +2,16 @@
 const route = useRoute()
 const router = useRouter()
 const logoutError = ref('')
+const darkMode = useState('site-dark-mode', () => true)
 const { data: staffSession } = await useFetch<{ username: string; role: string }>('/api/auth/session')
+
+function toggleAdminTheme() {
+  darkMode.value = !darkMode.value
+  if (import.meta.client) {
+    document.documentElement.dataset.theme = darkMode.value ? 'dark' : 'light'
+    localStorage.setItem('checkin-theme', darkMode.value ? 'dark' : 'light')
+  }
+}
 
 const navGroups = [
   {
@@ -121,6 +130,15 @@ async function logout() {
       <header class="admin-toolbar">
         <div class="admin-breadcrumb"><span>편집국</span><span aria-hidden="true">/</span><strong>{{ pageLabel }}</strong></div>
         <div class="admin-toolbar-actions">
+          <button
+            type="button"
+            class="admin-theme-btn"
+            :aria-pressed="darkMode"
+            title="테마 모드 전환 (다크 / 라이트)"
+            @click="toggleAdminTheme"
+          >
+            {{ darkMode ? '☀ 라이트' : '◐ 다크' }}
+          </button>
           <a class="admin-view-site" href="/news" target="_blank" rel="noreferrer">사이트 보기 <span aria-hidden="true">↗</span></a>
           <span class="admin-toolbar-divider" aria-hidden="true"></span>
           <span class="admin-avatar" aria-hidden="true">E</span>
@@ -145,5 +163,20 @@ async function logout() {
 .admin-sidebar {
   overflow-y: auto;
   max-height: 100vh;
+}
+.admin-theme-btn {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  color: var(--admin-text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.admin-theme-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 </style>

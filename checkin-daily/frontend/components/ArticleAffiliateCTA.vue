@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// cspell:ignore kualalumpur jeju chiangmai danang hochiminh hongkong newyork getfortrip tripscanner checkindaily
 import { siteConfig, type AffiliateTarget } from '~/config/site.config'
 
 const props = defineProps<{
@@ -11,25 +12,43 @@ const affiliates = siteConfig.affiliates
 const tripScannerTarget = affiliates[0] as AffiliateTarget
 const getForTripTarget = (affiliates[1] || affiliates[0]) as AffiliateTarget
 
-// Destination airport code & city detector
+// Destination airport code & city detector (20+ Global Regions)
 const detectedDestination = computed(() => {
   const text = `${props.title || ''} ${props.category || ''}`
-  if (/방콕|태국|수완나품|bkk|bangkok/i.test(text)) return { iata: 'BKK', cityId: 'bkk', name: '방콕' }
-  if (/푸켓|phuket|hkt/i.test(text)) return { iata: 'HKT', cityId: 'phuket', name: '푸켓' }
-  if (/치앙마이|chiang\s*mai|cnx/i.test(text)) return { iata: 'CNX', cityId: 'chiangmai', name: '치앙마이' }
-  if (/도쿄|나리타|하네다|tokyo|narita|haneda|nrt|hnd/i.test(text)) return { iata: 'NRT', cityId: 'tokyo', name: '도쿄' }
-  if (/오사카|간사이|osaka|kansai|kix/i.test(text)) return { iata: 'KIX', cityId: 'osaka', name: '오사카' }
-  if (/후쿠오카|fukuoka|fuk/i.test(text)) return { iata: 'FUK', cityId: 'fukuoka', name: '후쿠오카' }
-  if (/다낭|danang|dad/i.test(text)) return { iata: 'DAD', cityId: 'danang', name: '다낭' }
-  if (/하노이|hanoi|han/i.test(text)) return { iata: 'HAN', cityId: 'hanoi', name: '하노이' }
-  if (/호치민|hochiminh|sgn/i.test(text)) return { iata: 'SGN', cityId: 'hochiminh', name: '호치민' }
-  if (/싱가포르|창이|singapore|sin/i.test(text)) return { iata: 'SIN', cityId: 'singapore', name: '싱가포르' }
-  if (/발리|덴파사르|bali|dps/i.test(text)) return { iata: 'DPS', cityId: 'bali', name: '발리' }
-  if (/파리|샤를드골|paris|cdg|par/i.test(text)) return { iata: 'PAR', cityId: 'paris', name: '파리' }
-  if (/런던|히드로|london|lhr|lon/i.test(text)) return { iata: 'LON', cityId: 'london', name: '런던' }
-  if (/뉴욕|newyork|jfk|nyc/i.test(text)) return { iata: 'NYC', cityId: 'newyork', name: '뉴욕' }
-  if (/세부|cebu|ceb/i.test(text)) return { iata: 'CEB', cityId: 'cebu', name: '세부' }
-  return { iata: 'BKK', cityId: 'bkk', name: '주요 인기 여행지' }
+  if (/방콕|태국|수완나품|bkk|bangkok/i.test(text)) return { iata: 'BKK', cityId: 'bkk', name: '방콕', countryCode: 'TH' }
+  if (/푸켓|phuket|hkt/i.test(text)) return { iata: 'HKT', cityId: 'phuket', name: '푸켓', countryCode: 'TH' }
+  if (/치앙마이|chiang\s*mai|cnx/i.test(text)) return { iata: 'CNX', cityId: 'chiangmai', name: '치앙마이', countryCode: 'TH' }
+  if (/도쿄|나리타|하네다|tokyo|narita|haneda|nrt|hnd/i.test(text)) return { iata: 'NRT', cityId: 'tokyo', name: '도쿄', countryCode: 'JP' }
+  if (/오사카|간사이|교토|osaka|kansai|kix/i.test(text)) return { iata: 'KIX', cityId: 'osaka', name: '오사카', countryCode: 'JP' }
+  if (/후쿠오카|fukuoka|fuk/i.test(text)) return { iata: 'FUK', cityId: 'fukuoka', name: '후쿠오카', countryCode: 'JP' }
+  if (/삿포로|홋카이도|sapporo|cts/i.test(text)) return { iata: 'CTS', cityId: 'sapporo', name: '삿포로', countryCode: 'JP' }
+  if (/다낭|danang|dad/i.test(text)) return { iata: 'DAD', cityId: 'danang', name: '다낭', countryCode: 'VN' }
+  if (/하노이|hanoi|han/i.test(text)) return { iata: 'HAN', cityId: 'hanoi', name: '하노이', countryCode: 'VN' }
+  if (/호치민|푸꾸옥|hochiminh|sgn/i.test(text)) return { iata: 'SGN', cityId: 'hochiminh', name: '호치민', countryCode: 'VN' }
+  if (/싱가포르|창이|singapore|sin/i.test(text)) return { iata: 'SIN', cityId: 'singapore', name: '싱가포르', countryCode: 'SG' }
+  if (/발리|덴파사르|인도네시아|bali|dps/i.test(text)) return { iata: 'DPS', cityId: 'bali', name: '발리', countryCode: 'ID' }
+  if (/쿠알라룸푸르|말레이시아| 코타키나발루|kul|bki/i.test(text)) return { iata: 'KUL', cityId: 'kualalumpur', name: '쿠알라룸푸르', countryCode: 'MY' }
+  if (/세부|마닐라|보홀|필리핀|cebu|ceb|mnl/i.test(text)) return { iata: 'CEB', cityId: 'cebu', name: '세부', countryCode: 'PH' }
+  if (/상하이|베이징|중국|홍콩|마카오|pvg|hkg/i.test(text)) return { iata: 'HKG', cityId: 'hongkong', name: '홍콩·상하이', countryCode: 'CN' }
+  if (/파리|샤를드골|프랑스|paris|cdg|par/i.test(text)) return { iata: 'CDG', cityId: 'paris', name: '파리', countryCode: 'FR' }
+  if (/런던|히드로|영국|london|lhr|lon/i.test(text)) return { iata: 'LHR', cityId: 'london', name: '런던', countryCode: 'GB' }
+  if (/프랑크푸르트|뮌헨|독일|fra|muc/i.test(text)) return { iata: 'FRA', cityId: 'frankfurt', name: '프랑크푸르트', countryCode: 'DE' }
+  if (/로마|밀라노|이탈리아|fco|mxp/i.test(text)) return { iata: 'FCO', cityId: 'rome', name: '로마', countryCode: 'IT' }
+  if (/바르셀로나|마드리드|스페인|bcn|mad/i.test(text)) return { iata: 'BCN', cityId: 'barcelona', name: '바르셀로나', countryCode: 'ES' }
+  if (/뉴욕|로스앤젤레스|미국|하와이|newyork|jfk|lax|hnl/i.test(text)) return { iata: 'JFK', cityId: 'newyork', name: '뉴욕·미주', countryCode: 'US' }
+  if (/밴쿠버|토론토|캐나다|yvr|yyz/i.test(text)) return { iata: 'YVR', cityId: 'vancouver', name: '밴쿠버', countryCode: 'CA' }
+  if (/시드니|멜버른|호주|syd|mel/i.test(text)) return { iata: 'SYD', cityId: 'sydney', name: '시드니', countryCode: 'AU' }
+  if (/오클랜드|뉴질랜드|akl/i.test(text)) return { iata: 'AKL', cityId: 'auckland', name: '오클랜드', countryCode: 'NZ' }
+  if (/두바이|아부다비|도하|중동|dxb|doh/i.test(text)) return { iata: 'DXB', cityId: 'dubai', name: '두바이·중동', countryCode: 'AE' }
+  if (/제주|서울|인천|부산|한국|cju|icn|pus/i.test(text)) return { iata: 'CJU', cityId: 'jeju', name: '제주·국내', countryCode: 'KR' }
+  return { iata: 'BKK', cityId: 'bkk', name: '글로벌 인기 여행지', countryCode: 'GLOBAL' }
+})
+
+const defaultDates = computed(() => {
+  const now = new Date()
+  const depart = new Date(now.getTime() + 14 * 86400000).toISOString().slice(0, 10)
+  const ret = new Date(now.getTime() + 18 * 86400000).toISOString().slice(0, 10)
+  return { depart, ret }
 })
 
 // Pick best affiliate target based on category or content
@@ -65,16 +84,52 @@ function trackAffiliateClick(platform: string) {
 
 function buildUrl(target: AffiliateTarget): string {
   const dest = detectedDestination.value
+  const dates = defaultDates.value
   if (target.id === 'tripscanner') {
-    return `https://tripscanner.io/flights?destination=${dest.iata}&utm_source=checkindaily&utm_medium=article_cta&utm_campaign=article_${encodeURIComponent(props.category || 'all')}`
+    return `https://tripscanner.io/flights?origin=ICN&destination=${dest.iata}&depart=${dates.depart}&return=${dates.ret}&adults=1&utm_source=checkindaily&utm_medium=article_cta&utm_campaign=article_${encodeURIComponent(props.category || 'all')}`
   }
   if (target.id === 'getfortrip') {
-    return `https://getfortrip.com/search?city=${dest.cityId}&utm_source=checkindaily&utm_medium=article_cta`
+    return `https://getfortrip.com/search?city=${dest.cityId}&checkin=${dates.depart}&checkout=${dates.ret}&utm_source=checkindaily&utm_medium=article_cta`
   }
   const ref = 'checkindaily'
   const param = props.category ? `&cat=${encodeURIComponent(props.category)}` : ''
   return `${target.url}?ref=${ref}${param}`
 }
+
+const verticalLinks = computed(() => {
+  const dest = detectedDestination.value
+  const dates = defaultDates.value
+  return [
+    {
+      id: 'flights',
+      icon: '✈️',
+      label: `항공권 검색 (ICN➔${dest.iata})`,
+      url: `https://tripscanner.io/flights?origin=ICN&destination=${dest.iata}&depart=${dates.depart}&return=${dates.ret}&adults=1&utm_source=checkindaily&utm_medium=vertical_flights`,
+      external: true,
+    },
+    {
+      id: 'hotels',
+      icon: '🏨',
+      label: `${dest.name} 호텔·숙박 비교`,
+      url: `https://tripscanner.io/hotels?city=${dest.cityId}&checkin=${dates.depart}&checkout=${dates.ret}&rooms=1&adults=2&utm_source=checkindaily&utm_medium=vertical_hotels`,
+      external: true,
+    },
+    {
+      id: 'tours',
+      icon: '🎟️',
+      label: `${dest.name} 투어·티켓·패스`,
+      url: `https://getfortrip.com/search?city=${dest.cityId}&category=tours_tickets&utm_source=checkindaily&utm_medium=vertical_tours`,
+      external: true,
+    },
+    {
+      id: 'hub',
+      icon: '📍',
+      label: `${dest.name} 여행지 뉴스 허브`,
+      url: `/news/region`,
+      external: false,
+    },
+  ]
+})
 </script>
 
 <template>
@@ -86,7 +141,7 @@ function buildUrl(target: AffiliateTarget): string {
           {{ primaryTarget.badgeText }}
         </span>
         <span class="cta-network-label">
-          🛰️ {{ detectedDestination.name }} 공식 제휴 트래픽 파트너
+          🛰️ {{ detectedDestination.name }} ({{ detectedDestination.iata }}) 여행 커머스 인텔리전스 연결
         </span>
       </div>
 
@@ -119,6 +174,37 @@ function buildUrl(target: AffiliateTarget): string {
           </a>
         </div>
       </div>
+
+      <!-- Multi-Vertical Travel Search Deep-Links -->
+      <div class="cta-vertical-grid">
+        <template v-for="v in verticalLinks" :key="v.id">
+          <a
+            v-if="v.external"
+            :href="v.url"
+            target="_blank"
+            rel="sponsored noopener noreferrer"
+            class="cta-vertical-pill"
+            @click="trackAffiliateClick(`vertical_${v.id}`)"
+          >
+            <span class="v-icon">{{ v.icon }}</span>
+            <span class="v-label">{{ v.label }}</span>
+            <span class="v-arrow">↗</span>
+          </a>
+          <NuxtLink
+            v-else
+            :to="v.url"
+            class="cta-vertical-pill is-internal"
+          >
+            <span class="v-icon">{{ v.icon }}</span>
+            <span class="v-label">{{ v.label }}</span>
+            <span class="v-arrow">→</span>
+          </NuxtLink>
+        </template>
+      </div>
+
+      <p class="cta-disclosure-note">
+        * 본 영역은 제휴 링크를 포함하며, 실제 항공 운임·숙박 요금 및 예약 가능 여부는 제휴사 실시간 검색 결과에 따릅니다.
+      </p>
     </div>
 
     <!-- 2. Inline Bar Format -->
@@ -283,6 +369,66 @@ function buildUrl(target: AffiliateTarget): string {
 .cta-secondary-link:hover {
   text-decoration: underline;
   color: var(--accent, #00d4aa);
+}
+
+.cta-vertical-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, #23253a);
+}
+
+@media (max-width: 780px) {
+  .cta-vertical-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cta-vertical-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--bg-input, #11121d);
+  border: 1px solid var(--border, #23253a);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-base, #d6deeb);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.cta-vertical-pill:hover {
+  border-color: var(--accent, #00d4aa);
+  color: var(--accent, #00d4aa);
+  transform: translateY(-1px);
+}
+
+.cta-vertical-pill .v-icon {
+  font-size: 13px;
+}
+
+.cta-vertical-pill .v-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cta-vertical-pill .v-arrow {
+  font-size: 10px;
+  color: var(--text-dim, #7d8696);
+}
+
+.cta-disclosure-note {
+  margin: 10px 0 0 0;
+  font-size: 10.5px;
+  color: var(--text-dim, #7d8696);
+  line-height: 1.4;
 }
 
 /* 2. Inline Style */

@@ -86,16 +86,16 @@ function hasLang(langsStr: string | null, code: string) {
 }
 .table-link {
   font-weight: 700;
-  color: #111827;
+  color: var(--admin-heading);
   text-decoration: none;
 }
 .table-link:hover {
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: underline;
 }
 .tag-cat {
   font-size: 11px;
-  background: #F3F4F6;
+  background: var(--admin-surface);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
@@ -111,8 +111,8 @@ function hasLang(langsStr: string | null, code: string) {
   font-family: 'DM Mono', monospace;
 }
 .lang-check.ok {
-  color: #16A34A;
-  background: #DCFCE7;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
   width: 20px;
   height: 20px;
   line-height: 20px;
@@ -121,10 +121,10 @@ function hasLang(langsStr: string | null, code: string) {
 .btn-sub-edit {
   font-size: 11px;
   font-weight: 700;
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: none;
   padding: 3px 6px;
-  border: 1px solid #BFDBFE;
+  border: 1px solid var(--admin-border);
   border-radius: 3px;
 }
 </style>

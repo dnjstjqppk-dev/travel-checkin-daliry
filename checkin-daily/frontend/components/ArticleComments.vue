@@ -387,11 +387,11 @@ function formatDate(isoStr: string) {
 }
 
 .comment-input {
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #2b2e44;
   border-radius: 6px;
   padding: 8px 12px;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   font-size: 13px;
 }
 
@@ -405,11 +405,11 @@ function formatDate(isoStr: string) {
 
 .comment-textarea {
   width: 100%;
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #2b2e44;
   border-radius: 6px;
   padding: 12px;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   font-size: 14px;
   line-height: 1.5;
   resize: vertical;
@@ -493,7 +493,7 @@ function formatDate(isoStr: string) {
 .author-badge {
   font-weight: 700;
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
 }
 
 .reply-badge {
@@ -549,7 +549,7 @@ function formatDate(isoStr: string) {
 }
 
 .reply-form {
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #2b2e44;
   border-radius: 6px;
   padding: 12px;
@@ -558,21 +558,21 @@ function formatDate(isoStr: string) {
 .replies-container {
   margin-top: 10px;
   padding-left: 24px;
-  border-left: 2px solid #23253a;
+  border-left: 2px solid var(--border, #23253a);
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 .reply-bubble {
-  background: #181927;
+  background: var(--bg-card, #181927);
 }
 
 .no-comments-box {
   text-align: center;
   padding: 32px 16px;
   background: rgba(19, 20, 31, 0.5);
-  border: 1px dashed #23253a;
+  border: 1px dashed var(--border, #23253a);
   border-radius: 8px;
   color: #71758e;
   font-size: 13px;
@@ -593,7 +593,7 @@ function formatDate(isoStr: string) {
 }
 
 .modal-box {
-  background: #13141f;
+  background: var(--bg-surface, #13141f);
   border: 1px solid #2b2e44;
   border-radius: 8px;
   padding: 24px;
@@ -605,7 +605,7 @@ function formatDate(isoStr: string) {
 .modal-box h4 {
   margin: 0 0 10px 0;
   font-size: 16px;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
 }
 
 .modal-box p {
@@ -623,11 +623,11 @@ function formatDate(isoStr: string) {
 
 .modal-input, .modal-select, .modal-textarea {
   width: 100%;
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #2b2e44;
   border-radius: 4px;
   padding: 8px 10px;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   font-size: 13px;
   box-sizing: border-box;
 }
@@ -650,7 +650,7 @@ function formatDate(isoStr: string) {
 
 .btn-danger {
   background: #ff5252;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   border: none;
   padding: 6px 14px;
   border-radius: 4px;

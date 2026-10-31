@@ -108,7 +108,7 @@ const dynamicTrendingItems = computed(() => {
 }
 
 .ticker-item .sym {
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   font-weight: 700;
   font-size: 11.5px;
   letter-spacing: -0.2px;

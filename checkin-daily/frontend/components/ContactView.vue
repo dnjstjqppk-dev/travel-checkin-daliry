@@ -189,12 +189,12 @@ async function handleSubmit() {
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 20px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -215,7 +215,7 @@ async function handleSubmit() {
 
 .contact-header {
   margin-bottom: 40px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 24px;
 }
 
@@ -250,7 +250,7 @@ async function handleSubmit() {
 
 .contact-lead {
   font-size: 15px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   max-width: 880px;
   margin: 0;
@@ -264,8 +264,8 @@ async function handleSubmit() {
 }
 
 .contact-card {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 24px;
   display: flex;
@@ -303,7 +303,7 @@ async function handleSubmit() {
 
 .contact-card p {
   font-size: 13px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
   margin: 0 0 16px;
   flex: 1;
@@ -312,7 +312,7 @@ async function handleSubmit() {
 .channel-info {
   font-size: 13px;
   color: #c9d1d9;
-  border-top: 1px dashed #23253a;
+  border-top: 1px dashed var(--border, #23253a);
   padding-top: 12px;
 }
 
@@ -324,8 +324,8 @@ async function handleSubmit() {
 }
 
 .inquiry-form-section {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 32px;
   margin-bottom: 40px;
@@ -341,7 +341,7 @@ async function handleSubmit() {
 
 .inquiry-desc {
   font-size: 13px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   margin: 0 0 24px;
 }
 
@@ -358,7 +358,7 @@ async function handleSubmit() {
   gap: 8px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
 }
 
 .field.full {
@@ -369,10 +369,10 @@ async function handleSubmit() {
 .field select,
 .field textarea {
   padding: 12px 14px;
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   border-radius: 6px;
   font-size: 13.5px;
-  background: #181927;
+  background: var(--bg-card, #181927);
   color: #e6edf3;
   transition: all 0.15s;
 }
@@ -438,13 +438,13 @@ async function handleSubmit() {
 
 .submit-success p {
   font-size: 13.5px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   margin: 0 0 20px;
 }
 
 .ttr-btn-explore {
   display: inline-block;
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #00d4aa;
   color: #00d4aa;
   padding: 10px 24px;
@@ -456,8 +456,8 @@ async function handleSubmit() {
 }
 
 .office-info-section {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 24px 28px;
 }
@@ -484,16 +484,16 @@ async function handleSubmit() {
   width: 180px;
   text-align: left;
   padding: 12px 16px;
-  background: #181927;
-  color: #8b949e;
-  border-bottom: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  color: var(--text-muted, #8b949e);
+  border-bottom: 1px solid var(--border, #23253a);
   font-weight: 700;
 }
 
 .office-table td {
   padding: 12px 16px;
   color: #c9d1d9;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
 }
 
 @media (max-width: 800px) {

@@ -88,8 +88,8 @@ function triggerToast(msg: string) {
   width: 34px;
   height: 34px;
   border-radius: 6px;
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -144,9 +144,9 @@ function triggerToast(msg: string) {
   bottom: 24px;
   right: 24px;
   z-index: 9999;
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #00d4aa;
-  color: #f1f5f9;
+  color: var(--text-base, #f1f5f9);
   padding: 12px 18px;
   border-radius: 8px;
   font-size: 13.5px;

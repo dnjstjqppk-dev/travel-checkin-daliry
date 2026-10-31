@@ -132,10 +132,10 @@ async function updatePolicy(key: string, value: string) {
 
 <style scoped>
 .save-toast {
-  color: #16A34A;
+  color: #10b981;
   font-weight: 700;
   font-size: 13px;
-  background: #DCFCE7;
+  background: rgba(16, 185, 129, 0.15);
   padding: 6px 12px;
   border-radius: 4px;
 }
@@ -145,8 +145,8 @@ async function updatePolicy(key: string, value: string) {
   gap: 20px;
 }
 .policy-card {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 24px;
   display: flex;
@@ -154,7 +154,7 @@ async function updatePolicy(key: string, value: string) {
 }
 .policy-card.danger-zone {
   border-left: 4px solid #DC2626;
-  background: #FFFBFB;
+  background: var(--admin-surface);
 }
 .policy-card.full-width {
   grid-column: 1 / -1;
@@ -168,12 +168,12 @@ async function updatePolicy(key: string, value: string) {
 .policy-header h3 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0;
 }
 .policy-desc {
   font-size: 13px;
-  color: #4B5563;
+  color: var(--admin-text);
   line-height: 1.6;
   margin: 0 0 16px;
   flex: 1;
@@ -191,31 +191,33 @@ async function updatePolicy(key: string, value: string) {
   background: #D97706;
 }
 .btn-toggle {
-  background: #F3F4F6;
-  color: #374151;
+  background: var(--admin-surface);
+  color: var(--admin-text);
   font-weight: 700;
   font-size: 13px;
   padding: 8px 14px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   cursor: pointer;
 }
 .btn-toggle.active {
-  background: #060D81;
-  color: #FFFFFF;
-  border-color: #060D81;
+  background: var(--accent);
+  color: #0d0e1a;
+  border-color: var(--accent);
 }
 .input-keywords {
   width: 100%;
   padding: 10px 12px;
   font-size: 13px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   box-sizing: border-box;
-}
+
+  background: var(--admin-input);
+  color: var(--admin-text);}
 .help-text {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--admin-muted);
   margin-top: 6px;
   display: block;
 }
@@ -226,8 +228,8 @@ async function updatePolicy(key: string, value: string) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: #DCFCE7; color: #16A34A; }
-.badge-danger { background: #FEE2E2; color: #DC2626; }
-.badge-default { background: #F3F4F6; color: #4B5563; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-default { background: var(--admin-surface); color: var(--admin-text); }
 </style>
 

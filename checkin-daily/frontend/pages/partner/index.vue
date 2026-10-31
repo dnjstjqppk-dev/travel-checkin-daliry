@@ -92,19 +92,13 @@ async function submitArticle() {
 
 <template>
   <div class="partner-portal-container">
-    <header class="partner-header">
-      <div class="partner-header-inner">
-        <NuxtLink to="/news" class="brand-link">
-          <span class="brand-badge">CHECK-IN DAILY</span>
-          <span class="portal-tag">PARTNER & CONTRIBUTOR PORTAL</span>
-        </NuxtLink>
-        <NuxtLink to="/news" class="back-link">← 독자용 뉴스 홈으로 이동</NuxtLink>
-      </div>
-    </header>
-
     <main class="partner-main">
       <div class="partner-hero">
-        <h1>글로벌 프레스 & 파트너 투고 시스템</h1>
+        <div class="partner-kicker-row">
+          <span class="portal-tag">PARTNER &amp; CONTRIBUTOR PORTAL</span>
+          <NuxtLink to="/news" class="back-link">← 독자용 뉴스 홈으로 이동</NuxtLink>
+        </div>
+        <h1>글로벌 프레스 &amp; 파트너 투고 시스템</h1>
         <p>
           관광청, 공항, 항공사, 호텔 체인 및 전문 기고가의 공식 보도자료를 수합하고 
           편집국 팩트체크를 거쳐 6개 언어(한국어, 영어, 중국어, 태국어, 베트남어, 스페인어)로 전 세계에 보도합니다.
@@ -210,81 +204,64 @@ async function submitArticle() {
 
 <style scoped>
 .partner-portal-container {
-  min-height: 100vh;
-  background-color: #f7f9f8;
-  color: #1a221f;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-
-.partner-header {
-  background-color: #176b52;
-  color: #ffffff;
-  padding: 16px 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.partner-header-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.brand-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  color: #ffffff;
-}
-
-.brand-badge {
-  background-color: #0e4c3a;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 900;
-  font-size: 14px;
-  letter-spacing: 1px;
-}
-
-.portal-tag {
-  font-size: 13px;
-  font-weight: 600;
-  opacity: 0.9;
-}
-
-.back-link {
-  color: #e2f3ec;
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.back-link:hover {
-  text-decoration: underline;
+  color: var(--text-base);
 }
 
 .partner-main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 20px;
+  padding: 12px 0 40px;
 }
 
 .partner-hero {
-  margin-bottom: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+}
+
+.partner-kicker-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portal-tag {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 1.4px;
+  font-family: 'DM Mono', monospace;
+}
+
+.back-link {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--accent);
 }
 
 .partner-hero h1 {
-  font-size: 28px;
+  font-size: clamp(22px, 3vw, 28px);
   font-weight: 800;
-  margin-bottom: 8px;
-  color: #12382b;
+  margin: 0 0 10px;
+  color: var(--text-primary);
 }
 
 .partner-hero p {
-  color: #4a5c54;
-  line-height: 1.6;
-  max-width: 800px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 840px;
+  font-size: 14px;
 }
 
 .partner-grid {
@@ -300,43 +277,45 @@ async function submitArticle() {
 }
 
 .partner-card {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 24px;
-  border: 1px solid #e1e7e4;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 26px;
+  border: 1px solid var(--border);
 }
 
 .partner-card h2 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 20px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 20px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #f0f4f2;
+  border-bottom: 1px solid var(--border);
 }
 
 form label {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
   margin-bottom: 14px;
-  color: #2c3e35;
+  color: var(--text-secondary);
 }
 
 form input, form select, form textarea {
   padding: 10px 12px;
-  border: 1px solid #ccd8d2;
-  border-radius: 6px;
-  font-size: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 13.5px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s;
 }
 
 form input:focus, form select:focus, form textarea:focus {
-  border-color: #176b52;
+  border-color: var(--accent);
 }
 
 .form-row {
@@ -347,19 +326,19 @@ form input:focus, form select:focus, form textarea:focus {
 
 .submit-btn {
   width: 100%;
-  background-color: #176b52;
-  color: #ffffff;
-  padding: 14px;
+  background: var(--accent);
+  color: #0d0e1a;
+  padding: 13px;
   border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: opacity 0.2s;
 }
 
 .submit-btn:hover {
-  background-color: #135541;
+  opacity: 0.92;
 }
 
 .submit-btn:disabled {
@@ -369,27 +348,30 @@ form input:focus, form select:focus, form textarea:focus {
 
 .alert {
   padding: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 16px;
   font-size: 13px;
+  font-weight: 700;
 }
 
 .alert-error {
-  background-color: #fde8e8;
-  color: #c81e1e;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
 }
 
 .alert-success {
-  background-color: #def7ec;
-  color: #03543f;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
 }
 
 .submission-item {
   padding: 16px;
-  border: 1px solid #edf2ef;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   margin-bottom: 14px;
-  background-color: #fafcfb;
+  background: var(--bg-surface);
 }
 
 .submission-header {
@@ -400,46 +382,54 @@ form input:focus, form select:focus, form textarea:focus {
 }
 
 .badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  padding: 3px 6px;
+  padding: 3px 8px;
   border-radius: 4px;
+  font-family: 'DM Mono', monospace;
 }
 
 .badge-approved {
-  background: #def7ec;
-  color: #03543f;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 
 .badge-submitted {
-  background: #fef08a;
-  color: #713f12;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
 }
 
 .submission-date {
-  font-size: 12px;
-  color: #83958c;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
 }
 
 .submission-title {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
-  margin-bottom: 6px;
-  line-height: 1.4;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+  line-height: 1.45;
 }
 
 .submission-meta {
   font-size: 12px;
-  color: #61736b;
-  margin-bottom: 8px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
 }
 
 .feedback-box {
-  background-color: #f0fdf4;
-  border-left: 3px solid #176b52;
-  padding: 8px 12px;
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+  padding: 9px 12px;
+  border-radius: 0 6px 6px 0;
   font-size: 12px;
-  color: #166534;
+  color: var(--text-secondary);
+}
+
+.feedback-box strong {
+  color: var(--accent);
 }
 </style>
 

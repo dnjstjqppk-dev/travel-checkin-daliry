@@ -199,18 +199,18 @@ async function saveSettings() {
   gap: 24px;
 }
 .settings-card {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 24px;
 }
 .settings-card h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 18px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--admin-border);
 }
 .form-fields {
   display: grid;
@@ -223,32 +223,33 @@ async function saveSettings() {
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--admin-text);
 }
 .field.full {
   grid-column: 1 / -1;
 }
 .field input, .field select {
+  background: var(--admin-input);
   height: 40px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 0 12px;
   font-size: 14px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .field input:focus {
-  border-color: #060D81;
+  border-color: var(--accent);
   outline: none;
 }
 .field-hint {
   font-size: 12px;
   font-weight: normal;
-  color: #6B7280;
+  color: var(--admin-muted);
   margin-top: 4px;
 }
 .info-box {
-  background: #F0F4FF;
-  border: 1px solid #C7D7FE;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 14px;
   margin-top: 8px;
@@ -256,12 +257,12 @@ async function saveSettings() {
 .info-box h3 {
   font-size: 13px;
   font-weight: 800;
-  color: #1E40AF;
+  color: var(--accent);
   margin: 0 0 6px;
 }
 .info-box p {
   font-size: 12px;
-  color: #374151;
+  color: var(--admin-text);
   line-height: 1.5;
   margin: 0;
 }

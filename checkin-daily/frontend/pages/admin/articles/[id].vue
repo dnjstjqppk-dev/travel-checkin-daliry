@@ -449,24 +449,24 @@ function formatDate(val: string | null | undefined) {
   gap: 10px;
 }
 .alert-success {
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
   padding: 12px 16px;
   border-radius: 4px;
   font-weight: 700;
   margin-bottom: 20px;
 }
 .alert-error {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
   padding: 12px 16px;
   border-radius: 4px;
   margin-bottom: 20px;
   font-weight: 700;
 }
 .editorial-status-banner {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 16px 20px;
   display: flex;
@@ -481,13 +481,13 @@ function formatDate(val: string | null | undefined) {
 .status-item .label {
   font-size: 11px;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--admin-muted);
   margin-bottom: 4px;
 }
 .status-item .val {
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .status-item .val small {
   font-size: 11px;
@@ -497,15 +497,15 @@ function formatDate(val: string | null | undefined) {
 .text-mono {
   font-family: monospace;
 }
-.text-success { color: #16A34A; }
-.text-warning { color: #D97706; }
-.text-danger { color: #DC2626; }
-.text-muted { color: #64748B; }
+.text-success { color: #10b981; }
+.text-warning { color: #f59e0b; }
+.text-danger { color: #f87171; }
+.text-muted { color: var(--admin-muted); }
 .font-bold { font-weight: 800; }
 
 .editor-form {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 24px;
 }
@@ -515,8 +515,8 @@ function formatDate(val: string | null | undefined) {
   margin-bottom: 16px;
 }
 .form-row-box {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 16px;
   margin-bottom: 16px;
@@ -524,7 +524,7 @@ function formatDate(val: string | null | undefined) {
 .form-row-box h3 {
   font-size: 14px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 12px;
 }
 .field {
@@ -534,17 +534,18 @@ function formatDate(val: string | null | undefined) {
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--admin-text);
 }
 .field.full {
   flex: 100%;
 }
 .field input, .field select, .field textarea {
+  background: var(--admin-input);
   padding: 10px 12px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   font-size: 14px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .field textarea {
   font-family: monospace;
@@ -555,7 +556,7 @@ function formatDate(val: string | null | undefined) {
   justify-content: space-between;
   align-items: center;
   padding-top: 20px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--admin-border);
   margin-top: 20px;
 }
 .right-actions {
@@ -563,17 +564,17 @@ function formatDate(val: string | null | undefined) {
   gap: 10px;
 }
 .btn-retract {
-  background: #FEF2F2;
-  color: #DC2626;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
   border: 1px solid #FCA5A5;
 }
 .btn-retract:hover {
-  background: #FEE2E2;
+  background: rgba(239, 68, 68, 0.15);
 }
 .btn-draft {
-  background: #F1F5F9;
-  color: #334155;
-  border: 1px solid #CBD5E1;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
   font-weight: 700;
 }
 .btn-publish:disabled {
@@ -582,8 +583,8 @@ function formatDate(val: string | null | undefined) {
 }
 
 .revisions-panel {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 24px;
   margin-top: 24px;
@@ -593,23 +594,23 @@ function formatDate(val: string | null | undefined) {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 16px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--admin-border);
   padding-bottom: 12px;
 }
 .revisions-header h3 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 4px;
 }
 .revisions-sub {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--admin-muted);
   margin: 0;
 }
 .btn-refresh-rev {
-  background: #F3F4F6;
-  border: 1px solid #D1D5DB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   padding: 6px 12px;
   font-size: 12px;
@@ -619,9 +620,9 @@ function formatDate(val: string | null | undefined) {
 .empty-revisions {
   text-align: center;
   padding: 24px;
-  color: #6B7280;
+  color: var(--admin-muted);
   font-size: 13px;
-  background: #F9FAFB;
+  background: var(--admin-surface);
   border-radius: 4px;
 }
 .revisions-list {
@@ -634,8 +635,8 @@ function formatDate(val: string | null | undefined) {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
 }
 .rev-left {
@@ -644,8 +645,8 @@ function formatDate(val: string | null | undefined) {
   gap: 12px;
 }
 .rev-badge {
-  background: #060D81;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: #0d0e1a;
   font-family: monospace;
   font-size: 11px;
   font-weight: 700;
@@ -659,16 +660,16 @@ function formatDate(val: string | null | undefined) {
 }
 .rev-title {
   font-size: 13.5px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .rev-meta {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--admin-muted);
 }
 .btn-restore {
-  background: #EEF2FF;
+  background: var(--accent-dim);
   border: 1px solid #C7D2FE;
-  color: #3730A3;
+  color: var(--accent);
   padding: 6px 14px;
   border-radius: 4px;
   font-size: 12px;

@@ -80,12 +80,12 @@ useSeoMeta({
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 20px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -106,7 +106,7 @@ useSeoMeta({
 
 .about-header {
   margin-bottom: 40px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 24px;
 }
 
@@ -141,7 +141,7 @@ useSeoMeta({
 
 .about-lead {
   font-size: 15px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   max-width: 880px;
   margin: 0;
@@ -155,8 +155,8 @@ useSeoMeta({
 }
 
 .about-card {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 24px;
   position: relative;
@@ -192,14 +192,14 @@ useSeoMeta({
 
 .about-card p {
   font-size: 13px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
   margin: 0;
 }
 
 .about-legal-section {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 24px 28px;
 }
@@ -227,16 +227,16 @@ useSeoMeta({
   width: 180px;
   text-align: left;
   padding: 12px 16px;
-  background: #181927;
-  color: #8b949e;
-  border-bottom: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  color: var(--text-muted, #8b949e);
+  border-bottom: 1px solid var(--border, #23253a);
   font-weight: 700;
 }
 
 .legal-table td {
   padding: 12px 16px;
   color: #c9d1d9;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
 }
 
 @media (max-width: 800px) {

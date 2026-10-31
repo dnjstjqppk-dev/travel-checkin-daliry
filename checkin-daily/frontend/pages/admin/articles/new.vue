@@ -366,6 +366,92 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
       </div>
     </div>
 
+    <!-- 1-B. 대량 일괄 생성 탭 (Batch Mode) -->
+    <div v-else-if="activeTab === 'batch'" class="ai-generator-panel">
+      <div class="ai-card">
+        <div class="ai-card-header">
+          <h2>🚀 대량 일괄 기사 생성 파이프라인 (Batch Mode)</h2>
+          <span class="spec-badge">최대 10개 키워드 동시 생성 · 자동 초안 보관</span>
+        </div>
+        <p class="ai-desc">
+          줄바꿈(Enter)으로 구분하여 여러 개의 여행 뉴스 키워드를 입력하면 각 키워드별로 심층 보도 기사 초안과 다국어 번역을 일괄 생성하여 편집국 대기열에 저장합니다.
+        </p>
+
+        <div class="ai-input-grid">
+          <label class="field full">
+            일괄 생성할 키워드 목록 (줄바꿈으로 구분, 1회 최대 10개) *
+            <textarea
+              v-model="batchKeywords"
+              rows="5"
+              placeholder="방콕 수완나품 공항 자동출입국심사 확대&#10;일본 엔화 환율 변동의 한국인 여행객 영향&#10;다낭 미케비치 신규 5성급 리조트 오픈"
+              required
+            ></textarea>
+          </label>
+          <label class="field">
+            기본 분야 카테고리
+            <select v-model="batchCategory">
+              <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
+            </select>
+          </label>
+          <label class="field full">
+            공통 참고 배경 정보 / 보도자료 메모 (선택 사항)
+            <textarea
+              v-model="batchContextText"
+              rows="3"
+              placeholder="일괄 생성 시 공통으로 반영할 팩트 메모나 출처 기준을 입력하세요."
+            ></textarea>
+          </label>
+        </div>
+
+        <div v-if="batchError" class="alert alert-error">{{ batchError }}</div>
+        <div v-if="batchMessage" class="alert alert-success">{{ batchMessage }}</div>
+
+        <div class="ai-actions">
+          <button
+            class="button button-primary action-btn-large"
+            type="button"
+            :disabled="batchRunning"
+            @click="runBatchGeneration"
+          >
+            {{ batchRunning ? '⏳ 대량 기사 일괄 생성 진행 중...' : '🚀 선택 키워드 일괄 생성 시작' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="batchResult?.results?.length" class="ai-preview-card">
+        <div class="preview-header">
+          <strong>일괄 생성 결과 ({{ batchResult.results.length }}건)</strong>
+          <NuxtLink to="/admin/articles" class="button button-sm">기사 목록에서 확인 →</NuxtLink>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>키워드</th>
+              <th>생성된 제목</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, idx) in batchResult.results" :key="idx">
+              <td><strong>{{ item.keyword }}</strong></td>
+              <td>{{ item.title || item.error || '-' }}</td>
+              <td>
+                <span class="char-count-badge" :class="{ valid: item.success }">
+                  {{ item.success ? '✓ 생성 완료' : '✕ 실패' }}
+                </span>
+              </td>
+              <td>
+                <NuxtLink v-if="item.articleId" :to="`/admin/articles/${item.articleId}`" class="button button-sm">
+                  편집기 열기 ↗
+                </NuxtLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- 2. 수동 에디터 탭 -->
     <form v-else class="editor-form" @submit.prevent="submitManual()">
       <!-- 실시간 발행 규격 검증 바 -->
@@ -508,27 +594,27 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 .tab-btn {
   padding: 12px 20px;
   border-radius: 8px;
-  border: 1px solid #dcdfe1;
-  background: #ffffff;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
   font-size: 14px;
   font-weight: 700;
-  color: #334155;
+  color: var(--admin-text);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tab-btn.active {
-  background: #176B52;
-  color: #ffffff;
-  border-color: #176B52;
+  background: var(--accent);
+  color: #0d0e1a;
+  border-color: var(--accent);
   box-shadow: 0 4px 12px rgba(23, 107, 82, 0.2);
 }
 
 .ai-card {
-  background: #ffffff;
+  background: var(--admin-card);
   border-radius: 12px;
   padding: 28px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   margin-bottom: 24px;
 }
@@ -543,8 +629,8 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .spec-badge {
-  background: #FEF3C7;
-  color: #92400E;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
   font-size: 12px;
   font-weight: 800;
   padding: 4px 10px;
@@ -563,18 +649,18 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 4px;
-  background: #FEE2E2;
-  color: #991B1B;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .char-count-badge.valid, .image-count-badge.valid {
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 
 .editorial-status-banner {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 16px 20px;
   display: grid;
@@ -599,7 +685,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 .status-label {
   font-size: 12px;
   font-weight: 800;
-  color: #64748B;
+  color: var(--admin-muted);
 }
 
 .status-val-wrap {
@@ -619,12 +705,12 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 
 .status-hint {
   font-size: 11px;
-  color: #94A3B8;
+  color: var(--admin-muted);
 }
 
-.text-success { color: #16A34A; }
-.text-warning { color: #D97706; }
-.text-danger { color: #DC2626; }
+.text-success { color: #10b981; }
+.text-warning { color: #f59e0b; }
+.text-danger { color: #f87171; }
 
 .publish-ready-badge {
   padding: 8px 12px;
@@ -635,14 +721,14 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .publish-ready-badge.ready {
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
   border: 1px solid #86EFAC;
 }
 
 .publish-ready-badge.not-ready {
-  background: #FEF3C7;
-  color: #92400E;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
   border: 1px solid #FCD34D;
 }
 
@@ -659,7 +745,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: #334155;
+  color: var(--admin-text);
 }
 
 .field.full {
@@ -667,8 +753,10 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .field input, .field select, .field textarea {
+  color: var(--admin-text);
+  background: var(--admin-input);
   padding: 10px 14px;
-  border: 1px solid #CBD5E1;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -678,7 +766,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   justify-content: space-between;
   align-items: center;
   padding-top: 16px;
-  border-top: 1px solid #E2E8F0;
+  border-top: 1px solid var(--admin-border);
   margin-top: 24px;
 }
 
@@ -688,25 +776,115 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .btn-draft {
-  background: #F1F5F9;
-  color: #334155;
-  border: 1px solid #CBD5E1;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
   font-weight: 700;
 }
 
 .btn-draft:hover {
-  background: #E2E8F0;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .btn-publish {
-  background: #060D81;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: #0d0e1a;
   font-weight: 800;
 }
 
 .btn-publish:disabled {
-  background: #94A3B8;
+  background: var(--admin-muted);
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.ai-desc {
+  color: var(--admin-muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin: 0 0 20px;
+}
+
+.ai-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ai-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.ai-preview-card {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.preview-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--admin-heading);
+}
+
+.preview-lead {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--admin-muted);
+  line-height: 1.6;
+}
+
+.content-preview {
+  margin: 0;
+  padding: 16px;
+  background: var(--admin-input);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  color: var(--admin-text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 460px;
+  overflow-y: auto;
 }
 </style>

@@ -77,7 +77,7 @@ function formatDate(val: string) {
   margin-left: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: #374151;
+  color: var(--admin-text);
 }
 .details-cell {
   max-width: 320px;
@@ -87,8 +87,8 @@ function formatDate(val: string) {
 }
 .details-cell code {
   font-size: 11px;
-  color: #6B7280;
-  background: #F3F4F6;
+  color: var(--admin-muted);
+  background: var(--admin-surface);
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -99,11 +99,11 @@ function formatDate(val: string) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-primary { background: #EEF2FF; color: #0052CC; }
-.badge-default { background: #F3F4F6; color: #4B5563; }
+.badge-primary { background: var(--accent-dim); color: var(--accent); }
+.badge-default { background: var(--admin-surface); color: var(--admin-text); }
 .text-center {
   text-align: center;
-  color: #9CA3AF;
+  color: var(--admin-muted);
   padding: 30px;
 }
 </style>

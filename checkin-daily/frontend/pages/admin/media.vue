@@ -250,8 +250,8 @@ const mediaStandards = [
 
 <style scoped>
 .upload-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 24px;
   margin-bottom: 24px;
@@ -260,30 +260,30 @@ const mediaStandards = [
 .upload-panel h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 6px;
 }
 
 .upload-desc {
   font-size: 13px;
-  color: #64748B;
+  color: var(--admin-muted);
   margin: 0 0 16px;
 }
 
 .upload-box {
   position: relative;
-  border: 2px dashed #CBD5E1;
+  border: 2px dashed var(--admin-border);
   border-radius: 8px;
   padding: 28px;
   text-align: center;
-  background: #F8FAFC;
+  background: var(--admin-surface);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .upload-box:hover {
-  border-color: #060D81;
-  background: #F1F5F9;
+  border-color: var(--accent);
+  background: var(--admin-surface);
 }
 
 .upload-box input {
@@ -303,7 +303,7 @@ const mediaStandards = [
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  color: #334155;
+  color: var(--admin-text);
 }
 
 .upload-icon {
@@ -313,8 +313,8 @@ const mediaStandards = [
 .alert-success {
   margin-top: 12px;
   padding: 10px 14px;
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
   border-radius: 6px;
   font-weight: 700;
   font-size: 13px;
@@ -323,16 +323,16 @@ const mediaStandards = [
 .alert-error {
   margin-top: 12px;
   padding: 10px 14px;
-  background: #FEE2E2;
-  color: #991B1B;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
   border-radius: 6px;
   font-weight: 700;
   font-size: 13px;
 }
 
 .assets-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 8px;
   padding: 24px;
   margin-bottom: 24px;
@@ -348,14 +348,14 @@ const mediaStandards = [
 .panel-header h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0;
 }
 
 .empty-state {
   padding: 36px;
   text-align: center;
-  color: #94A3B8;
+  color: var(--admin-muted);
   font-size: 14px;
 }
 
@@ -366,10 +366,10 @@ const mediaStandards = [
 }
 
 .asset-card {
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   overflow: hidden;
-  background: #F8FAFC;
+  background: var(--admin-surface);
   display: flex;
   flex-direction: column;
 }
@@ -408,7 +408,7 @@ const mediaStandards = [
 .asset-name {
   font-size: 13px;
   font-weight: 700;
-  color: #1E293B;
+  color: var(--admin-heading);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -417,7 +417,7 @@ const mediaStandards = [
 
 .asset-mime {
   font-size: 11px;
-  color: #64748B;
+  color: var(--admin-muted);
   margin: 0;
 }
 
@@ -429,22 +429,22 @@ const mediaStandards = [
 
 .btn-copy {
   flex: 1;
-  background: #060D81;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: #0d0e1a;
   font-size: 11px;
   font-weight: 700;
   padding: 6px 8px;
 }
 
 .btn-del {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   padding: 6px 8px;
 }
 
 .media-standards-panel {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 24px;
   margin-bottom: 24px;
@@ -453,13 +453,13 @@ const mediaStandards = [
 .media-standards-panel h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 16px;
 }
 
 .media-guidelines-box {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 20px 24px;
 }
@@ -468,14 +468,14 @@ const mediaStandards = [
   font-size: 15px;
   font-weight: 800;
   margin: 0 0 10px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 
 .media-guidelines-box ul {
   margin: 0;
   padding-left: 20px;
   font-size: 13px;
-  color: #4B5563;
+  color: var(--admin-text);
   line-height: 1.8;
 }
 
@@ -487,6 +487,6 @@ const mediaStandards = [
   font-family: monospace;
 }
 
-.badge-success { background: #DCFCE7; color: #16A34A; }
-.badge-danger { background: #FEE2E2; color: #DC2626; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 </style>

@@ -234,7 +234,7 @@ const roleColors: Record<string, string> = {
   margin: 0;
   font-size: 24px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--admin-heading);
 }
 
 .ttr-back-btn {

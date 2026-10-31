@@ -243,13 +243,13 @@ function formatDate(iso: string) {
 .page-title {
   font-size: 24px;
   font-weight: 800;
-  color: #f1f5f9;
+  color: var(--admin-text);
   margin: 0;
 }
 
 .ttr-back-btn {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--admin-muted);
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 6px;
@@ -258,7 +258,7 @@ function formatDate(iso: string) {
 }
 .ttr-back-btn:hover {
   color: #fff;
-  border-color: #64748b;
+  border-color: var(--admin-muted);
 }
 
 .filter-tab-bar {
@@ -273,7 +273,7 @@ function formatDate(iso: string) {
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--admin-muted);
   background: #0f172a;
   border: 1px solid #1e293b;
   border-radius: 6px;
@@ -282,8 +282,8 @@ function formatDate(iso: string) {
 }
 
 .tab-btn:hover {
-  color: #f1f5f9;
-  border-color: #334155;
+  color: var(--admin-text);
+  border-color: var(--admin-text);
 }
 
 .tab-btn.active {
@@ -306,7 +306,7 @@ function formatDate(iso: string) {
 .empty-state {
   padding: 48px;
   text-align: center;
-  color: #64748b;
+  color: var(--admin-muted);
   background: #0f172a;
   border: 1px dashed #334155;
   border-radius: 8px;
@@ -351,7 +351,7 @@ function formatDate(iso: string) {
 .comment-id {
   font-family: monospace;
   font-size: 12px;
-  color: #64748b;
+  color: var(--admin-muted);
 }
 
 .author-name {
@@ -364,13 +364,13 @@ function formatDate(iso: string) {
   font-size: 11px;
   padding: 2px 6px;
   background: #1e293b;
-  color: #94a3b8;
+  color: var(--admin-muted);
   border-radius: 4px;
 }
 
 .created-at {
   font-size: 12px;
-  color: #64748b;
+  color: var(--admin-muted);
 }
 
 .header-right {
@@ -413,26 +413,26 @@ function formatDate(iso: string) {
 
 .status-pill.deleted {
   background: #334155;
-  color: #94a3b8;
+  color: var(--admin-muted);
 }
 
 .card-article-title {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--admin-muted);
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #1e293b;
 }
 
 .article-label {
-  color: #64748b;
+  color: var(--admin-muted);
   margin-right: 6px;
 }
 
 .card-content {
   font-size: 14px;
   line-height: 1.6;
-  color: #cbd5e1;
+  color: var(--admin-text);
   margin-bottom: 14px;
 }
 
@@ -443,7 +443,7 @@ function formatDate(iso: string) {
 
 .deleted-content-notice {
   font-style: italic;
-  color: #64748b;
+  color: var(--admin-muted);
   margin: 0;
 }
 
@@ -457,7 +457,7 @@ function formatDate(iso: string) {
 
 .footer-stats {
   font-size: 12px;
-  color: #64748b;
+  color: var(--admin-muted);
 }
 
 .footer-actions {
@@ -477,12 +477,12 @@ function formatDate(iso: string) {
 
 .action-btn.dismiss {
   background: #1e293b;
-  color: #94a3b8;
-  border-color: #334155;
+  color: var(--admin-muted);
+  border-color: var(--admin-text);
 }
 .action-btn.dismiss:hover {
   background: #334155;
-  color: #f1f5f9;
+  color: var(--admin-text);
 }
 
 .action-btn.approve {

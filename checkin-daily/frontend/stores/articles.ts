@@ -21,6 +21,7 @@ export interface Article {
   sourceUrl?: string
   licenseInfo?: string
   factCheckedAt?: string | null
+  citations?: Array<{ source_name?: string; source_url?: string; published_date?: string; license_type?: string }>
   factChecks?: Array<{ claim?: string; verification_status?: string }>
   corrections?: Array<{ reason?: string; corrected_at?: string; original_statement?: string; corrected_statement?: string }>
 }

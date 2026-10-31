@@ -183,12 +183,12 @@ useSeoMeta({
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 20px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -209,7 +209,7 @@ useSeoMeta({
 
 .correction-header {
   margin-bottom: 40px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 24px;
 }
 
@@ -244,7 +244,7 @@ useSeoMeta({
 
 .correction-lead {
   font-size: 15px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   max-width: 880px;
   margin: 0;
@@ -257,8 +257,8 @@ useSeoMeta({
 }
 
 .correction-form {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 32px;
   display: flex;
@@ -275,16 +275,16 @@ useSeoMeta({
 .form-group label {
   font-size: 12.5px;
   font-weight: 700;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
 }
 
 .form-group input,
 .form-group textarea {
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   border-radius: 6px;
   padding: 12px 14px;
   font-size: 13.5px;
-  background: #181927;
+  background: var(--bg-card, #181927);
   color: #e6edf3;
   transition: all 0.15s;
 }
@@ -340,8 +340,8 @@ useSeoMeta({
 }
 
 .correction-notice {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 24px;
   height: fit-content;
@@ -364,7 +364,7 @@ useSeoMeta({
   font-weight: 800;
   color: #e6edf3;
   margin: 0 0 16px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 10px;
   font-family: 'DM Mono', monospace;
 }
@@ -379,7 +379,7 @@ useSeoMeta({
 
 .correction-notice li {
   font-size: 13px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
 }
 
@@ -412,7 +412,7 @@ useSeoMeta({
 
 .banner-text p {
   font-size: 14px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   margin: 0 0 20px;
 }

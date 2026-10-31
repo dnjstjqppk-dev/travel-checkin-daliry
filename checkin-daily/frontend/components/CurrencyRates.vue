@@ -156,8 +156,14 @@ function getSparklineMeta(currency: string): SparklineMeta {
     <p v-else-if="error" class="bkp-fx-msg error">{{ locale === 'en' ? 'Unable to load rates.' : '환율 정보를 잠시 불러올 수 없습니다.' }}</p>
     <template v-else-if="data">
       <div class="bkp-fx-subbar">
-        <span>{{ locale === 'en' ? 'KRW per Foreign Currency Unit' : '외화 1단위당 원화(KRW) 가치' }}</span>
-        <span class="bkp-fx-live-pill" :title="`기준시각: ${updatedLabel} (공식 고시 환율, 1시간 주기 갱신)`">{{ locale === 'en' ? 'MARKET' : '공식 고시' }}</span>
+        <span>{{ locale === 'en' ? 'KRW per Foreign Currency Unit' : '외화 1단위당 원화(KRW) 매매기준율' }}</span>
+        <span
+          class="bkp-fx-live-pill"
+          :class="{ 'is-stale': data.stale }"
+          :title="`기준시각: ${updatedLabel} KST (${data.source})`"
+        >
+          {{ data.stale ? (locale === 'en' ? 'CACHED' : '예비 고시') : (locale === 'en' ? 'LIVE FX' : '공식 고시') }}
+        </span>
       </div>
       <ul class="bkp-fx-list">
         <li v-for="rate in displayRates" :key="rate.code" class="bkp-fx-row">
@@ -167,7 +173,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
             <span class="bkp-fx-unit" v-if="rate.unit && rate.unit > 1">({{ rate.unit }})</span>
             <span class="bkp-fx-country">{{ getCountryName(rate.code, rate.country) }}</span>
           </div>
-          <div class="bkp-fx-sparkline" :title="`30일 변동 추이: ${getSparklineMeta(rate.currency).changePct}`">
+          <div class="bkp-fx-sparkline" :title="`변동 추이 참고 지표: ${getSparklineMeta(rate.currency).changePct}`">
             <svg width="54" height="20" viewBox="0 0 54 20" fill="none">
               <path
                 :d="getSparklineMeta(rate.currency).path"
@@ -204,7 +210,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
   border: 1px solid var(--border, #23253a);
   border-radius: 12px;
   padding: 16px 18px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .bkp-box-title {
@@ -234,7 +240,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
   margin: 0;
   font-size: 13.5px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #f0f4f8);
   letter-spacing: -0.2px;
 }
 
@@ -268,7 +274,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-stale-tag {
-  color: var(--red, #f6465d);
+  color: var(--amber, #f0b90b);
   font-size: 10.5px;
   font-weight: 700;
   margin-left: 4px;
@@ -289,8 +295,25 @@ function getSparklineMeta(currency: string): SparklineMeta {
   border: 1px solid rgba(0, 212, 170, 0.3);
   font-size: 9.5px;
   font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.bkp-fx-live-pill.is-stale {
+  background: rgba(240, 185, 11, 0.15);
+  color: var(--amber, #f0b90b);
+  border-color: rgba(240, 185, 11, 0.35);
+}
+
+.bkp-fx-msg {
+  font-size: 12px;
+  color: var(--text-muted, #8e99aa);
+  padding: 16px 0;
+  text-align: center;
+}
+
+.bkp-fx-msg.error {
+  color: var(--red, #f6465d);
 }
 
 .bkp-fx-list {
@@ -304,7 +327,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
   align-items: center;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border, #23253a);
 }
 
 .bkp-fx-row:last-child {
@@ -314,30 +337,35 @@ function getSparklineMeta(currency: string): SparklineMeta {
 .bkp-fx-info {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 12px;
 }
 
 .bkp-fx-symbol {
-  color: var(--text-muted, #8e99aa);
-  font-weight: 700;
+  color: var(--accent, #00d4aa);
+  font-weight: 800;
   font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  min-width: 14px;
 }
 
 .bkp-fx-code {
   color: var(--text-primary, #f0f4f8);
   font-weight: 800;
   font-size: 12px;
+  font-family: var(--font-mono, monospace);
 }
 
 .bkp-fx-unit {
   color: var(--text-dim, #7d8696);
   font-size: 10px;
+  font-family: var(--font-mono, monospace);
 }
 
 .bkp-fx-country {
   color: var(--text-muted, #8e99aa);
-  font-size: 11px;
+  font-size: 11.5px;
+  margin-left: 2px;
 }
 
 .bkp-fx-val-wrap {
@@ -350,16 +378,18 @@ function getSparklineMeta(currency: string): SparklineMeta {
   color: var(--accent, #00d4aa);
   font-size: 13.5px;
   font-weight: 800;
+  font-family: var(--font-mono, monospace);
   font-variant-numeric: tabular-nums;
 }
 
 .bkp-fx-won {
-  color: var(--text-dim, #7d8696);
-  font-size: 10.5px;
+  color: var(--text-muted, #8e99aa);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .bkp-fx-footer {
-  margin-top: 10px;
+  margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--border, #23253a);
   display: flex;
@@ -367,114 +397,17 @@ function getSparklineMeta(currency: string): SparklineMeta {
   align-items: center;
   font-size: 10.5px;
   color: var(--text-dim, #7d8696);
+  font-family: var(--font-mono, monospace);
 }
 
 .bkp-fx-footer a {
   color: var(--accent, #00d4aa);
   text-decoration: none;
-}
-
-
-.bkp-fx-msg {
-  font-size: 12px;
-  color: #6B7280;
-  padding: 16px 0;
-  text-align: center;
-}
-
-.bkp-fx-msg.error {
-  color: #DC2626;
-}
-
-.bkp-fx-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.bkp-fx-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #F3F4F6;
-}
-
-.bkp-fx-row:last-child {
-  border-bottom: 0;
-}
-
-.bkp-fx-info {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.bkp-fx-symbol {
-  font-size: 11px;
-  font-weight: 800;
-  color: #060D81;
-  font-family: 'DM Mono', monospace;
-  min-width: 14px;
-}
-
-.bkp-fx-code {
-  font-size: 12px;
-  font-weight: 800;
-  color: #111827;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-fx-unit {
-  font-size: 10px;
-  color: #9CA3AF;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-fx-country {
-  font-size: 11.5px;
-  color: #6B7280;
-  margin-left: 2px;
-}
-
-.bkp-fx-val-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.bkp-fx-val {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #060D81;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-fx-won {
-  font-size: 11px;
-  color: #6B7280;
   font-weight: 600;
-}
-
-.bkp-fx-footer {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #E5E7EB;
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #9CA3AF;
-  font-family: 'DM Mono', monospace;
-}
-
-.bkp-fx-footer a {
-  color: #6B7280;
-  text-decoration: none;
 }
 
 .bkp-fx-footer a:hover {
   text-decoration: underline;
-  color: #060D81;
 }
 
 /* FX Sparkline & Change Badge */

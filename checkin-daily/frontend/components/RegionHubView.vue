@@ -312,13 +312,13 @@ function formatViews(views = 0) {
   gap: 8px;
   font-size: 11px;
   font-family: 'DM Mono', monospace;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   margin-bottom: 18px;
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -339,7 +339,7 @@ function formatViews(views = 0) {
 
 .ttr-region-header-banner {
   background: linear-gradient(135deg, #13141f 0%, #181927 100%);
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 28px 32px;
   margin-bottom: 24px;
@@ -368,8 +368,8 @@ function formatViews(views = 0) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   color: #00d4aa;
   font-size: 10.5px;
   font-family: 'DM Mono', monospace;
@@ -406,7 +406,7 @@ function formatViews(views = 0) {
 .ttr-region-sub-title {
   margin: 0;
   font-size: 13.5px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
   max-width: 800px;
 }
@@ -438,20 +438,20 @@ function formatViews(views = 0) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 20px;
   padding: 8px 16px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .ttr-country-pill:hover {
-  background: #181927;
+  background: var(--bg-card, #181927);
   border-color: #383b52;
   color: #e6edf3;
 }
@@ -475,8 +475,8 @@ function formatViews(views = 0) {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 6px;
   padding: 12px 16px;
   margin-bottom: 24px;
@@ -492,13 +492,13 @@ function formatViews(views = 0) {
 }
 
 .ttr-city-chip {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   border-radius: 4px;
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   cursor: pointer;
   transition: all 0.12s ease;
   font-family: 'DM Mono', monospace;
@@ -520,17 +520,17 @@ function formatViews(views = 0) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 12px;
   margin-bottom: 24px;
   font-size: 12px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-family: 'DM Mono', monospace;
 }
 
 .count-badge {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   padding: 2px 6px;
   border-radius: 3px;
   color: #00d4aa;
@@ -574,8 +574,8 @@ function formatViews(views = 0) {
 }
 
 .ttr-load-more-btn {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   color: #e6edf3;
   padding: 13px 36px;
   font-size: 12px;
@@ -590,17 +590,17 @@ function formatViews(views = 0) {
 .ttr-load-more-btn:hover {
   border-color: #00d4aa;
   color: #00d4aa;
-  background: #181927;
+  background: var(--bg-card, #181927);
   box-shadow: 0 0 16px rgba(0, 212, 170, 0.2);
 }
 
 .ttr-empty-state {
   padding: 60px 20px;
   text-align: center;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-size: 14px;
-  background: #13141f;
-  border: 1px dashed #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px dashed var(--border, #23253a);
   border-radius: 6px;
 }
 
@@ -612,8 +612,8 @@ function formatViews(views = 0) {
 
 /* Sidebar Styles */
 .ttr-side-widget {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 6px;
   padding: 20px;
   position: relative;
@@ -635,7 +635,7 @@ function formatViews(views = 0) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 12px;
 }
 
@@ -662,7 +662,7 @@ function formatViews(views = 0) {
 }
 
 .ttr-widget-more {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-size: 11px;
   font-weight: 700;
   text-decoration: none;

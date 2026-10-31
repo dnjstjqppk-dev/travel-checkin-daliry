@@ -99,12 +99,12 @@ onMounted(async () => {
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 18px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -127,7 +127,7 @@ onMounted(async () => {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 18px;
   margin-bottom: 24px;
 }
@@ -177,7 +177,7 @@ onMounted(async () => {
 
 .ttr-list-count {
   font-size: 12px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-family: 'DM Mono', monospace;
   display: flex;
   align-items: center;
@@ -185,8 +185,8 @@ onMounted(async () => {
 }
 
 .count-badge {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   padding: 2px 6px;
   border-radius: 3px;
   color: #00d4aa;
@@ -198,12 +198,12 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   padding: 12px 16px;
   border-radius: 6px;
   font-size: 12.5px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   margin-bottom: 28px;
   line-height: 1.5;
 }
@@ -221,15 +221,15 @@ onMounted(async () => {
 .ttr-saved-loading {
   padding: 60px 20px;
   text-align: center;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-size: 14px;
 }
 
 .ttr-saved-empty {
   padding: 80px 24px;
   text-align: center;
-  background: #13141f;
-  border: 1px dashed #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px dashed var(--border, #23253a);
   border-radius: 8px;
   max-width: 580px;
   margin: 40px auto;
@@ -249,14 +249,14 @@ onMounted(async () => {
 
 .ttr-saved-empty p {
   font-size: 13.5px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
   margin: 0 0 24px;
 }
 
 .ttr-btn-explore {
   display: inline-block;
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid #00d4aa;
   color: #00d4aa;
   padding: 12px 28px;

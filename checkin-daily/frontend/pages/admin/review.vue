@@ -307,7 +307,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 .review-tabs-bar {
   display: flex;
   gap: 8px;
-  border-bottom: 2px solid #E5E7EB;
+  border-bottom: 2px solid var(--admin-border);
   margin-bottom: 24px;
 }
 .tab-btn {
@@ -317,21 +317,21 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   padding: 12px 18px;
   font-size: 14px;
   font-weight: 700;
-  color: #6B7280;
+  color: var(--admin-muted);
   cursor: pointer;
   margin-bottom: -2px;
   transition: all 0.15s ease;
 }
 .tab-btn:hover {
-  color: #060D81;
+  color: var(--accent);
 }
 .tab-btn.active {
-  color: #060D81;
-  border-bottom-color: #060D81;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 .empty-queue-box {
-  background: #F0FDF4;
+  background: var(--admin-surface);
   border: 1px dashed #86EFAC;
   border-radius: 6px;
   padding: 60px 20px;
@@ -339,7 +339,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 }
 .empty-icon {
   font-size: 36px;
-  color: #16A34A;
+  color: #10b981;
   margin-bottom: 8px;
 }
 .review-queue-list {
@@ -348,8 +348,8 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   gap: 20px;
 }
 .review-card {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-left: 4px solid #F59E0B;
   border-radius: 6px;
   padding: 20px 24px;
@@ -358,7 +358,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   border-left-color: #3B82F6;
 }
 .correction-card {
-  border-left-color: #DC2626;
+  border-left-color: #f87171;
 }
 .review-card-head {
   display: flex;
@@ -372,8 +372,8 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   gap: 10px;
 }
 .badge-partner {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: var(--accent-dim);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 800;
   padding: 2px 8px;
@@ -381,60 +381,60 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 }
 .submitter-info, .sub-date {
   font-size: 11px;
-  color: #6B7280;
+  color: var(--admin-muted);
   font-family: monospace;
 }
 .review-title {
   font-size: 18px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 10px;
 }
 .review-summary {
   font-size: 14px;
-  color: #4B5563;
+  color: var(--admin-text);
   line-height: 1.5;
   margin: 0 0 10px;
 }
 .submission-content-preview {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   padding: 10px 14px;
   font-size: 13px;
-  color: #374151;
+  color: var(--admin-text);
   font-family: monospace;
   margin-bottom: 16px;
 }
 .correction-diff-box {
-  background: #FEF2F2;
+  background: rgba(239, 68, 68, 0.15);
   border: 1px solid #FECACA;
   border-radius: 6px;
   padding: 14px 18px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: #1F2937;
+  color: var(--admin-heading);
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 .correction-diff-box del {
-  color: #DC2626;
+  color: #f87171;
   font-weight: 700;
 }
 .correction-diff-box ins {
-  color: #16A34A;
+  color: #10b981;
   font-weight: 700;
   text-decoration: none;
 }
 .correction-reason {
-  color: #6B7280;
+  color: var(--admin-muted);
   font-size: 12px;
   margin-top: 4px;
 }
 .fact-check-box {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 14px 16px;
   margin-bottom: 16px;
@@ -442,7 +442,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 .fact-check-box h4 {
   font-size: 12px;
   font-weight: 800;
-  color: #475569;
+  color: var(--admin-text);
   margin: 0 0 8px;
 }
 .fact-item {
@@ -457,31 +457,31 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   border-radius: 3px;
   font-size: 10px;
   font-weight: 800;
-  background: #DEF7EC;
-  color: #03543F;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 .review-actions {
   display: flex;
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px solid var(--admin-border);
 }
 .btn-edit {
-  background: #F3F4F6;
-  border: 1px solid #D1D5DB;
-  color: #374151;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
   font-weight: 700;
 }
 .btn-approve {
-  background: #060D81;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: #0d0e1a;
   border: 0;
   font-weight: 800;
 }
 .btn-reject {
-  background: #FEF2F2;
-  color: #DC2626;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
   border: 1px solid #FCA5A5;
 }
 </style>

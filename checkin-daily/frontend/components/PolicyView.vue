@@ -93,12 +93,12 @@ useSeoMeta({
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 20px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .ttr-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -119,7 +119,7 @@ useSeoMeta({
 
 .policy-header {
   margin-bottom: 40px;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 24px;
 }
 
@@ -154,7 +154,7 @@ useSeoMeta({
 
 .policy-lead {
   font-size: 15px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   max-width: 880px;
   margin: 0;
@@ -167,8 +167,8 @@ useSeoMeta({
 }
 
 .policy-section {
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-radius: 8px;
   padding: 28px 32px;
   position: relative;
@@ -198,7 +198,7 @@ useSeoMeta({
 
 .policy-section p {
   font-size: 14px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.7;
   margin: 0 0 14px;
 }
@@ -213,7 +213,7 @@ useSeoMeta({
 
 .policy-section li {
   font-size: 13.5px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   line-height: 1.6;
 }
 

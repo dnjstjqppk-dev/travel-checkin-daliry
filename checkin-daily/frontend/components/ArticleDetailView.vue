@@ -468,19 +468,35 @@ function goBack() {
             </div>
           </div>
 
-          <!-- 사실 검증 및 1차 출처 인증 박스 (Fact-Check & Citation Box) -->
-          <div v-if="article.sourceName || (article.factChecks && article.factChecks.length)" class="bkp-factcheck-card">
+          <!-- 사실 검증 및 1차 출처 추적 시스템 박스 (Source Provenance & Fact-Check Box) -->
+          <div class="bkp-factcheck-card" :class="{ 'is-unverified': !article.sourceUrl && !(article.factChecks && article.factChecks.length) }">
             <div class="bkp-fc-header">
-              <span class="bkp-fc-badge">SOURCE RECORD</span>
-              <span class="bkp-fc-desk">CHECK-IN DAILY EDITORIAL INTEGRITY DESK</span>
+              <span class="bkp-fc-badge">
+                {{ (article.sourceUrl || (article.factChecks && article.factChecks.length)) ? 'VERIFIED SOURCE' : 'EDITORIAL BRIEF' }}
+              </span>
+              <span class="bkp-fc-desk">
+                {{ (article.sourceUrl || (article.factChecks && article.factChecks.length)) ? '공식·독립 출처 확인 완료' : '자체 편집 데스크 (외부 원문 URL 미지정)' }}
+              </span>
+              <NuxtLink :to="locUrl('/corrections')" class="bkp-fc-report-link">
+                정정·업데이트 요청 →
+              </NuxtLink>
             </div>
             <div class="bkp-fc-body">
-              <p v-if="article.sourceName" class="bkp-fc-source">
-                <strong>출처:</strong>
-                <a v-if="article.sourceUrl" :href="article.sourceUrl" target="_blank" rel="noopener noreferrer nofollow" class="bkp-fc-link">{{ article.sourceName }} ↗</a>
-                <span v-else>{{ article.sourceName }}</span>
+              <p class="bkp-fc-source">
+                <strong>최초 원문 출처:</strong>
+                <a v-if="article.sourceUrl" :href="article.sourceUrl" target="_blank" rel="noopener noreferrer nofollow" class="bkp-fc-link">
+                  {{ article.sourceName || article.sourceUrl }} (원문 확인하기 ↗)
+                </a>
+                <span v-else>{{ article.sourceName || '체크인데일리 에디토리얼 데스크 (1차 외부 원문 링크 미등록)' }}</span>
                 <span v-if="article.licenseInfo" class="bkp-fc-lic">({{ article.licenseInfo }})</span>
               </p>
+              <div v-if="article.citations && article.citations.length" class="bkp-fc-citations">
+                <strong>참고·인용 자료:</strong>
+                <span v-for="(cit, cIdx) in article.citations" :key="cIdx" class="bkp-fc-cit-chip">
+                  <a v-if="cit.source_url" :href="cit.source_url" target="_blank" rel="noopener noreferrer nofollow">{{ cit.source_name }} ↗</a>
+                  <span v-else>{{ cit.source_name }}</span>
+                </span>
+              </div>
               <div v-if="article.factChecks && article.factChecks.length" class="bkp-fc-claims">
                 <div v-for="(fc, idx) in article.factChecks" :key="idx" class="bkp-fc-item">
                   <span class="bkp-fc-check-icon">✓</span>
@@ -500,11 +516,11 @@ function goBack() {
           </div>
         </header>
 
-        <!-- AI Key Takeaways Box -->
+        <!-- AI Key Takeaways Box (본문 핵심 요점 추출, 리드문 중복 제거) -->
         <div v-if="(article as any).keyTakeaways?.length" class="bkp-takeaways-card">
           <div class="takeaways-header">
             <span class="takeaways-badge">KEY TAKEAWAYS</span>
-            <span class="takeaways-label">AI 핵심 3줄 요약</span>
+            <span class="takeaways-label">핵심 팩트 요약 (본문 주요 요점)</span>
           </div>
           <ul class="takeaways-list">
             <li v-for="(point, pIdx) in (article as any).keyTakeaways" :key="pIdx">
@@ -799,12 +815,12 @@ function goBack() {
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   margin-bottom: 22px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   letter-spacing: 0.8px;
 }
 
 .bkp-bc-link {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.15s;
@@ -870,7 +886,7 @@ function goBack() {
   font-size: clamp(26px, 3.6vw, 38px);
   font-weight: 800;
   line-height: 1.32;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   letter-spacing: -0.025em;
   margin: 0 0 16px;
 }
@@ -878,7 +894,7 @@ function goBack() {
 .bkp-article-lead-summary {
   font-size: 17.5px;
   line-height: 1.75;
-  color: #cbd5e1;
+  color: var(--text-secondary, #cbd5e1);
   margin: 0 0 22px;
   font-weight: 400;
 }
@@ -888,12 +904,12 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #23253a;
-  border-bottom: 1px solid #23253a;
+  border-top: 1px solid var(--border, #23253a);
+  border-bottom: 1px solid var(--border, #23253a);
   padding: 12px 0;
   margin-bottom: 26px;
   font-size: 11px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-family: 'DM Mono', monospace;
   flex-wrap: wrap;
   gap: 12px;
@@ -921,9 +937,9 @@ function goBack() {
 }
 
 .bkp-share-btn {
-  background: #181927;
-  border: 1px solid #23253a;
-  color: #cbd5e1;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
+  color: var(--text-secondary, #cbd5e1);
   padding: 6px 12px;
   font-size: 11px;
   font-weight: 700;
@@ -940,9 +956,9 @@ function goBack() {
 }
 
 .bkp-share-btn.save {
-  background: #181927;
-  border-color: #23253a;
-  color: #cbd5e1;
+  background: var(--bg-card, #181927);
+  border-color: var(--border, #23253a);
+  color: var(--text-secondary, #cbd5e1);
 }
 
 .bkp-share-btn.save:hover {
@@ -953,7 +969,7 @@ function goBack() {
 
 /* Fact-Check & Citation Box */
 .bkp-factcheck-card {
-  background: #13141f;
+  background: var(--bg-surface, #13141f);
   border: 1px solid rgba(0, 212, 170, 0.25);
   border-radius: 10px;
   padding: 16px 20px;
@@ -987,9 +1003,52 @@ function goBack() {
   font-family: 'DM Mono', monospace;
 }
 
+.bkp-fc-report-link {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #8e99aa);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.bkp-fc-report-link:hover {
+  color: var(--accent, #00d4aa);
+  text-decoration: underline;
+}
+
+.bkp-factcheck-card.is-unverified {
+  border-color: var(--border, #23253a);
+}
+
+.bkp-factcheck-card.is-unverified .bkp-fc-badge {
+  background: rgba(142, 153, 170, 0.15);
+  color: var(--text-muted, #8e99aa);
+  border-color: var(--border, #23253a);
+}
+
+.bkp-factcheck-card.is-unverified .bkp-fc-desk {
+  color: var(--text-muted, #8e99aa);
+}
+
+.bkp-fc-citations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #cbd5e1);
+  margin-top: 6px;
+}
+
+.bkp-fc-cit-chip a {
+  color: var(--accent, #00d4aa);
+  text-decoration: underline;
+}
+
 .bkp-fc-source {
   margin: 0 0 6px;
-  color: #cbd5e1;
+  color: var(--text-secondary, #cbd5e1);
   font-size: 13px;
 }
 
@@ -1002,7 +1061,7 @@ function goBack() {
 
 .bkp-fc-lic {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-dim, #64748b);
   margin-left: 6px;
 }
 
@@ -1012,7 +1071,7 @@ function goBack() {
   gap: 6px;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px dashed #23253a;
+  border-top: 1px dashed var(--border, #23253a);
 }
 
 .bkp-fc-item {
@@ -1020,7 +1079,7 @@ function goBack() {
   align-items: flex-start;
   gap: 6px;
   font-size: 12.5px;
-  color: #cbd5e1;
+  color: var(--text-secondary, #cbd5e1);
 }
 
 .bkp-fc-check-icon {
@@ -1063,7 +1122,7 @@ function goBack() {
 
 /* AI Key Takeaways Card */
 .bkp-takeaways-card {
-  background: #181927;
+  background: var(--bg-card, #181927);
   border: 1px solid rgba(0, 212, 170, 0.35);
   border-radius: 12px;
   padding: 22px 24px;
@@ -1104,7 +1163,7 @@ function goBack() {
 
 .takeaways-list li {
   font-size: 14px;
-  color: #f1f5f9;
+  color: var(--text-base, #f1f5f9);
   line-height: 1.65;
 }
 
@@ -1112,8 +1171,8 @@ function goBack() {
 .bkp-toc-card {
   margin: 24px 0;
   padding: 20px 24px;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   border-left: 4px solid #38bdf8;
   border-radius: 8px;
 }
@@ -1168,14 +1227,14 @@ function goBack() {
   max-height: 520px;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   display: block;
 }
 
 .bkp-image-caption {
   font-size: 11.5px;
-  color: #64748b;
+  color: var(--text-dim, #64748b);
   margin-top: 8px;
   font-family: 'DM Mono', monospace;
   text-align: center;
@@ -1190,8 +1249,8 @@ function goBack() {
 }
 
 .bkp-article-tag-chip {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   color: #94a3b8;
   font-size: 11.5px;
   font-weight: 600;
@@ -1210,7 +1269,7 @@ function goBack() {
 
 /* Article Markdown Content Body */
 .bkp-article-content-html {
-  color: #d2d9e3;
+  color: var(--text-secondary, #d2d9e3);
   margin-bottom: 40px;
 }
 
@@ -1232,16 +1291,16 @@ function goBack() {
 .bkp-article-content-html :deep(h3) {
   font-size: 19px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-base, #f1f5f9);
   margin: 32px 0 14px;
 }
 
 .bkp-article-content-html :deep(blockquote) {
   border-left: 4px solid #38bdf8;
-  background: #13141f;
+  background: var(--bg-surface, #13141f);
   margin: 24px 0;
   padding: 18px 22px;
-  color: #cbd5e1;
+  color: var(--text-secondary, #cbd5e1);
   border-radius: 0 8px 8px 0;
   font-style: normal;
 }
@@ -1276,7 +1335,7 @@ function goBack() {
   max-width: 100%;
   height: auto;
   border-radius: 10px;
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   display: block;
 }
@@ -1284,7 +1343,7 @@ function goBack() {
 .bkp-article-content-html :deep(.article-body-caption) {
   margin-top: 10px;
   font-size: 12px;
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-family: 'DM Mono', monospace;
   text-align: center;
 }
@@ -1306,8 +1365,8 @@ function goBack() {
 
 /* Reader Reactions Box */
 .bkp-reactions-box {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   border-radius: 12px;
   padding: 24px;
   margin: 32px 0;
@@ -1329,7 +1388,7 @@ function goBack() {
 .reaction-heading {
   font-size: 17px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   margin: 6px 0 0;
 }
 
@@ -1344,9 +1403,9 @@ function goBack() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #13141f;
-  border: 1px solid #23253a;
-  color: #cbd5e1;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
+  color: var(--text-secondary, #cbd5e1);
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -1384,8 +1443,8 @@ function goBack() {
 .bkp-author-profile-card {
   display: flex;
   gap: 20px;
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   border-radius: 12px;
   padding: 24px;
   margin: 32px 0;
@@ -1396,8 +1455,8 @@ function goBack() {
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-surface, #13141f);
+  border: 1px solid var(--border, #23253a);
   display: grid;
   place-items: center;
   font-size: 24px;
@@ -1418,7 +1477,7 @@ function goBack() {
 .author-name {
   font-size: 17px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   margin: 0;
 }
 
@@ -1474,9 +1533,9 @@ function goBack() {
   display: flex;
   flex-direction: column;
   padding: 18px 20px;
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   border-radius: 10px;
-  background: #181927;
+  background: var(--bg-card, #181927);
   text-decoration: none;
   transition: all 0.2s ease;
 }
@@ -1503,7 +1562,7 @@ function goBack() {
 .pn-title {
   font-size: 14px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--text-base, #f1f5f9);
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1514,7 +1573,7 @@ function goBack() {
 /* Related Stories Section */
 .bkp-related-section {
   margin-top: 48px;
-  border-top: 1px solid #23253a;
+  border-top: 1px solid var(--border, #23253a);
   padding-top: 28px;
 }
 
@@ -1543,7 +1602,7 @@ function goBack() {
   margin: 0;
   font-size: 20px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
 }
 
 .bkp-sec-more {
@@ -1577,8 +1636,8 @@ function goBack() {
 
 /* Right Sidebar: TOP STORIES Widget */
 .bkp-topstories-widget {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   border-radius: 12px;
   padding: 20px 22px;
 }
@@ -1587,7 +1646,7 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   padding-bottom: 12px;
   margin-bottom: 16px;
 }
@@ -1605,13 +1664,13 @@ function goBack() {
   margin: 0;
   font-size: 15px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   letter-spacing: 0.5px;
   flex: 1;
 }
 
 .bkp-widget-more {
-  color: #8b949e;
+  color: var(--text-muted, #8b949e);
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
@@ -1634,7 +1693,7 @@ function goBack() {
   grid-template-columns: 28px 1fr;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #23253a;
+  border-bottom: 1px solid var(--border, #23253a);
   align-items: baseline;
 }
 
@@ -1669,7 +1728,7 @@ function goBack() {
 .bkp-rank-text {
   font-size: 13.5px;
   line-height: 1.45;
-  color: #f1f5f9;
+  color: var(--text-base, #f1f5f9);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1685,7 +1744,7 @@ function goBack() {
 .bkp-rank-submeta {
   margin-top: 4px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-dim, #64748b);
   display: flex;
   gap: 8px;
   font-family: 'DM Mono', monospace;
@@ -1713,7 +1772,7 @@ function goBack() {
     height: 58px;
     background: rgba(19, 20, 31, 0.95);
     backdrop-filter: blur(12px);
-    border-top: 1px solid #23253a;
+    border-top: 1px solid var(--border, #23253a);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
@@ -1766,8 +1825,8 @@ function goBack() {
 }
 
 .share-modal-card {
-  background: #181927;
-  border: 1px solid #23253a;
+  background: var(--bg-card, #181927);
+  border: 1px solid var(--border, #23253a);
   border-radius: 12px;
   max-width: 440px;
   width: 100%;
@@ -1786,7 +1845,7 @@ function goBack() {
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
 }
 
 .share-close-btn {
@@ -1822,10 +1881,10 @@ function goBack() {
   border-radius: 6px;
   font-size: 13px;
   font-weight: 700;
-  border: 1px solid #23253a;
+  border: 1px solid var(--border, #23253a);
   cursor: pointer;
-  background: #13141f;
-  color: #f1f5f9;
+  background: var(--bg-surface, #13141f);
+  color: var(--text-base, #f1f5f9);
   transition: all 0.15s;
 }
 
@@ -1863,7 +1922,7 @@ function goBack() {
 .ttr-faq-heading {
   font-size: 17px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   margin: 0 0 4px 0;
 }
 .ttr-faq-sub {

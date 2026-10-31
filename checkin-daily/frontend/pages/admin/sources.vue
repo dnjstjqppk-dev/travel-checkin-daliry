@@ -182,7 +182,7 @@ function formatDate(val: string | null) {
   z-index: 9999;
 }
 .modal-card {
-  background: #FFFFFF;
+  background: var(--admin-card);
   border-radius: 6px;
   padding: 28px;
   width: 520px;
@@ -192,7 +192,7 @@ function formatDate(val: string | null) {
 .modal-card h3 {
   margin: 0 0 20px;
   font-size: 18px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .form-group {
   margin-bottom: 14px;
@@ -201,17 +201,19 @@ function formatDate(val: string | null) {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #374151;
+  color: var(--admin-text);
   margin-bottom: 4px;
 }
 .input-text {
   width: 100%;
   padding: 8px 10px;
   font-size: 13px;
-  border: 1px solid #D1D5DB;
+  border: 1px solid var(--admin-border);
   border-radius: 4px;
   box-sizing: border-box;
-}
+
+  background: var(--admin-input);
+  color: var(--admin-text);}
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -220,8 +222,8 @@ function formatDate(val: string | null) {
 }
 .tag-type {
   font-size: 10px;
-  background: #EEF2FF;
-  color: #060D81;
+  background: var(--accent-dim);
+  color: var(--accent);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
@@ -234,7 +236,7 @@ function formatDate(val: string | null) {
   font-size: 12px;
 }
 .text-url a {
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: none;
 }
 .btn-toggle {
@@ -242,15 +244,15 @@ function formatDate(val: string | null) {
   font-size: 11px;
   font-weight: 800;
   border-radius: 3px;
-  border: 1px solid #D1D5DB;
-  background: #F3F4F6;
-  color: #6B7280;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
   cursor: pointer;
 }
 .btn-toggle.active {
   background: #16A34A;
   color: #FFFFFF;
-  border-color: #16A34A;
+  border-color: #10b981;
 }
 .badge {
   display: inline-block;
@@ -260,8 +262,8 @@ function formatDate(val: string | null) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: #DCFCE7; color: #16A34A; }
-.badge-danger { background: #FEE2E2; color: #DC2626; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 .text-mono {
   font-family: 'DM Mono', monospace;
   font-size: 11px;

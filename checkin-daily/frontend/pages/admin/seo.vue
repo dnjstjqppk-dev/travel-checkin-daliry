@@ -61,8 +61,8 @@ const seoChecklist = [
 
 <style scoped>
 .seo-table-panel {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 24px;
   margin-bottom: 24px;
@@ -70,7 +70,7 @@ const seoChecklist = [
 .seo-table-panel h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #111827;
+  color: var(--admin-heading);
   margin: 0 0 16px;
 }
 .text-mono {
@@ -84,20 +84,20 @@ const seoChecklist = [
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: #DCFCE7; color: #16A34A; }
+.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .btn-check {
   font-size: 11px;
   font-weight: 700;
-  color: #0052CC;
+  color: var(--accent);
   text-decoration: underline;
 }
 .text-sub {
-  color: #9CA3AF;
+  color: var(--admin-muted);
   font-size: 11px;
 }
 .seo-tips-box {
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: 6px;
   padding: 20px 24px;
 }
@@ -105,13 +105,13 @@ const seoChecklist = [
   font-size: 15px;
   font-weight: 800;
   margin: 0 0 10px;
-  color: #111827;
+  color: var(--admin-heading);
 }
 .seo-tips-box ul {
   margin: 0;
   padding-left: 20px;
   font-size: 13px;
-  color: #4B5563;
+  color: var(--admin-text);
   line-height: 1.8;
 }
 </style>

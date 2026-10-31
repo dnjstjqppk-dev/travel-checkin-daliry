@@ -594,7 +594,7 @@ useHead(() => ({
   margin: 0;
   font-size: 16px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   letter-spacing: -0.2px;
 }
 
@@ -967,7 +967,7 @@ useHead(() => ({
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   letter-spacing: -0.2px;
 }
 
@@ -1369,7 +1369,7 @@ useHead(() => ({
   margin: 0;
   font-size: 15px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--text-primary, #ffffff);
   letter-spacing: 0.3px;
 }
 

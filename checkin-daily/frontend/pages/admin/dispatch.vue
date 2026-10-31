@@ -319,13 +319,13 @@ function formatDate(iso: string) {
 .page-title {
   font-size: 24px;
   font-weight: 800;
-  color: #f1f5f9;
+  color: var(--admin-text);
   margin: 0;
 }
 
 .ttr-back-btn {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--admin-muted);
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 6px;
@@ -334,7 +334,7 @@ function formatDate(iso: string) {
 }
 .ttr-back-btn:hover {
   color: #fff;
-  border-color: #64748b;
+  border-color: var(--admin-muted);
 }
 
 .metrics-grid {
@@ -355,7 +355,7 @@ function formatDate(iso: string) {
 
 .m-label {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--admin-muted);
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -369,7 +369,7 @@ function formatDate(iso: string) {
 
 .m-sub {
   font-size: 12px;
-  color: #64748b;
+  color: var(--admin-muted);
 }
 
 .control-row {
@@ -395,13 +395,13 @@ function formatDate(iso: string) {
 .box-title {
   font-size: 16px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--admin-text);
   margin: 0 0 8px 0;
 }
 
 .box-desc {
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--admin-muted);
   line-height: 1.5;
   margin: 0 0 18px 0;
 }
@@ -420,7 +420,7 @@ function formatDate(iso: string) {
 
 .form-group label {
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--admin-text);
   font-weight: 600;
 }
 
@@ -429,7 +429,7 @@ function formatDate(iso: string) {
   border: 1px solid #334155;
   border-radius: 6px;
   padding: 10px 14px;
-  color: #f1f5f9;
+  color: var(--admin-text);
   font-size: 13.5px;
 }
 .ttr-input:focus {
@@ -478,7 +478,7 @@ function formatDate(iso: string) {
 .section-title {
   font-size: 18px;
   font-weight: 700;
-  color: #f1f5f9;
+  color: var(--admin-text);
   margin-bottom: 16px;
 }
 .mt-8 {
@@ -488,7 +488,7 @@ function formatDate(iso: string) {
 .empty-logs {
   padding: 32px;
   text-align: center;
-  color: #64748b;
+  color: var(--admin-muted);
   background: #0f172a;
   border: 1px dashed #334155;
   border-radius: 8px;
@@ -511,7 +511,7 @@ function formatDate(iso: string) {
 
 .log-table th {
   background: #1e293b;
-  color: #94a3b8;
+  color: var(--admin-muted);
   padding: 12px 14px;
   font-size: 11.5px;
   text-transform: uppercase;
@@ -521,7 +521,7 @@ function formatDate(iso: string) {
 .log-table td {
   padding: 12px 14px;
   border-top: 1px solid #1e293b;
-  color: #cbd5e1;
+  color: var(--admin-text);
 }
 
 .font-mono {
@@ -568,7 +568,7 @@ function formatDate(iso: string) {
 }
 
 .sub-text {
-  color: #64748b;
+  color: var(--admin-muted);
 }
 
 .link-txt {
