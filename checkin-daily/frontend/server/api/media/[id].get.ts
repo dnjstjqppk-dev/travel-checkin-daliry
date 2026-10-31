@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const cfEnv = event.context._platform?.cloudflare?.env || event.context.cloudflare?.env || {}
-  const r2Bucket = (cfEnv.MEDIA_BUCKET || cfEnv.R2_BUCKET) as any
+  const r2Bucket = (cfEnv.IMAGES_BUCKET || cfEnv.R2_IMAGES || cfEnv.MEDIA_BUCKET || cfEnv.R2_BUCKET) as any
 
   let buffer: Buffer
 

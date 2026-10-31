@@ -1,8 +1,7 @@
 <script setup lang="ts">
-await navigateTo('/admin/login', { replace: true })
+await navigateTo('/admin/dashboard', { replace: true })
 </script>
 
 <template>
   <div />
 </template>
-

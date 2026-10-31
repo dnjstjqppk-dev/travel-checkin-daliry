@@ -2,7 +2,7 @@
 // Automated Daily 08:00 KST Morning Newsletter Briefing Dispatcher
 
 import { createError, defineEventHandler, getRequestHeader } from 'h3'
-import { getD1Database, d1All, d1First, d1Run } from '../../utils/d1'
+import { getD1Database, getWorkerEnvironment, d1All, d1First, d1Run } from '../../utils/d1'
 import { authenticateAdmin } from '../../utils/d1-auth'
 import { siteConfig } from '../../../config/site.config'
 
@@ -105,7 +105,8 @@ export default defineEventHandler(async (event) => {
 
   // Strict Fail-Closed Authorization:
   const token = getRequestHeader(event, 'x-cron-token')
-  const expectedToken = process.env.CRON_TOKEN
+  const env = getWorkerEnvironment(event) as Record<string, unknown> | undefined
+  const expectedToken = (env?.CRON_TOKEN || env?.CRON_SECRET || process.env.CRON_TOKEN || process.env.CRON_SECRET) as string | undefined
 
   let isAuthorized = false
   if (token && expectedToken && expectedToken.length >= 16 && token === expectedToken) {

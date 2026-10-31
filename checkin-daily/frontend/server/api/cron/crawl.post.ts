@@ -1,6 +1,6 @@
 // checkin-daily/frontend/server/api/cron/crawl.post.ts
 import { createError, defineEventHandler, getRequestHeader } from 'h3'
-import { getD1Database } from '../../utils/d1'
+import { getD1Database, getWorkerEnvironment } from '../../utils/d1'
 import { authenticateAdmin } from '../../utils/d1-auth'
 import { executeCronTasks } from '../../utils/cron-runner'
 
@@ -11,9 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   // Strict Fail-Closed Authorization:
-  // Must provide valid x-cron-token matching CRON_TOKEN (at least 16 chars) OR valid admin session
+  // Must provide valid x-cron-token matching CRON_TOKEN / CRON_SECRET (at least 16 chars) OR valid admin session
   const token = getRequestHeader(event, 'x-cron-token')
-  const expectedToken = process.env.CRON_TOKEN
+  const env = getWorkerEnvironment(event) as Record<string, unknown> | undefined
+  const expectedToken = (env?.CRON_TOKEN || env?.CRON_SECRET || process.env.CRON_TOKEN || process.env.CRON_SECRET) as string | undefined
 
   let isAuthorized = false
 

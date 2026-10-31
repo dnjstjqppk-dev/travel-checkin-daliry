@@ -157,7 +157,7 @@ export default defineEventHandler(async (event) => {
 
     // Check Cloudflare R2 bucket binding if configured
     const cfEnv = event.context._platform?.cloudflare?.env || event.context.cloudflare?.env || {}
-    const r2Bucket = (cfEnv.MEDIA_BUCKET || cfEnv.R2_BUCKET) as any
+    const r2Bucket = (cfEnv.IMAGES_BUCKET || cfEnv.R2_IMAGES || cfEnv.MEDIA_BUCKET || cfEnv.R2_BUCKET) as any
 
     // D1 SQL Statement Byte Limit Protection (1.5MB)
     const SAFE_D1_SIZE_BYTES = 1.5 * 1024 * 1024
