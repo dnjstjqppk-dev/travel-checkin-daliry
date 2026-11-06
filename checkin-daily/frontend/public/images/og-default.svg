@@ -1,64 +1,46 @@
-<svg xmlns="http://www.w3.org/2005/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#04084D"/>
-      <stop offset="50%" stop-color="#060D81"/>
-      <stop offset="100%" stop-color="#020426"/>
-    </linearGradient>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-    </pattern>
-  </defs>
-  <!-- Background -->
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#grid)"/>
-  
-  <!-- Accent Border -->
-  <line x1="80" y1="80" x2="1120" y2="80" stroke="#D9534F" stroke-width="4"/>
-  
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Paper background with hairline frame -->
+  <rect width="1200" height="630" fill="#FFFFFF"/>
+  <rect x="24" y="24" width="1152" height="582" fill="none" stroke="#E3E8E2" stroke-width="2"/>
+
   <!-- Overline -->
-  <text x="80" y="140" fill="#93C5FD" font-family="'DM Mono', monospace, sans-serif" font-size="20" font-weight="700" letter-spacing="4">
+  <text x="80" y="140" fill="#0E6B4F" font-family="'Courier New', Courier, monospace" font-size="20" font-weight="700" letter-spacing="4">
     INDEPENDENT GLOBAL TRAVEL JOURNALISM
   </text>
-  
+
   <!-- Brand Heading -->
-  <text x="80" y="240" fill="#FFFFFF" font-family="'Newsreader', Georgia, serif" font-size="82" font-weight="800" letter-spacing="-1">
-    CHECK-IN <tspan fill="#D9534F">DAILY</tspan>
+  <text x="80" y="245" fill="#101613" font-family="Georgia, 'Times New Roman', serif" font-size="88" font-weight="900" letter-spacing="-1">
+    CHECK-IN <tspan fill="#0E6B4F">DAILY</tspan>
   </text>
-  
+
   <!-- Subtitle -->
-  <text x="80" y="320" fill="#E2E8F0" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="400">
+  <text x="80" y="325" fill="#3D4742" font-family="Georgia, serif" font-size="32" font-style="italic" font-weight="400">
     The World’s Window on Travel Intelligence &amp; Market Trends
   </text>
-  
+
   <!-- Tagline Korean -->
-  <text x="80" y="380" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="400">
+  <text x="80" y="380" fill="#6B7570" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="400">
     전 세계 항공, 호텔, 여행지 트렌드를 데이터 기반으로 심층 보도하는 디지털 뉴스룸
   </text>
-  
+
   <!-- Category Badges -->
-  <g transform="translate(80, 480)">
-    <!-- Badge 1: AVIATION -->
-    <rect x="0" y="0" width="160" height="44" rx="4" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)"/>
-    <text x="80" y="28" fill="#FFFFFF" font-family="'DM Mono', monospace" font-size="14" font-weight="700" text-anchor="middle">✈️ AVIATION</text>
-    
-    <!-- Badge 2: HOTELS -->
-    <rect x="180" y="0" width="160" height="44" rx="4" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)"/>
-    <text x="260" y="28" fill="#FFFFFF" font-family="'DM Mono', monospace" font-size="14" font-weight="700" text-anchor="middle">🏨 HOTELS</text>
-    
-    <!-- Badge 3: DESTINATIONS -->
-    <rect x="360" y="0" width="190" height="44" rx="4" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)"/>
-    <text x="455" y="28" fill="#FFFFFF" font-family="'DM Mono', monospace" font-size="14" font-weight="700" text-anchor="middle">📍 DESTINATIONS</text>
-    
-    <!-- Badge 4: REALTIME -->
-    <rect x="570" y="0" width="160" height="44" rx="4" fill="rgba(217,83,79,0.2)" stroke="#D9534F"/>
-    <text x="650" y="28" fill="#FF8A80" font-family="'DM Mono', monospace" font-size="14" font-weight="700" text-anchor="middle">⚡ TOP STORIES</text>
+  <g transform="translate(80, 470)" font-family="'Courier New', Courier, monospace" font-size="14" font-weight="700">
+    <rect x="0" y="0" width="170" height="46" rx="23" fill="#0E6B4F"/>
+    <text x="85" y="30" fill="#FFFFFF" text-anchor="middle">AVIATION</text>
+
+    <rect x="186" y="0" width="150" height="46" rx="23" fill="none" stroke="#C9D2C7" stroke-width="1.5"/>
+    <text x="261" y="30" fill="#3D4742" text-anchor="middle">HOTELS</text>
+
+    <rect x="352" y="0" width="200" height="46" rx="23" fill="none" stroke="#C9D2C7" stroke-width="1.5"/>
+    <text x="452" y="30" fill="#3D4742" text-anchor="middle">DESTINATIONS</text>
+
+    <rect x="568" y="0" width="180" height="46" rx="23" fill="none" stroke="#C9D2C7" stroke-width="1.5"/>
+    <text x="658" y="30" fill="#3D4742" text-anchor="middle">TOP STORIES</text>
   </g>
-  
+
   <!-- Footer Legal / Domain -->
-  <line x1="80" y1="560" x2="1120" y2="560" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-  <text x="80" y="590" fill="#64748B" font-family="'DM Mono', monospace" font-size="14">
+  <line x1="80" y1="560" x2="1120" y2="560" stroke="#E3E8E2" stroke-width="1"/>
+  <text x="80" y="592" fill="#8B948F" font-family="'Courier New', Courier, monospace" font-size="14">
     checkindaily.com · Verified Travel Newsroom
   </text>
 </svg>
-

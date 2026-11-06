@@ -33,7 +33,8 @@ const contactPhone = computed(() => settingsMap.value.contact_phone || '')
       <div class="bkp-page-container bkp-footer-grid">
         <div class="bkp-fcol brand-col">
           <NuxtLink :to="locUrl('/news')" class="bkp-footer-logo">
-            <img src="/logo-white.svg" :alt="siteConfig.brandName" class="bkp-footer-vector-logo" width="280" height="46">
+            <img src="/logo.svg" :alt="siteConfig.brandName" class="bkp-footer-vector-logo logo-light" width="280" height="46">
+            <img src="/logo-white.svg" :alt="siteConfig.brandName" class="bkp-footer-vector-logo logo-dark" width="280" height="46">
           </NuxtLink>
           <p class="bkp-footer-summary">
             {{ t('footer_tagline') }}
@@ -141,6 +142,15 @@ const contactPhone = computed(() => settingsMap.value.contact_phone || '')
 .brand-col .bkp-footer-logo {
   display: inline-block;
   margin-bottom: 12px;
+}
+.bkp-footer-vector-logo.logo-dark {
+  display: none;
+}
+html[data-theme="dark"] .bkp-footer-vector-logo.logo-light {
+  display: none;
+}
+html[data-theme="dark"] .bkp-footer-vector-logo.logo-dark {
+  display: inline-block;
 }
 
 .brand-col .bkp-footer-summary {
