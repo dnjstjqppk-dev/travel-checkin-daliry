@@ -220,7 +220,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
     <!-- 헤더 및 실시간 카운터 배너 -->
     <div class="im-header">
       <div class="im-title-wrap">
-        <h4>📸 본문 이미지 관리 (필수 발행 규격: 4장 ~ 10장)</h4>
+        <h4>본문 이미지 관리 (필수 발행 규격: 4장 ~ 10장)</h4>
         <span class="im-subtext">대표 커버 이미지를 제외한 본문 내 삽입 이미지만 집계됩니다.</span>
       </div>
       <div class="im-counter-badge" :class="{ 'is-valid': isCountValid, 'is-short': !isMinMet, 'is-exceeded': isMaxExceeded }">
@@ -239,7 +239,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
         :class="{ active: activeAddTab === 'upload' }"
         @click="activeAddTab = 'upload'"
       >
-        📁 이미지 파일 업로드 (다중 선택 가능)
+        이미지 파일 업로드 (다중 선택 가능)
       </button>
       <button
         type="button"
@@ -247,7 +247,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
         :class="{ active: activeAddTab === 'url' }"
         @click="activeAddTab = 'url'"
       >
-        🔗 외부 이미지 URL 입력
+        외부 이미지 URL 입력
       </button>
     </div>
 
@@ -263,7 +263,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
           @change="handleFileUpload"
         >
         <div class="im-dropzone-prompt">
-          <span class="im-drop-icon">📤</span>
+
           <p class="im-drop-text">
             <strong>컴퓨터에서 이미지 파일을 선택하거나 여기로 드래그하세요.</strong><br>
             <small>JPEG, PNG, WebP, GIF, AVIF 지원 (장당 최대 5MB, 영구 D1 스토리지 저장)</small>
@@ -319,7 +319,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
     <div class="im-gallery-panel">
       <div class="im-gallery-header">
         <h5>본문에 삽입된 이미지 목록 ({{ bodyImages.length }}장)</h5>
-        <span class="im-gallery-hint">순서 변경(▲/▼) 및 삭제(🗑️)가 가능하며 본문 마크다운과 실시간 동기화됩니다.</span>
+        <span class="im-gallery-hint">순서 변경(▲/▼) 및 삭제가 가능하며 본문 마크다운과 실시간 동기화됩니다.</span>
       </div>
 
       <div v-if="bodyImages.length === 0" class="im-empty-gallery">
@@ -372,7 +372,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
               title="본문에서 제거"
               @click="removeImage(img)"
             >
-              🗑️
+              삭제
             </button>
           </div>
         </div>
@@ -425,20 +425,20 @@ function moveImage(index: number, direction: 'up' | 'down') {
 }
 
 .im-counter-badge.is-valid {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
   border: 1px solid #86EFAC;
 }
 
 .im-counter-badge.is-short {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--amber-dim);
+  color: var(--amber);
   border: 1px solid #FCD34D;
 }
 
 .im-counter-badge.is-exceeded {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   border: 1px solid #FCA5A5;
 }
 
@@ -471,7 +471,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
 
 .im-tab-btn.active {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -565,7 +565,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
 .im-btn-add {
   padding: 8px 16px;
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border: none;
   border-radius: 4px;
   font-size: 13px;
@@ -574,7 +574,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
 }
 
 .im-btn-add:disabled {
-  background: #94A3B8;
+  background: var(--border-strong);
   cursor: not-allowed;
 }
 
@@ -591,8 +591,8 @@ function moveImage(index: number, direction: 'up' | 'down') {
 .im-alert-success {
   margin-top: 10px;
   padding: 8px 12px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
   font-size: 12px;
   border-radius: 4px;
   font-weight: 700;
@@ -601,8 +601,8 @@ function moveImage(index: number, direction: 'up' | 'down') {
 .im-alert-error {
   margin-top: 10px;
   padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   font-size: 12px;
   border-radius: 4px;
   font-weight: 700;
@@ -663,7 +663,7 @@ function moveImage(index: number, direction: 'up' | 'down') {
   flex-shrink: 0;
   border-radius: 4px;
   overflow: hidden;
-  background: #CBD5E1;
+  background: var(--bg-surface);
 }
 
 .im-card-thumb img {
@@ -740,9 +740,9 @@ function moveImage(index: number, direction: 'up' | 'down') {
 }
 
 .im-btn-delete:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #F87171;
-  color: #f87171;
+  background: var(--red-dim);
+  border-color: var(--red);
+  color: var(--red);
 }
 </style>
 

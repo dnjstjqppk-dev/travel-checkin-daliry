@@ -54,7 +54,7 @@ async function submit() {
       <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       <button class="button button-primary" type="submit" :disabled="submitting">{{ submitting ? '확인 중...' : '로그인' }}</button>
     </form>
-    <p class="auth-security-note"><span aria-hidden="true">⌑</span> 관리자 전용 보안 연결</p>
+    <p class="auth-security-note">관리자 전용 보안 연결</p>
     <NuxtLink class="auth-back-link" to="/news">← 뉴스 홈으로</NuxtLink>
   </section>
 </template>

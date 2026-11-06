@@ -284,7 +284,7 @@ function formatDate(val: string | null | undefined) {
       <div class="status-item">
         <span class="label">발행 적합도:</span>
         <span class="val font-bold" :class="canPublish ? 'text-success' : 'text-warning'">
-          {{ canPublish ? '✓ 발행 가능' : '⚠️ 규격 미달 (초안 가능)' }}
+          {{ canPublish ? '✓ 발행 가능' : '⚠규격 미달 (초안 가능)' }}
         </span>
       </div>
     </div>
@@ -392,7 +392,7 @@ function formatDate(val: string | null | undefined) {
             :disabled="saving"
             @click="submit('draft')"
           >
-            {{ saving ? '저장 중...' : '💾 초안으로 저장' }}
+            {{ saving ? '저장 중...' : '초안으로 저장' }}
           </button>
           <button
             class="button button-primary btn-publish"
@@ -401,7 +401,7 @@ function formatDate(val: string | null | undefined) {
             :title="form.status === 'published' && !canPublish ? '발행 조건(800~2,000자, 이미지 4~10장)을 충족해야 합니다.' : ''"
             @click="submit('published')"
           >
-            {{ saving ? '저장 중...' : '🚀 발행 상태로 저장' }}
+            {{ saving ? '저장 중...' : '발행 상태로 저장' }}
           </button>
         </div>
       </div>
@@ -449,16 +449,16 @@ function formatDate(val: string | null | undefined) {
   gap: 10px;
 }
 .alert-success {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
   padding: 12px 16px;
   border-radius: 4px;
   font-weight: 700;
   margin-bottom: 20px;
 }
 .alert-error {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   padding: 12px 16px;
   border-radius: 4px;
   margin-bottom: 20px;
@@ -497,9 +497,9 @@ function formatDate(val: string | null | undefined) {
 .text-mono {
   font-family: monospace;
 }
-.text-success { color: #10b981; }
-.text-warning { color: #f59e0b; }
-.text-danger { color: #f87171; }
+.text-success { color: var(--accent); }
+.text-warning { color: var(--amber); }
+.text-danger { color: var(--red); }
 .text-muted { color: var(--admin-muted); }
 .font-bold { font-weight: 800; }
 
@@ -564,12 +564,12 @@ function formatDate(val: string | null | undefined) {
   gap: 10px;
 }
 .btn-retract {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   border: 1px solid #FCA5A5;
 }
 .btn-retract:hover {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--red-dim);
 }
 .btn-draft {
   background: var(--admin-surface);
@@ -646,7 +646,7 @@ function formatDate(val: string | null | undefined) {
 }
 .rev-badge {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   font-family: monospace;
   font-size: 11px;
   font-weight: 700;
@@ -678,8 +678,8 @@ function formatDate(val: string | null | undefined) {
   transition: all 0.15s ease;
 }
 .btn-restore:hover:not(:disabled) {
-  background: #4338CA;
-  border-color: #4338CA;
-  color: #FFFFFF;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 </style>

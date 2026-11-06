@@ -107,12 +107,12 @@ function hasLang(langsStr: string | null, code: string) {
   display: inline-block;
   font-size: 12px;
   font-weight: 800;
-  color: #D1D5DB;
+  color: var(--admin-muted);
   font-family: 'DM Mono', monospace;
 }
 .lang-check.ok {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent);
+  background: var(--accent-dim);
   width: 20px;
   height: 20px;
   line-height: 20px;

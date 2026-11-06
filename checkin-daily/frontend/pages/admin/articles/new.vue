@@ -266,7 +266,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
         type="button"
         @click="activeTab = 'manual'"
       >
-        ✍️ 수동 에디터 모드
+       수동 에디터 모드
       </button>
       <button
         class="tab-btn"
@@ -274,7 +274,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
         type="button"
         @click="activeTab = 'batch'"
       >
-        🚀 대량 일괄 생성 모드 (Batch Mode)
+       대량 일괄 생성 모드 (Batch Mode)
       </button>
     </div>
 
@@ -336,7 +336,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             :disabled="generating || publishing"
             @click="generateAiDraft"
           >
-            {{ generating ? '고품질 기사 작성 중...' : '🔍 미리보기 생성' }}
+            {{ generating ? '고품질 기사 작성 중...' : '미리보기 생성' }}
           </button>
         </div>
       </div>
@@ -354,7 +354,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             <span class="cta-badge">연동 타겟 CTA: {{ aiResult.ctaTarget }}</span>
           </div>
           <button class="button button-sm" type="button" @click="loadAiResultToForm">
-            ✏️ 수동 에디터로 가져와 수정하기
+           수동 에디터로 가져와 수정하기
           </button>
         </div>
 
@@ -370,7 +370,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
     <div v-else-if="activeTab === 'batch'" class="ai-generator-panel">
       <div class="ai-card">
         <div class="ai-card-header">
-          <h2>🚀 대량 일괄 기사 생성 파이프라인 (Batch Mode)</h2>
+          <h2>대량 일괄 기사 생성 파이프라인 (Batch Mode)</h2>
           <span class="spec-badge">최대 10개 키워드 동시 생성 · 자동 초안 보관</span>
         </div>
         <p class="ai-desc">
@@ -413,7 +413,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             :disabled="batchRunning"
             @click="runBatchGeneration"
           >
-            {{ batchRunning ? '⏳ 대량 기사 일괄 생성 진행 중...' : '🚀 선택 키워드 일괄 생성 시작' }}
+            {{ batchRunning ? '대량 기사 일괄 생성 진행 중...' : '선택 키워드 일괄 생성 시작' }}
           </button>
         </div>
       </div>
@@ -500,7 +500,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             ✓ 즉시 공개 발행 가능
           </div>
           <div v-else class="publish-ready-badge not-ready">
-            ⚠️ 발행 불가 (초안 저장 가능)
+            ⚠발행 불가 (초안 저장 가능)
           </div>
         </div>
       </div>
@@ -567,7 +567,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             :disabled="saving"
             @click="submitManual('draft')"
           >
-            {{ saving ? '저장 중...' : '💾 임시 저장 (초안)' }}
+            {{ saving ? '저장 중...' : '임시 저장 (초안)' }}
           </button>
           <button
             class="button button-primary btn-publish"
@@ -576,7 +576,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
             :title="!canPublish ? '발행 조건(800~2,000자, 이미지 4~10장)을 충족해야 발행할 수 있습니다.' : ''"
             @click="submitManual('published')"
           >
-            {{ saving ? '저장 중...' : '🚀 공개 발행 (Published)' }}
+            {{ saving ? '저장 중...' : '공개 발행 (Published)' }}
           </button>
         </div>
       </div>
@@ -605,7 +605,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 
 .tab-btn.active {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border-color: var(--accent);
   box-shadow: 0 4px 12px rgba(23, 107, 82, 0.2);
 }
@@ -629,8 +629,8 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .spec-badge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--amber-dim);
+  color: var(--amber);
   font-size: 12px;
   font-weight: 800;
   padding: 4px 10px;
@@ -649,13 +649,13 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 4px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
 }
 
 .char-count-badge.valid, .image-count-badge.valid {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .editorial-status-banner {
@@ -708,9 +708,9 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
   color: var(--admin-muted);
 }
 
-.text-success { color: #10b981; }
-.text-warning { color: #f59e0b; }
-.text-danger { color: #f87171; }
+.text-success { color: var(--accent); }
+.text-warning { color: var(--amber); }
+.text-danger { color: var(--red); }
 
 .publish-ready-badge {
   padding: 8px 12px;
@@ -721,14 +721,14 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .publish-ready-badge.ready {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
   border: 1px solid #86EFAC;
 }
 
 .publish-ready-badge.not-ready {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--amber-dim);
+  color: var(--amber);
   border: 1px solid #FCD34D;
 }
 
@@ -789,7 +789,7 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 
 .btn-publish {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   font-weight: 800;
 }
 
@@ -828,15 +828,15 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 }
 
 .alert-error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #f87171;
+  background: var(--red-dim);
+  border: 1px solid var(--red-dim);
+  color: var(--red);
 }
 
 .alert-success {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #10b981;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
 }
 
 .ai-preview-card {

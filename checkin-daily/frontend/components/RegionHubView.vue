@@ -21,7 +21,7 @@ const countries = ref<Country[]>([])
 const cities = ref<City[]>([])
 
 const countryList = [
-  { code: '', nameKo: '전체', nameEn: 'All Regions', flag: '🌐' },
+  { code: '', nameKo: '전체', nameEn: 'All Regions', flag: '' },
   { code: 'KR', nameKo: '대한민국', nameEn: 'South Korea', flag: '🇰🇷' },
   { code: 'JP', nameKo: '일본', nameEn: 'Japan', flag: '🇯🇵' },
   { code: 'US', nameKo: '미국', nameEn: 'United States', flag: '🇺🇸' },
@@ -218,7 +218,7 @@ function formatViews(views = 0) {
 
     <!-- City Sub-filter Chips -->
     <div v-if="cities.length" class="ttr-city-chips-bar">
-      <span class="ttr-city-label">📍 {{ locale === 'en' ? 'CITIES' : '주요 도시' }}:</span>
+      <span class="ttr-city-label">{{ locale === 'en' ? 'CITIES' : '주요 도시' }}:</span>
       <button
         type="button"
         class="ttr-city-chip"
@@ -251,7 +251,7 @@ function formatViews(views = 0) {
         </div>
 
         <div v-if="!store.articles.length" class="ttr-empty-state">
-          <span class="empty-icon">🌏</span>
+
           <p>선택하신 지역에 등록된 기사가 없습니다. 다른 국가 또는 도시를 선택해 주세요.</p>
         </div>
         <div v-else class="ttr-card-grid-2">
@@ -325,15 +325,15 @@ function formatViews(views = 0) {
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-bc-current {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -354,7 +354,7 @@ function formatViews(views = 0) {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, #58a6ff, transparent);
+  background: linear-gradient(90deg, var(--accent), var(--accent), transparent);
 }
 
 .ttr-region-badge-row {
@@ -370,7 +370,7 @@ function formatViews(views = 0) {
   gap: 6px;
   background: var(--bg-card, #181927);
   border: 1px solid var(--border, #23253a);
-  color: #00d4aa;
+  color: var(--accent);
   font-size: 10.5px;
   font-family: 'DM Mono', monospace;
   font-weight: 800;
@@ -383,14 +383,13 @@ function formatViews(views = 0) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .ttr-geo-coords {
   font-size: 10px;
   font-family: 'DM Mono', monospace;
-  color: #6e7681;
+  color: var(--text-muted);
   letter-spacing: 1px;
 }
 
@@ -400,7 +399,7 @@ function formatViews(views = 0) {
   font-weight: 800;
   letter-spacing: -0.6px;
   line-height: 1.25;
-  color: #e6edf3;
+  color: var(--text-primary);
 }
 
 .ttr-region-sub-title {
@@ -424,7 +423,7 @@ function formatViews(views = 0) {
 }
 
 .ttr-country-tabs-wrapper::-webkit-scrollbar-thumb {
-  background: #23253a;
+  background: var(--border-strong);
   border-radius: 2px;
 }
 
@@ -452,16 +451,16 @@ function formatViews(views = 0) {
 
 .ttr-country-pill:hover {
   background: var(--bg-card, #181927);
-  border-color: #383b52;
-  color: #e6edf3;
+  border-color: var(--text-dim);
+  color: var(--text-primary);
 }
 
 .ttr-country-pill.active {
-  background: #00d4aa;
-  border-color: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 800;
-  box-shadow: 0 0 14px rgba(0, 212, 170, 0.35);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-country-flag {
@@ -486,7 +485,7 @@ function formatViews(views = 0) {
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   font-weight: 800;
-  color: #00d4aa;
+  color: var(--accent);
   margin-right: 6px;
   letter-spacing: 0.8px;
 }
@@ -505,14 +504,14 @@ function formatViews(views = 0) {
 }
 
 .ttr-city-chip:hover {
-  border-color: #00d4aa;
-  color: #e6edf3;
+  border-color: var(--accent);
+  color: var(--text-primary);
 }
 
 .ttr-city-chip.active {
-  background: rgba(0, 212, 170, 0.12);
-  border-color: #00d4aa;
-  color: #00d4aa;
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -533,7 +532,7 @@ function formatViews(views = 0) {
   border: 1px solid var(--border, #23253a);
   padding: 2px 6px;
   border-radius: 3px;
-  color: #00d4aa;
+  color: var(--accent);
   font-size: 10px;
   font-weight: 700;
   margin-right: 4px;
@@ -541,7 +540,7 @@ function formatViews(views = 0) {
 
 .ttr-filter-indicator {
   font-size: 11px;
-  color: #58a6ff;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -576,7 +575,7 @@ function formatViews(views = 0) {
 .ttr-load-more-btn {
   background: var(--bg-surface, #13141f);
   border: 1px solid var(--border, #23253a);
-  color: #e6edf3;
+  color: var(--text-primary);
   padding: 13px 36px;
   font-size: 12px;
   font-weight: 700;
@@ -588,10 +587,10 @@ function formatViews(views = 0) {
 }
 
 .ttr-load-more-btn:hover {
-  border-color: #00d4aa;
-  color: #00d4aa;
+  border-color: var(--accent);
+  color: var(--accent);
   background: var(--bg-card, #181927);
-  box-shadow: 0 0 16px rgba(0, 212, 170, 0.2);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-empty-state {
@@ -627,7 +626,7 @@ function formatViews(views = 0) {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, transparent);
+  background: var(--accent);
 }
 
 .ttr-widget-header {
@@ -649,7 +648,7 @@ function formatViews(views = 0) {
   margin: 0;
   font-size: 14px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   letter-spacing: 0.6px;
   font-family: 'DM Mono', monospace;
 }
@@ -657,7 +656,7 @@ function formatViews(views = 0) {
 .ttr-widget-indicator {
   width: 3px;
   height: 14px;
-  background: #00d4aa;
+  background: var(--accent);
   border-radius: 1px;
 }
 
@@ -671,7 +670,7 @@ function formatViews(views = 0) {
 }
 
 .ttr-widget-more:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-ordered-list {
@@ -698,13 +697,13 @@ function formatViews(views = 0) {
   font-size: 18px;
   font-family: 'DM Mono', monospace;
   font-weight: 800;
-  color: #484f58;
+  color: var(--text-secondary);
   line-height: 1;
   text-align: center;
 }
 
 .ttr-rank-number.accent {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-body {
@@ -720,7 +719,7 @@ function formatViews(views = 0) {
 .ttr-rank-text {
   font-size: 13px;
   font-weight: 600;
-  color: #c9d1d9;
+  color: var(--text-secondary);
   line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -731,12 +730,12 @@ function formatViews(views = 0) {
 }
 
 .ttr-rank-line:hover .ttr-rank-text {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-submeta {
   font-size: 10px;
-  color: #6e7681;
+  color: var(--text-muted);
   font-family: 'DM Mono', monospace;
   margin-top: 4px;
 }

@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
                 :alt="item.title"
                 loading="lazy"
               >
-              <div v-else class="thumb-fallback">📰</div>
+              <div v-else class="thumb-fallback" aria-hidden="true">C</div>
             </div>
             <div class="item-meta">
               <div class="meta-top">
@@ -227,8 +227,8 @@ onBeforeUnmount(() => {
 }
 
 .ttr-search-box-inner:focus-within {
-  border-color: var(--accent, #00d4aa);
-  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.18);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card);
 }
 
 .search-icon {
@@ -255,8 +255,8 @@ input::placeholder {
 .search-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(0, 212, 170, 0.2);
-  border-top-color: var(--accent, #00d4aa);
+  border: 2px solid var(--accent);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: ttr-spin 0.6s linear infinite;
   margin-left: 6px;
@@ -268,8 +268,8 @@ input::placeholder {
 }
 
 .ttr-search-btn-mobile {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 4px;
   padding: 0 12px;
@@ -309,7 +309,7 @@ input::placeholder {
 }
 
 .dropdown-title {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   letter-spacing: 0.5px;
 }
 
@@ -341,7 +341,7 @@ input::placeholder {
 
 .dropdown-item:hover,
 .dropdown-item.is-selected {
-  background: rgba(0, 212, 170, 0.08);
+  background: var(--accent-dim);
 }
 
 .item-thumb {
@@ -364,7 +364,10 @@ input::placeholder {
 }
 
 .thumb-fallback {
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .item-meta {
@@ -383,8 +386,8 @@ input::placeholder {
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 9.5px;
   font-weight: 800;
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -416,7 +419,7 @@ input::placeholder {
 }
 
 .dropdown-footer strong {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 /* Transitions */

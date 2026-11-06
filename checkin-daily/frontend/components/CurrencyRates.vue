@@ -177,7 +177,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
             <svg width="54" height="20" viewBox="0 0 54 20" fill="none">
               <path
                 :d="getSparklineMeta(rate.currency).path"
-                :stroke="getSparklineMeta(rate.currency).isUp ? 'var(--accent, #00d4aa)' : '#ff5252'"
+                :stroke="getSparklineMeta(rate.currency).isUp ? 'var(--accent)' : '#ff5252'"
                 stroke-width="1.8"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -231,7 +231,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 .bkp-title-indicator {
   width: 4px;
   height: 14px;
-  background: var(--accent, #00d4aa);
+  background: var(--accent);
   border-radius: 2px;
   display: inline-block;
 }
@@ -258,7 +258,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 
 .bkp-fx-refresh-btn:hover {
   background: var(--border, #23253a);
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .bkp-fx-refresh-btn.is-spinning {
@@ -290,9 +290,9 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-live-pill {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   font-size: 9.5px;
   font-weight: 800;
   padding: 1px 6px;
@@ -313,7 +313,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-msg.error {
-  color: var(--red, #f6465d);
+  color: var(--red);
 }
 
 .bkp-fx-list {
@@ -342,7 +342,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-symbol {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 800;
   font-size: 11px;
   font-family: var(--font-mono, monospace);
@@ -375,7 +375,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-val {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-size: 13.5px;
   font-weight: 800;
   font-family: var(--font-mono, monospace);
@@ -401,7 +401,7 @@ function getSparklineMeta(currency: string): SparklineMeta {
 }
 
 .bkp-fx-footer a {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   text-decoration: none;
   font-weight: 600;
 }
@@ -426,11 +426,11 @@ function getSparklineMeta(currency: string): SparklineMeta {
   white-space: nowrap;
 }
 .bkp-fx-change-pill.is-up {
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 .bkp-fx-change-pill.is-down {
-  color: #ff5252;
+  color: var(--red);
   background: rgba(255, 82, 82, 0.12);
 }
 @media (max-width: 480px) {

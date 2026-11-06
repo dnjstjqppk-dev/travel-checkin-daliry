@@ -2,7 +2,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { getD1Database, d1Run, d1First, type D1Database } from '../../utils/d1'
 import { authenticateAdmin, isSameOriginRequest } from '../../utils/d1-auth'
-import { generateNewsStory, type GeneratedArticle } from '../../utils/ai-generator'
+import type { GeneratedArticle } from '../../utils/ai-generator'
 import { generateNewsWithGemini } from '../../utils/gemini-client'
 
 export default defineEventHandler(async (event) => {
@@ -41,9 +41,11 @@ export default defineEventHandler(async (event) => {
     if (setting?.value) {
       apiKey = setting.value.trim()
     }
-  } catch {}
+  } catch (err) {
+    console.error('[GenerateArticle] Failed to load gemini_api_key from site_settings:', err)
+  }
 
-  // 5. Generate article story with Gemini 3.5 Flash (with graceful fallback)
+  // 5. Generate article story with Gemini 3.5 Flash (fail closed on error)
   let story: GeneratedArticle
   try {
     story = await generateNewsWithGemini({
@@ -53,7 +55,11 @@ export default defineEventHandler(async (event) => {
       apiKey: apiKey || undefined,
     })
   } catch (err: any) {
-    story = generateNewsStory(keyword, body.category)
+    console.error('[GenerateArticle] Gemini generation failed for keyword:', keyword, err)
+    throw createError({
+      statusCode: 502,
+      statusMessage: `AI 기사 생성 실패: ${err?.message || 'Gemini API 오류'}`,
+    })
   }
 
   // Verify strict publishing standards (800 <= length <= 2,000, 4 <= images <= 10)

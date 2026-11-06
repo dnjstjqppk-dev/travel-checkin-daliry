@@ -327,7 +327,7 @@ form input:focus, form select:focus, form textarea:focus {
 .submit-btn {
   width: 100%;
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   padding: 13px;
   border: none;
   border-radius: 8px;
@@ -355,15 +355,15 @@ form input:focus, form select:focus, form textarea:focus {
 }
 
 .alert-error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #f87171;
+  background: var(--red-dim);
+  border: 1px solid var(--red-dim);
+  color: var(--red);
 }
 
 .alert-success {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #10b981;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
 }
 
 .submission-item {
@@ -390,13 +390,13 @@ form input:focus, form select:focus, form textarea:focus {
 }
 
 .badge-approved {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .badge-submitted {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--amber-dim);
+  color: var(--amber);
 }
 
 .submission-date {

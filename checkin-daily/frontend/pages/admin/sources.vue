@@ -250,9 +250,9 @@ function formatDate(val: string | null) {
   cursor: pointer;
 }
 .btn-toggle.active {
-  background: #16A34A;
-  color: #FFFFFF;
-  border-color: #10b981;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .badge {
   display: inline-block;
@@ -262,8 +262,8 @@ function formatDate(val: string | null) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 .text-mono {
   font-family: 'DM Mono', monospace;
   font-size: 11px;

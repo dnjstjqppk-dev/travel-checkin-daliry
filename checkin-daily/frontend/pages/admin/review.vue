@@ -163,7 +163,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
           <div class="review-card-head">
             <div class="head-left">
               <span class="badge" :class="item.review_status === 'needs_review' ? 'badge-danger' : 'badge-warning'">
-                {{ item.review_status === 'needs_review' ? '⚠️ 고위험 검토 필요' : '후보 기사' }}
+                {{ item.review_status === 'needs_review' ? '⚠고위험 검토 필요' : '후보 기사' }}
               </span>
               <span class="tag-cat">{{ item.category }}</span>
               <span class="score-badge">품질 점수: {{ item.quality_score }}점</span>
@@ -339,7 +339,7 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 }
 .empty-icon {
   font-size: 36px;
-  color: #10b981;
+  color: var(--accent);
   margin-bottom: 8px;
 }
 .review-queue-list {
@@ -355,10 +355,10 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   padding: 20px 24px;
 }
 .submission-card {
-  border-left-color: #3B82F6;
+  border-left-color: var(--accent);
 }
 .correction-card {
-  border-left-color: #f87171;
+  border-left-color: var(--red);
 }
 .review-card-head {
   display: flex;
@@ -407,8 +407,8 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   margin-bottom: 16px;
 }
 .correction-diff-box {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #FECACA;
+  background: var(--red-dim);
+  border: 1px solid var(--red);
   border-radius: 6px;
   padding: 14px 18px;
   margin-bottom: 16px;
@@ -419,11 +419,11 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   gap: 6px;
 }
 .correction-diff-box del {
-  color: #f87171;
+  color: var(--red);
   font-weight: 700;
 }
 .correction-diff-box ins {
-  color: #10b981;
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
 }
@@ -457,8 +457,8 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
   border-radius: 3px;
   font-size: 10px;
   font-weight: 800;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 .review-actions {
   display: flex;
@@ -475,13 +475,13 @@ async function handleCorrectionDecision(correctionId: number, decision: 'approve
 }
 .btn-approve {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border: 0;
   font-weight: 800;
 }
 .btn-reject {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   border: 1px solid #FCA5A5;
 }
 </style>

@@ -53,7 +53,7 @@ async function updatePolicy(key: string, value: string) {
       <!-- 1. 긴급 킬스위치 -->
       <div class="policy-card danger-zone">
         <div class="policy-header">
-          <h3>🛑 전사 자동화 긴급 킬스위치 (Kill-Switch)</h3>
+          <h3>전사 자동화 긴급 킬스위치 (Kill-Switch)</h3>
           <span class="badge" :class="policyMap.is_automation_paused === '1' ? 'badge-danger' : 'badge-success'">
             {{ policyMap.is_automation_paused === '1' ? '일시 중지됨' : '정상 가동' }}
           </span>
@@ -67,14 +67,14 @@ async function updatePolicy(key: string, value: string) {
           :class="{ active: policyMap.is_automation_paused === '1' }"
           @click="updatePolicy('is_automation_paused', policyMap.is_automation_paused === '1' ? '0' : '1')"
         >
-          {{ policyMap.is_automation_paused === '1' ? '▶ 자동화 재개하기' : '🛑 자동화 즉시 중단' }}
+          {{ policyMap.is_automation_paused === '1' ? '▶ 자동화 재개하기' : '자동화 즉시 중단' }}
         </button>
       </div>
 
       <!-- 2. AI 초안 자동 생성 -->
       <div class="policy-card">
         <div class="policy-header">
-          <h3>🤖 피드 수집 시 AI 초안 자동 생성</h3>
+          <h3>피드 수집 시 AI 초안 자동 생성</h3>
           <span class="badge badge-success">{{ policyMap.auto_draft_enabled === '1' ? 'ON' : 'OFF' }}</span>
         </div>
         <p class="policy-desc">공식 RSS 피드 수집 시 300~1,000자 규격에 맞춰 AI 기사 초안과 5개국어 번역을 자동 생성합니다.</p>
@@ -112,7 +112,7 @@ async function updatePolicy(key: string, value: string) {
       <!-- 4. 고위험 검토 필수 키워드 가드레일 -->
       <div class="policy-card full-width">
         <div class="policy-header">
-          <h3>🛡️ 고위험 검토 필수 키워드 가드레일 (Restricted Keywords)</h3>
+          <h3>고위험 검토 필수 키워드 가드레일 (Restricted Keywords)</h3>
         </div>
         <p class="policy-desc">
           아래 키워드가 원문 또는 제목에 포함된 기사는 자동 발행이 전면 차단되며, 반드시 편집국 검토 대기열로 이관됩니다. (쉼표로 구분)
@@ -132,10 +132,10 @@ async function updatePolicy(key: string, value: string) {
 
 <style scoped>
 .save-toast {
-  color: #10b981;
+  color: var(--accent);
   font-weight: 700;
   font-size: 13px;
-  background: rgba(16, 185, 129, 0.15);
+  background: var(--accent-dim);
   padding: 6px 12px;
   border-radius: 4px;
 }
@@ -153,7 +153,7 @@ async function updatePolicy(key: string, value: string) {
   flex-direction: column;
 }
 .policy-card.danger-zone {
-  border-left: 4px solid #DC2626;
+  border-left: 4px solid var(--red);
   background: var(--admin-surface);
 }
 .policy-card.full-width {
@@ -179,8 +179,8 @@ async function updatePolicy(key: string, value: string) {
   flex: 1;
 }
 .btn-toggle-large {
-  background: #DC2626;
-  color: #FFFFFF;
+  background: var(--red);
+  color: var(--on-accent);
   font-weight: 800;
   padding: 10px 16px;
   border-radius: 4px;
@@ -188,7 +188,7 @@ async function updatePolicy(key: string, value: string) {
   cursor: pointer;
 }
 .btn-toggle-large.active {
-  background: #D97706;
+  background: var(--amber);
 }
 .btn-toggle {
   background: var(--admin-surface);
@@ -202,7 +202,7 @@ async function updatePolicy(key: string, value: string) {
 }
 .btn-toggle.active {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 .input-keywords {
@@ -228,8 +228,8 @@ async function updatePolicy(key: string, value: string) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 .badge-default { background: var(--admin-surface); color: var(--admin-text); }
 </style>
 

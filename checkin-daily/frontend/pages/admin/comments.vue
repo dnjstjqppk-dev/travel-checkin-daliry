@@ -89,7 +89,7 @@ function formatDate(iso: string) {
         type="button"
         @click="statusFilter = 'flagged'"
       >
-        🚩 신고/차단 접수
+       신고/차단 접수
       </button>
       <button
         class="tab-btn"
@@ -148,7 +148,7 @@ function formatDate(iso: string) {
           </div>
           <div class="header-right">
             <span v-if="item.report_count > 0" class="report-badge">
-              🚨 신고 {{ item.report_count }}건
+             신고 {{ item.report_count }}건
             </span>
             <span class="status-pill" :class="item.status">
               {{ item.status.toUpperCase() }}
@@ -172,7 +172,7 @@ function formatDate(iso: string) {
 
         <div class="card-footer">
           <div class="footer-stats">
-            <span>👍 추천 {{ item.like_count }}</span>
+            <span>추천 {{ item.like_count }}</span>
           </div>
           <div class="footer-actions">
             <button
@@ -235,7 +235,7 @@ function formatDate(iso: string) {
 .eyebrow {
   font-size: 11px;
   font-family: monospace;
-  color: #ff5252;
+  color: var(--red);
   letter-spacing: 0.1em;
   margin: 0 0 6px 0;
 }
@@ -253,11 +253,11 @@ function formatDate(iso: string) {
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #0f172a;
+  border: 1px solid var(--text-secondary);
+  background: var(--admin-card);
 }
 .ttr-back-btn:hover {
-  color: #fff;
+  color: var(--admin-text);
   border-color: var(--admin-muted);
 }
 
@@ -265,7 +265,7 @@ function formatDate(iso: string) {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--text-primary);
   padding-bottom: 12px;
 }
 
@@ -274,8 +274,8 @@ function formatDate(iso: string) {
   font-size: 13px;
   font-weight: 600;
   color: var(--admin-muted);
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--admin-card);
+  border: 1px solid var(--text-primary);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -287,17 +287,17 @@ function formatDate(iso: string) {
 }
 
 .tab-btn.active {
-  background: #ff5252;
+  background: var(--red);
   color: #ffffff;
-  border-color: #ff5252;
+  border-color: var(--red);
 }
 
 .action-alert {
   padding: 12px 18px;
   border-radius: 6px;
-  background: #14532d;
-  color: #86efac;
-  border: 1px solid #22c55e;
+  background: var(--accent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   margin-bottom: 20px;
   font-size: 14px;
 }
@@ -307,8 +307,8 @@ function formatDate(iso: string) {
   padding: 48px;
   text-align: center;
   color: var(--admin-muted);
-  background: #0f172a;
-  border: 1px dashed #334155;
+  background: var(--admin-card);
+  border: 1px dashed var(--text-secondary);
   border-radius: 8px;
 }
 
@@ -319,16 +319,16 @@ function formatDate(iso: string) {
 }
 
 .comment-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--admin-card);
+  border: 1px solid var(--text-primary);
   border-radius: 8px;
   padding: 18px 20px;
   transition: border-color 0.2s;
 }
 
 .comment-card.is-flagged {
-  border-color: #ef4444;
-  background: #1f1212;
+  border-color: var(--red);
+  background: var(--red-dim);
 }
 
 .comment-card.is-deleted {
@@ -356,14 +356,14 @@ function formatDate(iso: string) {
 
 .author-name {
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-primary);
   font-size: 15px;
 }
 
 .reply-badge {
   font-size: 11px;
   padding: 2px 6px;
-  background: #1e293b;
+  background: var(--text-primary);
   color: var(--admin-muted);
   border-radius: 4px;
 }
@@ -380,8 +380,8 @@ function formatDate(iso: string) {
 }
 
 .report-badge {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--red);
+  color: var(--red);
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 11px;
@@ -397,22 +397,22 @@ function formatDate(iso: string) {
 }
 
 .status-pill.approved {
-  background: #14532d;
-  color: #86efac;
+  background: var(--accent);
+  color: var(--accent);
 }
 
 .status-pill.pending_review {
-  background: #713f12;
-  color: #fde047;
+  background: var(--amber);
+  color: var(--amber);
 }
 
 .status-pill.flagged {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--red);
+  color: var(--red);
 }
 
 .status-pill.deleted {
-  background: #334155;
+  background: var(--text-secondary);
   color: var(--admin-muted);
 }
 
@@ -421,7 +421,7 @@ function formatDate(iso: string) {
   color: var(--admin-muted);
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid var(--text-primary);
 }
 
 .article-label {
@@ -452,7 +452,7 @@ function formatDate(iso: string) {
   justify-content: space-between;
   align-items: center;
   padding-top: 10px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--text-primary);
 }
 
 .footer-stats {
@@ -476,39 +476,39 @@ function formatDate(iso: string) {
 }
 
 .action-btn.dismiss {
-  background: #1e293b;
+  background: var(--text-primary);
   color: var(--admin-muted);
   border-color: var(--admin-text);
 }
 .action-btn.dismiss:hover {
-  background: #334155;
+  background: var(--text-secondary);
   color: var(--admin-text);
 }
 
 .action-btn.approve {
-  background: #14532d;
-  color: #86efac;
-  border-color: #22c55e;
+  background: var(--accent);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .action-btn.approve:hover {
-  background: #166534;
+  background: var(--accent);
 }
 
 .action-btn.flag {
-  background: #78350f;
-  color: #fde047;
-  border-color: #f59e0b;
+  background: var(--amber);
+  color: var(--amber);
+  border-color: var(--amber);
 }
 .action-btn.flag:hover {
-  background: #92400e;
+  background: var(--amber);
 }
 
 .action-btn.delete {
-  background: #7f1d1d;
-  color: #fca5a5;
-  border-color: #ef4444;
+  background: var(--red);
+  color: var(--red);
+  border-color: var(--red);
 }
 .action-btn.delete:hover {
-  background: #991b1b;
+  background: var(--red);
 }
 </style>

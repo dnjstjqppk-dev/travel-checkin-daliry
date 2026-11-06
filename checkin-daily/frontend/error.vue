@@ -65,21 +65,21 @@ function handleError() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0d0e1a;
-  color: #e1e3ea;
+  background-color: var(--bg-primary);
+  color: var(--text-base);
   padding: 32px 16px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .error-card {
   max-width: 580px;
   width: 100%;
-  background: #13141f;
-  border: 1px solid #23253a;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 48px 36px;
   text-align: center;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-card);
 }
 
 .brand-badge {
@@ -88,38 +88,35 @@ function handleError() {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: #00d4aa;
-  background: rgba(0, 212, 170, 0.1);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 4px 12px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 212, 170, 0.25);
+  border: 1px solid var(--accent);
   margin-bottom: 24px;
 }
 
 .error-status-code {
-  font-family: monospace;
+  font-family: var(--font-display);
   font-size: 80px;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -2px;
   margin-bottom: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, #71758e 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .error-title {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0 0 14px 0;
   line-height: 1.4;
 }
 
 .error-description {
   font-size: 14px;
-  color: #8e95aa;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0 0 32px 0;
 }
@@ -133,8 +130,8 @@ function handleError() {
 }
 
 .btn-primary {
-  background: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   font-weight: 700;
   font-size: 14px;
@@ -149,21 +146,22 @@ function handleError() {
 }
 
 .btn-secondary {
-  background: #1e2030;
-  color: #ffffff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
   padding: 12px 24px;
   border-radius: 6px;
-  border: 1px solid #2b2e44;
+  border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
   transition: background 0.2s;
 }
 
 .btn-secondary:hover {
-  background: #25283d;
+  background: var(--bg-card);
+  border-color: var(--border-strong);
 }
 
 .quick-links {
@@ -172,29 +170,29 @@ function handleError() {
   justify-content: center;
   gap: 8px;
   font-size: 13px;
-  color: #71758e;
-  border-top: 1px solid #1e2030;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
   padding-top: 20px;
   flex-wrap: wrap;
 }
 
 .quick-label {
   font-size: 12px;
-  color: #55586d;
+  color: var(--text-dim);
 }
 
 .quick-links a {
-  color: #8e95aa;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .quick-links a:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .dot {
-  color: #3b3e55;
+  color: var(--border-strong);
 }
 </style>
 

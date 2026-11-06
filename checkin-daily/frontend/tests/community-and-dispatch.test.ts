@@ -85,38 +85,77 @@ test('Comments Hierarchy Builder - 2-Level Threading', () => {
   assert.equal(tree[1]?.replies.length, 0, 'Root comment 3 should have 0 replies')
 })
 
-test('Email Dispatcher - High-Volume Batch & D1 Logging', async () => {
+test('Email Dispatcher - Fails closed without provider keys', async () => {
+  const { database } = testDatabase()
+  const savedResend = process.env.RESEND_API_KEY
+  const savedSendgrid = process.env.SENDGRID_API_KEY
+  delete process.env.RESEND_API_KEY
+  delete process.env.SENDGRID_API_KEY
+  try {
+    const recipients = ['reader1@example.com', 'reader2@example.com', 'reader3@example.com']
+    await assert.rejects(
+      dispatchNewsletterBatch({
+        database,
+        subject: '[Check-in Daily] 10월 31일 모닝 브리핑',
+        html: '<p>모닝 뉴스레터 본문 테스트</p>',
+        recipients,
+      }),
+      (err: any) => err?.statusCode === 503,
+      'Dispatch without provider keys must reject with 503, never report mock delivery',
+    )
+
+    // No fabricated success may be logged
+    const logCount = await database.prepare('SELECT COUNT(*) AS n FROM newsletter_dispatch_logs').first<any>()
+    assert.equal(logCount?.n ?? 0, 0, 'Unconfigured dispatch must not write a delivery log')
+  } finally {
+    if (savedResend !== undefined) process.env.RESEND_API_KEY = savedResend
+    if (savedSendgrid !== undefined) process.env.SENDGRID_API_KEY = savedSendgrid
+  }
+})
+
+test('Email Dispatcher - Provider selection without network delivery', async () => {
   const { database } = testDatabase()
 
-  const recipients = ['reader1@example.com', 'reader2@example.com', 'reader3@example.com']
   const result = await dispatchNewsletterBatch({
     database,
-    subject: '[Check-in Daily] 10월 31일 모닝 브리핑',
-    html: '<p>모닝 뉴스레터 본문 테스트</p>',
-    recipients,
+    env: { RESEND_API_KEY: 're_test_key_for_provider_selection' },
+    subject: '[Check-in Daily] test',
+    html: '<p>test</p>',
+    recipients: [],
   })
 
-  assert.equal(result.provider, 'mock', 'Defaults to mock provider when no API key is set')
-  assert.equal(result.totalRecipients, 3)
-  assert.equal(result.successCount, 3)
+  assert.equal(result.provider, 'resend', 'Valid Resend key format must select the resend provider')
+  assert.equal(result.totalRecipients, 0)
   assert.equal(result.status, 'completed')
+})
 
-  // Verify D1 logging
-  const log = await database.prepare('SELECT * FROM newsletter_dispatch_logs ORDER BY id DESC LIMIT 1').first<any>()
-  assert.ok(log, 'Dispatch log must be recorded in D1')
-  assert.equal(log.recipient_count, 3)
-  assert.equal(log.success_count, 3)
-  assert.equal(log.status, 'completed')
-  assert.equal(log.provider, 'mock')
+test('Web Push Notification - Fails closed without VAPID keys', async () => {
+  const { database } = testDatabase()
+  const savedPub = process.env.VAPID_PUBLIC_KEY
+  const savedPriv = process.env.VAPID_PRIVATE_KEY
+  delete process.env.VAPID_PUBLIC_KEY
+  delete process.env.VAPID_PRIVATE_KEY
+  try {
+    await assert.rejects(
+      getVapidConfig(database),
+      (err: any) => err?.statusCode === 503,
+      'Missing VAPID keys must reject with 503, never fall back to embedded keys',
+    )
+  } finally {
+    if (savedPub !== undefined) process.env.VAPID_PUBLIC_KEY = savedPub
+    if (savedPriv !== undefined) process.env.VAPID_PRIVATE_KEY = savedPriv
+  }
 })
 
 test('Web Push Notification - VAPID Key Loading & Subscription Broadcast', async () => {
   const { database } = testDatabase()
 
-  // 1. VAPID Config
+  // 1. VAPID Config from site_settings (test-only keys, never production secrets)
+  await database.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('vapid_public_key', 'test-vapid-public-key-not-for-production-use-0123456789abcdef')`).run()
+  await database.prepare(`INSERT OR REPLACE INTO site_settings (key, value) VALUES ('vapid_private_key', 'test-vapid-private-key-not-for-production-00')`).run()
   const vapid = await getVapidConfig(database)
-  assert.ok(vapid.publicKey.length > 50, 'VAPID public key must be loaded')
-  assert.ok(vapid.privateKey.length > 30, 'VAPID private key must be loaded')
+  assert.equal(vapid.publicKey, 'test-vapid-public-key-not-for-production-use-0123456789abcdef')
+  assert.equal(vapid.privateKey, 'test-vapid-private-key-not-for-production-00')
 
   // 2. Insert test push subscription
   await database.prepare(`

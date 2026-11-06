@@ -105,15 +105,15 @@ useSeoMeta({
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-bc-current {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -130,7 +130,7 @@ useSeoMeta({
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 10px;
 }
@@ -139,14 +139,13 @@ useSeoMeta({
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .policy-title {
   font-size: 28px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 14px;
   line-height: 1.3;
   letter-spacing: -0.6px;
@@ -182,15 +181,15 @@ useSeoMeta({
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, transparent);
+  background: var(--accent);
 }
 
 .policy-section h2 {
   font-size: 17px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 14px;
-  border-left: 3px solid #00d4aa;
+  border-left: 3px solid var(--accent);
   padding-left: 10px;
   font-family: 'DM Mono', monospace;
   letter-spacing: 0.5px;
@@ -218,11 +217,11 @@ useSeoMeta({
 }
 
 .policy-section strong {
-  color: #c9d1d9;
+  color: var(--text-secondary);
 }
 
 .policy-inline-link {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
   text-decoration: underline;
 }

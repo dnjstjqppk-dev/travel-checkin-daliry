@@ -18,7 +18,7 @@ async function togglePush() {
   } else {
     const ok = await subscribe(locale.value)
     if (ok) {
-      triggerToast('속보 웹 푸시 알림이 등록되었습니다! 🔔')
+      triggerToast('속보 웹 푸시 알림이 등록되었습니다.')
     } else if (errorMessage.value) {
       triggerToast(errorMessage.value)
     }
@@ -66,7 +66,7 @@ function triggerToast(msg: string) {
     <!-- Notification Toast Popup -->
     <Teleport to="body">
       <div v-if="showToast" class="push-toast-banner" role="status">
-        <span class="toast-icon">{{ isSubscribed ? '🔔' : '🔕' }}</span>
+        <span class="toast-dot" :class="{ off: !isSubscribed }" aria-hidden="true" />
         <span>{{ toastMessage }}</span>
       </div>
     </Teleport>
@@ -90,22 +90,22 @@ function triggerToast(msg: string) {
   border-radius: 6px;
   background: var(--bg-card, #181927);
   border: 1px solid var(--border, #23253a);
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
 }
 
 .push-bell-btn:hover {
-  color: #00d4aa;
-  border-color: #00d4aa;
-  background: rgba(0, 212, 170, 0.08);
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .push-bell-btn.is-active {
-  color: #00d4aa;
-  border-color: rgba(0, 212, 170, 0.4);
-  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .push-bell-btn:disabled {
@@ -120,15 +120,14 @@ function triggerToast(msg: string) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #00d4aa;
-  box-shadow: 0 0 6px #00d4aa;
+  background-color: var(--accent);
 }
 
 .bell-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(0, 212, 170, 0.2);
-  border-top-color: #00d4aa;
+  border: 2px solid var(--accent);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: bell-spin 0.6s linear infinite;
 }
@@ -145,7 +144,7 @@ function triggerToast(msg: string) {
   right: 24px;
   z-index: 9999;
   background: var(--bg-card, #181927);
-  border: 1px solid #00d4aa;
+  border: 1px solid var(--accent);
   color: var(--text-base, #f1f5f9);
   padding: 12px 18px;
   border-radius: 8px;
@@ -154,12 +153,20 @@ function triggerToast(msg: string) {
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   animation: toast-fade-in 0.25s ease-out;
 }
 
-.toast-icon {
-  font-size: 16px;
+.toast-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.toast-dot.off {
+  background-color: var(--text-dim);
 }
 
 @keyframes toast-fade-in {

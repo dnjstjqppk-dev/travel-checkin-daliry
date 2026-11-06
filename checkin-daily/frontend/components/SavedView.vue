@@ -64,7 +64,6 @@ onMounted(async () => {
 
     <!-- Terminal Cache Info Banner -->
     <div class="ttr-storage-badge">
-      <span class="badge-icon">🔒</span>
       <span class="badge-text">스크랩 기사는 현재 사용 중인 단말기의 브라우저 암호화 로컬 캐시(LocalStorage)에 안전하게 저장됩니다. (별도 계정 로그인 없이 무제한 이용 가능)</span>
     </div>
 
@@ -76,7 +75,6 @@ onMounted(async () => {
         <NewsArticleCard v-for="article in articles" :key="article.id" :article="article" />
       </div>
       <div v-else class="ttr-saved-empty">
-        <div class="ttr-empty-icon">📂</div>
         <h3>스크랩한 기사가 없습니다</h3>
         <p>기사 카드의 [☆ 저장] 버튼을 누르면 언제든지 오프라인/로컬 캐시에서 즉시 불러올 수 있습니다.</p>
         <NuxtLink :to="locUrl('/news')" class="ttr-btn-explore">실시간 뉴스 터미널 탐색 →</NuxtLink>
@@ -111,15 +109,15 @@ onMounted(async () => {
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-bc-current {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -141,10 +139,10 @@ onMounted(async () => {
 .ttr-color-bar {
   width: 4px;
   height: 48px;
-  background: #00d4aa;
+  background: var(--accent);
   border-radius: 2px;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(0, 212, 170, 0.4);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-kicker-tag {
@@ -154,7 +152,7 @@ onMounted(async () => {
   font-size: 10px;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 4px;
 }
@@ -163,15 +161,14 @@ onMounted(async () => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .ttr-list-page-title {
   margin: 0;
   font-size: 26px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   letter-spacing: -0.6px;
 }
 
@@ -189,7 +186,7 @@ onMounted(async () => {
   border: 1px solid var(--border, #23253a);
   padding: 2px 6px;
   border-radius: 3px;
-  color: #00d4aa;
+  color: var(--accent);
   font-size: 10px;
   font-weight: 700;
 }
@@ -243,7 +240,7 @@ onMounted(async () => {
 .ttr-saved-empty h3 {
   font-size: 18px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 10px;
 }
 
@@ -257,8 +254,8 @@ onMounted(async () => {
 .ttr-btn-explore {
   display: inline-block;
   background: var(--bg-card, #181927);
-  border: 1px solid #00d4aa;
-  color: #00d4aa;
+  border: 1px solid var(--accent);
+  color: var(--accent);
   padding: 12px 28px;
   border-radius: 4px;
   font-size: 12px;
@@ -270,9 +267,9 @@ onMounted(async () => {
 }
 
 .ttr-btn-explore:hover {
-  background: #00d4aa;
-  color: #0d0e1a;
-  box-shadow: 0 0 16px rgba(0, 212, 170, 0.3);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-card);
 }
 
 @media (max-width: 1024px) {

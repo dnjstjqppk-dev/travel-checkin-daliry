@@ -66,31 +66,9 @@ final articlesProvider = FutureProvider<List<Article>>((ref) async {
     }
     return [];
   } catch (_) {
-    // Return sample fallback articles if backend is offline in local preview
-    return [
-      Article(
-        id: 57,
-        slug: 'bangkok-suvarnabhumi-sat-1-terminal-expansion',
-        title: '방콕 수완나품 공항 신규 위성터미널(SAT-1) 전면 가동… 입국 심사 20분대 단축',
-        summary: '태국 방콕 수완나품 국제공항이 제1위성터미널(SAT-1)과 무인 지하 셔틀트레인(APM)을 전면 가동하며 연간 여객 수용 능력을 6,000만 명으로 확대했습니다.',
-        content: '태국공항공사(AOT)는 수완나품 국제공항의 신규 제1위성터미널(SAT-1)을 전면 개방했습니다. 자동출입국 게이트 32대가 신설되었습니다.',
-        category: 'destination',
-        author: '체크인데일리 방콕지국',
-        coverImage: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80',
-        publishedAt: '2026-10-14',
-      ),
-      Article(
-        id: 58,
-        slug: 'thai-airways-bangkok-chiangmai-daily-10-flights',
-        title: '타이항공, 동계 시즌 방콕~치앙마이 일 10회 증편… 북부 러이끄라통 축제 특수',
-        summary: '타이항공이 11월 동계 시즌과 북부 최대 축제인 러이끄라통 기간에 맞추어 주력 노선을 대폭 증편합니다.',
-        content: '타이항공은 방콕 수완나품~치앙마이 노선에 A350-900 광동체기를 투입하여 관광객 편의를 극대화합니다.',
-        category: 'airline',
-        author: '체크인데일리 항공운송팀',
-        coverImage: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
-        publishedAt: '2026-10-14',
-      ),
-    ];
+    // Never mask a backend outage with fabricated sample articles: rethrow so
+    // the feed shows its error state with a retry action.
+    rethrow;
   }
 });
 
@@ -145,20 +123,24 @@ class CheckinDailyApp extends ConsumerWidget {
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF176B52),
+          seedColor: const Color(0xFF0E6B4F),
           brightness: Brightness.light,
-          primary: const Color(0xFF176B52),
+          primary: const Color(0xFF0E6B4F),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF7F8F7),
+        scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+        cardColor: const Color(0xFFFFFFFF),
+        dividerColor: const Color(0xFFE3E8E2),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF176B52),
+          seedColor: const Color(0xFF35B184),
           brightness: Brightness.dark,
-          primary: const Color(0xFF45A686),
+          primary: const Color(0xFF35B184),
         ),
-        scaffoldBackgroundColor: const Color(0xFF121413),
+        scaffoldBackgroundColor: const Color(0xFF101312),
+        cardColor: const Color(0xFF1A1F1D),
+        dividerColor: const Color(0xFF2A322F),
         useMaterial3: true,
       ),
       home: const MainNavigationShell(),
@@ -223,7 +205,7 @@ class NewsFeedScreen extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: const Color(0xFF176B52), borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(color: const Color(0xFF0E6B4F), borderRadius: BorderRadius.circular(4)),
               child: const Text('CHECK-IN', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
             ),
             const SizedBox(width: 6),
@@ -349,9 +331,7 @@ class ArticleCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
-          ],
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +354,7 @@ class ArticleCard extends ConsumerWidget {
               children: [
                 Text(
                   article.category.toUpperCase(),
-                  style: const TextStyle(color: Color(0xFF176B52), fontWeight: FontWeight.bold, fontSize: 11),
+                  style: const TextStyle(color: Color(0xFF0E6B4F), fontWeight: FontWeight.bold, fontSize: 11),
                 ),
                 IconButton(
                   icon: Icon(isBookmarked ? Icons.bookmark : Icons.bookmark_border, size: 20),
@@ -399,7 +379,7 @@ class ArticleCard extends ConsumerWidget {
               children: [
                 Text(article.author, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 const Spacer(),
-                const Text('상세보기 →', style: TextStyle(fontSize: 12, color: Color(0xFF176B52), fontWeight: FontWeight.bold)),
+                const Text('상세보기 →', style: TextStyle(fontSize: 12, color: Color(0xFF0E6B4F), fontWeight: FontWeight.bold)),
               ],
             ),
           ],

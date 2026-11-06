@@ -154,8 +154,8 @@ const ctr = computed(() => {
   font-size: 11px;
   color: var(--admin-muted);
 }
-.text-success { color: #10b981; }
-.text-accent { color: #FF5A5F; }
+.text-success { color: var(--accent); }
+.text-accent { color: var(--accent); }
 .text-primary { color: var(--accent); }
 .text-mono { font-family: 'DM Mono', monospace; }
 

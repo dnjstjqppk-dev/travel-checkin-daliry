@@ -1,6 +1,7 @@
 // checkin-daily/frontend/server/utils/email-dispatcher.ts
 // Production High-Volume Email Dispatcher supporting Resend & SendGrid REST APIs with D1 logging fallback
 
+import { createError } from 'h3'
 import type { D1DatabaseLike } from './d1'
 import { d1Run } from './d1'
 
@@ -15,7 +16,7 @@ export interface EmailDispatchOptions {
 }
 
 export interface DispatchResult {
-  provider: 'resend' | 'sendgrid' | 'mock'
+  provider: 'resend' | 'sendgrid'
   totalRecipients: number
   successCount: number
   failureCount: number
@@ -32,11 +33,20 @@ export async function dispatchNewsletterBatch(options: EmailDispatchOptions): Pr
   const senderName = options.fromName || 'Check-in Daily Newsroom'
   const formattedSender = `${senderName} <${defaultFrom}>`
 
-  let provider: 'resend' | 'sendgrid' | 'mock' = 'mock'
+  let provider: 'resend' | 'sendgrid' | null = null
   if (resendApiKey && resendApiKey.startsWith('re_')) {
     provider = 'resend'
   } else if (sendgridApiKey && sendgridApiKey.startsWith('SG.')) {
     provider = 'sendgrid'
+  }
+
+  // Fail closed: never report a delivery that did not happen. Without a real
+  // provider key the caller must surface a 503 so operators know mail is down.
+  if (!provider) {
+    throw createError({
+      statusCode: 503,
+      statusMessage: 'Email provider is not configured (RESEND_API_KEY or SENDGRID_API_KEY required)',
+    })
   }
 
   const total = recipients.length
@@ -54,12 +64,7 @@ export async function dispatchNewsletterBatch(options: EmailDispatchOptions): Pr
     }
   }
 
-  // If no external provider API key configured, run in mock delivery mode (audit logged)
-  if (provider === 'mock') {
-    // In mock mode, mark as completed (or partial/failed depending on simulated validation)
-    successCount = total
-    failureCount = 0
-  } else if (provider === 'resend') {
+  if (provider === 'resend') {
     // Resend Batch API: max 100 emails per request
     const chunkSize = 50
     for (let i = 0; i < recipients.length; i += chunkSize) {

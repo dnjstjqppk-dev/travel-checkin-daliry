@@ -143,7 +143,7 @@ function formatDate(iso: string) {
     <div class="control-row">
       <!-- 1. 뉴스레터 제어 -->
       <div class="control-box">
-        <h2 class="box-title">📧 뉴스레터 테스트 발송</h2>
+        <h2 class="box-title">뉴스레터 테스트 발송</h2>
         <p class="box-desc">
           최신 기사 3건을 바탕으로 생성된 실제 모닝 브리핑 HTML 템플릿을 지정된 이메일로 즉시 발송합니다.
         </p>
@@ -161,7 +161,7 @@ function formatDate(iso: string) {
             />
           </div>
           <button type="submit" class="submit-btn" :disabled="isSendingNewsletter">
-            {{ isSendingNewsletter ? '발송 중...' : '테스트 뉴스레터 발송 ✉️' }}
+            {{ isSendingNewsletter ? '발송 중...' : '테스트 뉴스레터 발송' }}
           </button>
         </form>
 
@@ -172,7 +172,7 @@ function formatDate(iso: string) {
 
       <!-- 2. 웹 푸시 수동 브로드캐스트 -->
       <div class="control-box">
-        <h2 class="box-title">🔔 웹 푸시 수동 브로드캐스트</h2>
+        <h2 class="box-title">웹 푸시 수동 브로드캐스트</h2>
         <p class="box-desc">
           긴급 속보 또는 중요 공지를 구독 기기 전체에 웹 푸시 알림으로 즉각 전파합니다.
         </p>
@@ -212,7 +212,7 @@ function formatDate(iso: string) {
             />
           </div>
           <button type="submit" class="submit-btn push" :disabled="isBroadcastingPush">
-            {{ isBroadcastingPush ? '전송 중...' : '전체 푸시 즉시 발송 🚀' }}
+            {{ isBroadcastingPush ? '전송 중...' : '전체 푸시 즉시 발송' }}
           </button>
         </form>
 
@@ -224,7 +224,7 @@ function formatDate(iso: string) {
 
     <!-- 발송 이력 로그 테이블 -->
     <div class="logs-section">
-      <h2 class="section-title">📊 최근 뉴스레터 발송 이력</h2>
+      <h2 class="section-title">최근 뉴스레터 발송 이력</h2>
       <div v-if="!dispatchData?.newsletter.logs.length" class="empty-logs">
         아직 기록된 뉴스레터 발송 내역이 없습니다. (매일 08:00 KST 크론 실행 시 자동 기록됩니다)
       </div>
@@ -262,7 +262,7 @@ function formatDate(iso: string) {
         </table>
       </div>
 
-      <h2 class="section-title mt-8">🔔 최근 웹 푸시 전송 이력</h2>
+      <h2 class="section-title mt-8">최근 웹 푸시 전송 이력</h2>
       <div v-if="!dispatchData?.webPush.logs.length" class="empty-logs">
         아직 기록된 웹 푸시 전송 내역이 없습니다.
       </div>
@@ -311,7 +311,7 @@ function formatDate(iso: string) {
 .eyebrow {
   font-size: 11px;
   font-family: monospace;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 0.1em;
   margin: 0 0 6px 0;
 }
@@ -329,11 +329,11 @@ function formatDate(iso: string) {
   text-decoration: none;
   padding: 8px 14px;
   border-radius: 6px;
-  border: 1px solid #334155;
-  background: #0f172a;
+  border: 1px solid var(--text-secondary);
+  background: var(--admin-card);
 }
 .ttr-back-btn:hover {
-  color: #fff;
+  color: var(--admin-text);
   border-color: var(--admin-muted);
 }
 
@@ -345,8 +345,8 @@ function formatDate(iso: string) {
 }
 
 .metric-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--admin-card);
+  border: 1px solid var(--text-primary);
   border-radius: 8px;
   padding: 20px;
   display: flex;
@@ -363,7 +363,7 @@ function formatDate(iso: string) {
 .m-val {
   font-size: 26px;
   font-weight: 800;
-  color: #00d4aa;
+  color: var(--accent);
   margin-bottom: 6px;
 }
 
@@ -386,8 +386,8 @@ function formatDate(iso: string) {
 }
 
 .control-box {
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--admin-card);
+  border: 1px solid var(--text-primary);
   border-radius: 8px;
   padding: 24px;
 }
@@ -425,8 +425,8 @@ function formatDate(iso: string) {
 }
 
 .ttr-input {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--text-primary);
+  border: 1px solid var(--text-secondary);
   border-radius: 6px;
   padding: 10px 14px;
   color: var(--admin-text);
@@ -434,12 +434,12 @@ function formatDate(iso: string) {
 }
 .ttr-input:focus {
   outline: none;
-  border-color: #00d4aa;
+  border-color: var(--accent);
 }
 
 .submit-btn {
-  background: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 13.5px;
   padding: 11px;
@@ -458,17 +458,17 @@ function formatDate(iso: string) {
 }
 
 .submit-btn.push {
-  background: #38bdf8;
+  background: var(--accent);
 }
 
 .feedback-msg {
   margin-top: 14px;
   font-size: 13px;
-  color: #86efac;
-  background: #14532d;
+  color: var(--accent);
+  background: var(--accent);
   padding: 10px 14px;
   border-radius: 6px;
-  border: 1px solid #22c55e;
+  border: 1px solid var(--accent);
 }
 
 .logs-section {
@@ -489,16 +489,16 @@ function formatDate(iso: string) {
   padding: 32px;
   text-align: center;
   color: var(--admin-muted);
-  background: #0f172a;
-  border: 1px dashed #334155;
+  background: var(--admin-card);
+  border: 1px dashed var(--text-secondary);
   border-radius: 8px;
   font-size: 13px;
 }
 
 .table-wrap {
   overflow-x: auto;
-  background: #0f172a;
-  border: 1px solid #1e293b;
+  background: var(--admin-card);
+  border: 1px solid var(--text-primary);
   border-radius: 8px;
 }
 
@@ -510,7 +510,7 @@ function formatDate(iso: string) {
 }
 
 .log-table th {
-  background: #1e293b;
+  background: var(--text-primary);
   color: var(--admin-muted);
   padding: 12px 14px;
   font-size: 11.5px;
@@ -520,7 +520,7 @@ function formatDate(iso: string) {
 
 .log-table td {
   padding: 12px 14px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--text-primary);
   color: var(--admin-text);
 }
 
@@ -533,9 +533,9 @@ function formatDate(iso: string) {
   font-family: monospace;
   font-size: 11px;
   padding: 2px 6px;
-  background: #334155;
+  background: var(--text-secondary);
   border-radius: 4px;
-  color: #e2e8f0;
+  color: var(--border);
 }
 
 .status-pill {
@@ -546,24 +546,24 @@ function formatDate(iso: string) {
   font-weight: 700;
 }
 .status-pill.completed {
-  background: #14532d;
-  color: #86efac;
+  background: var(--accent);
+  color: var(--accent);
 }
 .status-pill.partial {
-  background: #713f12;
-  color: #fde047;
+  background: var(--amber);
+  color: var(--amber);
 }
 .status-pill.failed {
-  background: #7f1d1d;
-  color: #fca5a5;
+  background: var(--red);
+  color: var(--red);
 }
 
 .success-txt {
-  color: #4ade80;
+  color: var(--accent);
   font-weight: 700;
 }
 .fail-txt {
-  color: #f87171;
+  color: var(--red);
   font-weight: 700;
 }
 
@@ -572,7 +572,7 @@ function formatDate(iso: string) {
 }
 
 .link-txt {
-  color: #38bdf8;
+  color: var(--accent);
   text-decoration: none;
 }
 .link-txt:hover {

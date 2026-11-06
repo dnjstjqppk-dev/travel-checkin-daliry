@@ -57,11 +57,11 @@ const currentArticle = computed(() => articles.value[currentIndex.value] || null
 
 <style scoped>
 .breaking-ticker-bar {
-  background: #0f172a;
-  color: #f8fafc;
+  background: var(--bg-surface);
+  color: var(--text-base);
   padding: 8px 16px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  border-bottom: 2px solid #176B52;
+  font-family: var(--font-sans);
+  border-bottom: 1px solid var(--border);
 }
 
 .ticker-inner {
@@ -76,7 +76,7 @@ const currentArticle = computed(() => articles.value[currentIndex.value] || null
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #dc2626;
+  background: var(--red);
   color: #ffffff;
   font-size: 11px;
   font-weight: 900;
@@ -108,7 +108,7 @@ const currentArticle = computed(() => articles.value[currentIndex.value] || null
 }
 
 .ticker-headline {
-  color: #f1f5f9;
+  color: var(--text-primary);
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
@@ -123,11 +123,11 @@ const currentArticle = computed(() => articles.value[currentIndex.value] || null
 
 .ticker-headline:hover .ticker-title {
   text-decoration: underline;
-  color: #6ee7b7;
+  color: var(--accent);
 }
 
 .ticker-cat {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
 }
@@ -140,7 +140,7 @@ const currentArticle = computed(() => articles.value[currentIndex.value] || null
 
 .ticker-counter {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   font-weight: 700;
   white-space: nowrap;
 }

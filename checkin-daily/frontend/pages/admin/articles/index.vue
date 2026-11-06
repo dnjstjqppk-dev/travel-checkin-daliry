@@ -175,7 +175,7 @@ async function retractArticle(id: number) {
 }
 .filter-tabs button.active {
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 .search-box input {
@@ -224,19 +224,19 @@ async function retractArticle(id: number) {
   background: var(--accent-dim);
 }
 .btn-action.view {
-  color: #10b981;
-  border-color: #A7F3D0;
-  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 .btn-action.retract {
-  color: #f59e0b;
-  border-color: #FDE68A;
-  background: rgba(245, 158, 11, 0.15);
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
 }
 .btn-action.delete {
-  color: #f87171;
-  border-color: #FECACA;
-  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-dim);
 }
 .badge {
   display: inline-block;
@@ -246,9 +246,9 @@ async function retractArticle(id: number) {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-warning { background: var(--amber-dim); color: var(--amber); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 .badge-default { background: var(--admin-surface); color: var(--admin-text); }
 .text-mono {
   font-family: 'DM Mono', monospace;

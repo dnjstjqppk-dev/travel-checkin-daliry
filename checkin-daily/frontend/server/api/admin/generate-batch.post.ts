@@ -5,7 +5,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getD1Database, d1Run, d1First, type D1Database } from '../../utils/d1'
 import { authenticateAdmin, isSameOriginRequest } from '../../utils/d1-auth'
 import { canAccessStaff } from '../../utils/staff-permissions'
-import { generateNewsStory, type GeneratedArticle } from '../../utils/ai-generator'
+import type { GeneratedArticle } from '../../utils/ai-generator'
 import { generateNewsWithGemini } from '../../utils/gemini-client'
 
 interface BatchItemResult {
@@ -73,7 +73,9 @@ export default defineEventHandler(async (event) => {
     if (setting?.value) {
       apiKey = setting.value.trim()
     }
-  } catch {}
+  } catch (err) {
+    console.error('[GenerateBatch] Failed to load gemini_api_key from site_settings:', err)
+  }
 
   const createdArticles: BatchItemResult[] = []
   const errors: Array<{ keyword: string; error: string }> = []
@@ -88,14 +90,22 @@ export default defineEventHandler(async (event) => {
           preferredCategory: body?.category,
           apiKey: apiKey || undefined,
         })
-      } catch {
-        story = generateNewsStory(keyword, body?.category)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error('[GenerateBatch] Gemini generation failed for keyword:', keyword, msg)
+        errors.push({ keyword, error: `AI 생성 실패: ${msg}` })
+        continue
       }
 
-      // Check boundary constraints
+      // Check boundary constraints — reject out-of-spec output instead of
+      // silently substituting fabricated template content.
       if (story.charCount < 800 || story.charCount > 2000 || story.imageCount < 4 || story.imageCount > 10) {
-        // Fallback to strict template generator
-        story = generateNewsStory(keyword, body?.category)
+        console.error('[GenerateBatch] Gemini output failed spec validation for keyword:', keyword, {
+          charCount: story.charCount,
+          imageCount: story.imageCount,
+        })
+        errors.push({ keyword, error: `AI 생성 결과 규격 미달(본문 ${story.charCount}자, 이미지 ${story.imageCount}장)` })
+        continue
       }
 
       const nowIso = new Date().toISOString()

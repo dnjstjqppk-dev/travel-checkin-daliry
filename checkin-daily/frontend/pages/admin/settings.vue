@@ -91,7 +91,7 @@ async function saveSettings() {
         :disabled="saving"
         @click="saveSettings"
       >
-        {{ saving ? '저장 중...' : '💾 설정 저장 (1초 즉시 반영)' }}
+        {{ saving ? '저장 중...' : '설정 저장 (1초 즉시 반영)' }}
       </button>
     </div>
 
@@ -102,7 +102,7 @@ async function saveSettings() {
       <div class="settings-grid">
         <!-- 1. 법적 필수 공시 정보 -->
         <div class="settings-card">
-          <h2>🏢 발행사 및 법적 공시 정보 (전자상거래법 & 신문법)</h2>
+          <h2>발행사 및 법적 공시 정보 (전자상거래법 & 신문법)</h2>
           <div class="form-fields">
             <label class="field">
               발행 법인 상호명 *
@@ -149,7 +149,7 @@ async function saveSettings() {
 
         <!-- 2. 브랜드 & 도메인 설정 -->
         <div class="settings-card">
-          <h2>🌐 브랜드 및 도메인 연동 설정 (Master Template)</h2>
+          <h2>브랜드 및 도메인 연동 설정 (Master Template)</h2>
           <div class="form-fields">
             <label class="field full">
               공식 서비스 도메인 (URL) *
@@ -169,7 +169,7 @@ async function saveSettings() {
               <input v-model="form.slogan" required placeholder="The World’s Window on Travel Journalism">
             </label>
             <div class="field full info-box">
-              <h3>💡 자체 도메인(checkindaily.com) 연결 팁</h3>
+              <h3>자체 도메인(checkindaily.com) 연결 팁</h3>
               <p>Cloudflare Workers & Pages 대시보드의 <strong>Custom Domains</strong>에서 <code>checkindaily.com</code>을 추가한 뒤, 위 '공식 서비스 도메인'을 <code>https://checkindaily.com</code>으로 설정하시면 1초 만에 전 사이트의 메타 태그와 사이트맵이 전환됩니다.</p>
             </div>
           </div>
@@ -182,7 +182,7 @@ async function saveSettings() {
           type="submit"
           :disabled="saving"
         >
-          {{ saving ? '저장 중...' : '💾 법적 공시 및 사이트 설정 즉시 저장' }}
+          {{ saving ? '저장 중...' : '법적 공시 및 사이트 설정 즉시 저장' }}
         </button>
       </div>
     </form>

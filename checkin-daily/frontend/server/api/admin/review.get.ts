@@ -18,8 +18,8 @@ export default defineEventHandler(async (event) => {
      ORDER BY a.quality_score ASC, a.id DESC`,
   )
 
-  let submissions: any[] = []
-  let corrections: any[] = []
+  let submissions: any[]
+  let corrections: any[]
 
   try {
     submissions = await d1All(
@@ -29,7 +29,10 @@ export default defineEventHandler(async (event) => {
        WHERE status = 'submitted'
        ORDER BY id DESC LIMIT 50`,
     )
-  } catch {}
+  } catch (err) {
+    console.error('[ReviewQueue] Failed to load contributor submissions:', err)
+    throw createError({ statusCode: 500, statusMessage: '검수 대기 제보 목록을 불러오지 못했습니다.' })
+  }
 
   try {
     corrections = await d1All(
@@ -41,7 +44,10 @@ export default defineEventHandler(async (event) => {
        WHERE c.status = 'pending'
        ORDER BY c.id DESC LIMIT 50`,
     )
-  } catch {}
+  } catch (err) {
+    console.error('[ReviewQueue] Failed to load pending corrections:', err)
+    throw createError({ statusCode: 500, statusMessage: '정정 요청 목록을 불러오지 못했습니다.' })
+  }
 
   return { queue: items, submissions, corrections }
 })

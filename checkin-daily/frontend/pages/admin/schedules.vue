@@ -50,7 +50,7 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
     </div>
 
     <div v-if="!data?.jobs.length" class="empty-box">
-      <div class="empty-icon">⏱️</div>
+
       <h3>현재 예약된 발행 작업이 없습니다.</h3>
       <p>기사 편집기 또는 검토 대기열에서 기사를 승인할 때 예약 시각을 지정할 수 있습니다.</p>
     </div>
@@ -154,8 +154,8 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
   padding: 3px 8px;
   border-radius: 3px;
   border: none;
-  background: #16A34A;
-  color: #FFFFFF;
+  background: var(--accent);
+  color: var(--on-accent);
   cursor: pointer;
 }
 .btn-cancel {
@@ -165,7 +165,7 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
   border-radius: 3px;
   border: 1px solid var(--admin-border);
   background: var(--admin-card);
-  color: #f87171;
+  color: var(--red);
   cursor: pointer;
 }
 .badge {
@@ -176,9 +176,9 @@ async function handleJob(jobId: number, action: 'publish_now' | 'cancel') {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-warning { background: var(--amber-dim); color: var(--amber); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 .badge-default { background: var(--admin-surface); color: var(--admin-text); }
 .tag-cat {
   font-size: 11px;

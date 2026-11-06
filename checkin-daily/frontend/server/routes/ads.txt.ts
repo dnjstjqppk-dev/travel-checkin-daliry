@@ -1,4 +1,4 @@
-import { defineEventHandler, setResponseHeader } from 'h3'
+import { createError, defineEventHandler, setResponseHeader } from 'h3'
 import { d1All, d1First, getD1Database } from '../utils/d1'
 
 interface AdPlacementRow {
@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
   ]
 
   let customAdsTxt = ''
+  let databaseFailed = false
   if (database) {
     try {
       const setting = await d1First<SettingRow>(
@@ -33,7 +34,10 @@ export default defineEventHandler(async (event) => {
       if (setting?.value) {
         customAdsTxt = setting.value.trim()
       }
-    } catch {}
+    } catch (err) {
+      databaseFailed = true
+      console.error('[AdsTxt] Failed to load ads_txt_content from site_settings:', err)
+    }
   }
 
   if (customAdsTxt) {
@@ -55,12 +59,19 @@ export default defineEventHandler(async (event) => {
           lines.push(`google.com, ${pubId}, DIRECT, f08c47fec0942fa0`)
         }
       }
-    } catch {}
+    } catch (err) {
+      databaseFailed = true
+      console.error('[AdsTxt] Failed to load active ad placements:', err)
+    }
   }
 
-  // Default fallback if nothing configured
+  // No fabricated fallback: an unconfigured ads.txt must not attribute this
+  // site's inventory to an unrelated publisher account.
   if (lines.length <= 4) {
-    lines.push('google.com, pub-9201847192847192, DIRECT, f08c47fec0942fa0')
+    if (databaseFailed) {
+      throw createError({ statusCode: 500, statusMessage: 'Failed to load ads.txt configuration' })
+    }
+    throw createError({ statusCode: 404, statusMessage: 'ads.txt is not configured' })
   }
 
   return lines.join('\n') + '\n'

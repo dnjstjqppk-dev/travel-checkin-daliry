@@ -33,7 +33,7 @@ graph TD
 
 * **Frontend**: Nuxt 4.6, Vue 3.5, Pinia 2.3, Vite 8.3
 * **Edge Backend**: Cloudflare Workers, Nitro 2.13, Cloudflare D1
-* **Standalone Backend**: Go 1.27, Gin Engine, GORM
+* **Standalone Backend**: Go 1.22, Gin Engine, GORM
 * **Mobile**: Flutter 3.x, Dart, Riverpod
 * **Database**: Cloudflare D1 (배포) / SQLite (로컬)
 * **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)

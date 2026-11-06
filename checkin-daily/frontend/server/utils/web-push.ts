@@ -1,11 +1,10 @@
 // checkin-daily/frontend/server/utils/web-push.ts
 // Standards-compliant Web Push Notification Engine (RFC 8292 VAPID) using native Web Crypto API
 
+import { createError } from 'h3'
 import type { D1DatabaseLike } from './d1'
 import { d1All, d1First, d1Run } from './d1'
 
-const DEFAULT_VAPID_PUBLIC_KEY = 'BJnEnAqEg0Wfj0Hf7wOmG0YPydrh_Tqtcgczl_JnSzFn9va1fneUMs_8QeuPHcgbKF2VtJImAup5BfA_D7umiv4'
-const DEFAULT_VAPID_PRIVATE_KEY = 'MtDYmRVBC_29laCLW1_oqVFEGxIG1tn1D03B4eoAAZA'
 const DEFAULT_VAPID_SUBJECT = 'mailto:admin@checkindaily.news'
 
 export interface VapidConfig {
@@ -71,14 +70,18 @@ export async function getVapidConfig(database?: D1DatabaseLike, env?: Record<str
           subject: envSub || DEFAULT_VAPID_SUBJECT,
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('[WebPush] Failed to load VAPID keys from site_settings:', err)
+    }
   }
 
-  return {
-    publicKey: DEFAULT_VAPID_PUBLIC_KEY,
-    privateKey: DEFAULT_VAPID_PRIVATE_KEY,
-    subject: DEFAULT_VAPID_SUBJECT,
-  }
+  // Fail closed: no embedded fallback keys. Push stays disabled until real
+  // VAPID keys are configured via env (VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY)
+  // or site_settings (vapid_public_key/vapid_private_key).
+  throw createError({
+    statusCode: 503,
+    statusMessage: 'Push notification VAPID keys are not configured',
+  })
 }
 
 async function createVapidJwt(audience: string, config: VapidConfig): Promise<string> {

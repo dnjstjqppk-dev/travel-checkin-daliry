@@ -237,10 +237,10 @@ function formatDate(isoStr: string) {
 
           <div class="bubble-actions">
             <button type="button" class="btn-action like-btn" @click="handleLike(c.id)">
-              👍 공감 <span class="like-num">{{ c.likeCount }}</span>
+              공감 <span class="like-num">{{ c.likeCount }}</span>
             </button>
             <button type="button" class="btn-action reply-btn" @click="activeReplyId = activeReplyId === c.id ? null : c.id">
-              💬 답글
+              답글
             </button>
             <button type="button" class="btn-action delete-btn" @click="openDeleteModal(c.id)">
               삭제
@@ -279,7 +279,7 @@ function formatDate(isoStr: string) {
               </div>
               <div class="bubble-actions">
                 <button type="button" class="btn-action like-btn" @click="handleLike(rep.id)">
-                  👍 공감 <span class="like-num">{{ rep.likeCount }}</span>
+                  공감 <span class="like-num">{{ rep.likeCount }}</span>
                 </button>
                 <button type="button" class="btn-action delete-btn" @click="openDeleteModal(rep.id)">
                   삭제
@@ -350,7 +350,7 @@ function formatDate(isoStr: string) {
   font-family: monospace;
   font-size: 11px;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
 }
 
@@ -362,13 +362,13 @@ function formatDate(isoStr: string) {
 }
 
 .comment-count {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 600;
 }
 
 .comments-policy-note {
   font-size: 12px;
-  color: var(--text-muted, #71758e);
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -418,7 +418,7 @@ function formatDate(isoStr: string) {
 
 .comment-textarea:focus, .comment-input:focus {
   outline: none;
-  border-color: #00d4aa;
+  border-color: var(--accent);
 }
 
 .form-row-bottom {
@@ -431,12 +431,12 @@ function formatDate(isoStr: string) {
 .char-counter {
   font-size: 11px;
   font-family: monospace;
-  color: #71758e;
+  color: var(--text-muted);
 }
 
 .btn-submit-comment {
-  background: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   font-weight: 700;
   font-size: 13px;
@@ -459,14 +459,14 @@ function formatDate(isoStr: string) {
 }
 
 .feedback-msg.success {
-  background: rgba(0, 212, 170, 0.1);
-  color: #00d4aa;
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
 }
 
 .feedback-msg.error {
   background: rgba(255, 82, 82, 0.1);
-  color: #ff5252;
+  color: var(--red);
   border: 1px solid rgba(255, 82, 82, 0.3);
 }
 
@@ -497,19 +497,19 @@ function formatDate(isoStr: string) {
 }
 
 .reply-badge {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .created-time {
   font-size: 11px;
-  color: #71758e;
+  color: var(--text-muted);
   font-family: monospace;
 }
 
 .bubble-body {
   font-size: 14px;
   line-height: 1.6;
-  color: #d1d5db;
+  color: var(--text-secondary);
   margin-bottom: 12px;
   white-space: pre-wrap;
 }
@@ -523,7 +523,7 @@ function formatDate(isoStr: string) {
 .btn-action {
   background: none;
   border: none;
-  color: #8e95aa;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0;
   font-size: 12px;
@@ -531,16 +531,16 @@ function formatDate(isoStr: string) {
 }
 
 .btn-action:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .like-btn:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .like-num {
   font-weight: bold;
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .reply-input-wrapper {
@@ -574,7 +574,7 @@ function formatDate(isoStr: string) {
   background: rgba(19, 20, 31, 0.5);
   border: 1px dashed var(--border, #23253a);
   border-radius: 8px;
-  color: #71758e;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -610,14 +610,14 @@ function formatDate(isoStr: string) {
 
 .modal-box p {
   font-size: 13px;
-  color: #8e95aa;
+  color: var(--text-muted);
   margin: 0 0 14px 0;
 }
 
 .modal-label {
   display: block;
   font-size: 12px;
-  color: #8e95aa;
+  color: var(--text-muted);
   margin: 10px 0 4px 0;
 }
 
@@ -640,8 +640,8 @@ function formatDate(isoStr: string) {
 }
 
 .btn-cancel {
-  background: #1e2030;
-  color: #d1d5db;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
   border: 1px solid #2b2e44;
   padding: 6px 14px;
   border-radius: 4px;
@@ -649,7 +649,7 @@ function formatDate(isoStr: string) {
 }
 
 .btn-danger {
-  background: #ff5252;
+  background: var(--red);
   color: var(--text-primary, #ffffff);
   border: none;
   padding: 6px 14px;
@@ -659,8 +659,8 @@ function formatDate(isoStr: string) {
 }
 
 .btn-primary-action {
-  background: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   padding: 6px 14px;
   border-radius: 4px;

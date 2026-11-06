@@ -135,7 +135,7 @@ const contactPhone = computed(() => settingsMap.value.contact_phone || '')
 }
 
 .bkp-fcol ul a:hover {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .brand-col .bkp-footer-logo {

@@ -90,7 +90,7 @@ async function toggleKillSwitch() {
           :disabled="isTogglingKillSwitch"
           @click="toggleKillSwitch"
         >
-          {{ data?.metrics.isAutomationPaused ? '⚠️ 자동화 재개 (Kill-Switch 해제)' : '🛑 자동화 긴급 중지 (Kill-Switch)' }}
+          {{ data?.metrics.isAutomationPaused ? '⚠자동화 재개 (Kill-Switch 해제)' : '자동화 긴급 중지 (Kill-Switch)' }}
         </button>
         <NuxtLink class="button button-primary" to="/admin/articles/new">
           ＋ 새 기사 작성 / AI 생성
@@ -99,7 +99,7 @@ async function toggleKillSwitch() {
     </div>
 
     <div v-if="data?.metrics.isAutomationPaused" class="admin-alert-banner warning">
-      🚨 현재 <strong>자동화 긴급 중지(Kill-Switch)</strong>가 활성화되어 있습니다. 모든 자동 뉴스 수집 및 초안 작성이 일시 정지 상태입니다.
+     현재 <strong>자동화 긴급 중지(Kill-Switch)</strong>가 활성화되어 있습니다. 모든 자동 뉴스 수집 및 초안 작성이 일시 정지 상태입니다.
     </div>
 
     <!-- 핵심 지표 카드 그리드 -->
@@ -264,8 +264,8 @@ async function toggleKillSwitch() {
   align-items: center;
 }
 .button-killswitch {
-  background: #DC2626;
-  color: #FFFFFF;
+  background: var(--red);
+  color: var(--on-accent);
   border: none;
   font-weight: 800;
   padding: 8px 16px;
@@ -273,7 +273,7 @@ async function toggleKillSwitch() {
   cursor: pointer;
 }
 .button-killswitch.is-paused {
-  background: #D97706;
+  background: var(--amber);
 }
 .admin-alert-banner {
   padding: 14px 18px;
@@ -282,9 +282,9 @@ async function toggleKillSwitch() {
   margin-bottom: 24px;
 }
 .admin-alert-banner.warning {
-  background: rgba(245, 158, 11, 0.15);
+  background: var(--amber-dim);
   border: 1px solid #F59E0B;
-  color: #f59e0b;
+  color: var(--amber);
 }
 .admin-stats-grid {
   display: grid;
@@ -317,11 +317,11 @@ async function toggleKillSwitch() {
   font-size: 11px;
   color: var(--admin-muted);
 }
-.text-success { color: #10b981; }
-.text-warning { color: #f59e0b; }
-.text-danger { color: #f87171; }
+.text-success { color: var(--accent); }
+.text-warning { color: var(--amber); }
+.text-danger { color: var(--red); }
 .text-primary { color: var(--accent); }
-.text-accent { color: #FF5A5F; }
+.text-accent { color: var(--accent); }
 
 .dashboard-split-grid {
   display: grid;
@@ -363,9 +363,9 @@ async function toggleKillSwitch() {
   border-radius: 3px;
   font-family: 'DM Mono', monospace;
 }
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-warning { background: var(--amber-dim); color: var(--amber); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 .badge-default { background: var(--admin-surface); color: var(--admin-text); }
 .text-mono {
   font-family: 'DM Mono', monospace;

@@ -2,7 +2,7 @@
 const route = useRoute()
 const router = useRouter()
 const logoutError = ref('')
-const darkMode = useState('site-dark-mode', () => true)
+const darkMode = useState('site-dark-mode', () => false)
 const { data: staffSession } = await useFetch<{ username: string; role: string }>('/api/auth/session')
 
 function toggleAdminTheme() {
@@ -17,41 +17,41 @@ const navGroups = [
   {
     title: 'EDITORIAL NEWSROOM',
     items: [
-      { label: '뉴스룸 대시보드', to: '/admin/dashboard', icon: '📊' },
-      { label: '기사 목록 및 관리', to: '/admin/articles', icon: '📰' },
-      { label: '새 기사 / AI 생성', to: '/admin/articles/new', icon: '✍️' },
-      { label: '독자 댓글 모더레이션', to: '/admin/comments', icon: '💬' },
-      { label: '편집국 검토 대기열', to: '/admin/review', icon: '⚖️' },
-      { label: '예약 발행 큐', to: '/admin/schedules', icon: '⏱️' },
+      { label: '뉴스룸 대시보드', to: '/admin/dashboard', icon: 'DB' },
+      { label: '기사 목록 및 관리', to: '/admin/articles', icon: 'AR' },
+      { label: '새 기사 / AI 생성', to: '/admin/articles/new', icon: 'NW' },
+      { label: '독자 댓글 모더레이션', to: '/admin/comments', icon: 'CM' },
+      { label: '편집국 검토 대기열', to: '/admin/review', icon: 'RV' },
+      { label: '예약 발행 큐', to: '/admin/schedules', icon: 'SQ' },
     ],
   },
   {
     title: 'INGESTION & AUTOMATION',
     items: [
-      { label: '뉴스 수집 출처', to: '/admin/sources', icon: '📡' },
-      { label: '자동화 정책 설정', to: '/admin/automation', icon: '⚙️' },
-      { label: '뉴스레터 & 푸시 발송', to: '/admin/dispatch', icon: '📬' },
-      { label: '다국어 번역 현황', to: '/admin/translations', icon: '🌐' },
-      { label: '미디어 & 저작권', to: '/admin/media', icon: '🖼️' },
+      { label: '뉴스 수집 출처', to: '/admin/sources', icon: 'FD' },
+      { label: '자동화 정책 설정', to: '/admin/automation', icon: 'AT' },
+      { label: '뉴스레터 & 푸시 발송', to: '/admin/dispatch', icon: 'DP' },
+      { label: '다국어 번역 현황', to: '/admin/translations', icon: 'TR' },
+      { label: '미디어 & 저작권', to: '/admin/media', icon: 'MD' },
     ],
   },
   {
     title: 'TAXONOMY & REVENUE',
     items: [
-      { label: '카테고리 관리', to: '/admin/categories', icon: '🏷️' },
-      { label: '국가 · 도시 관리', to: '/admin/locations', icon: '📍' },
-      { label: '광고 슬롯 관리', to: '/admin/ads', icon: '📢' },
-      { label: '제휴 수익화 (Trip/Get)', to: '/admin/affiliate', icon: '💰' },
+      { label: '카테고리 관리', to: '/admin/categories', icon: 'CT' },
+      { label: '국가 · 도시 관리', to: '/admin/locations', icon: 'LC' },
+      { label: '광고 슬롯 관리', to: '/admin/ads', icon: 'AD' },
+      { label: '제휴 수익화 (Trip/Get)', to: '/admin/affiliate', icon: 'AF' },
     ],
   },
   {
     title: 'GOVERNANCE & AUDIT',
     items: [
-      { label: '트래픽 & 봇 분석', to: '/admin/analytics', icon: '📈' },
-      { label: 'SEO & 뉴스 사이트맵', to: '/admin/seo', icon: '🔍' },
-      { label: '편집국 계정 및 권한', to: '/admin/users', icon: '👥' },
-      { label: '편집국 감사 로그', to: '/admin/logs', icon: '📜' },
-      { label: '시스템 설정', to: '/admin/settings', icon: '🛠️' },
+      { label: '트래픽 & 봇 분석', to: '/admin/analytics', icon: 'AN' },
+      { label: 'SEO & 뉴스 사이트맵', to: '/admin/seo', icon: 'SE' },
+      { label: '편집국 계정 및 권한', to: '/admin/users', icon: 'UR' },
+      { label: '편집국 감사 로그', to: '/admin/logs', icon: 'LG' },
+      { label: '시스템 설정', to: '/admin/settings', icon: 'ST' },
     ],
   },
 ]
@@ -114,7 +114,7 @@ async function logout() {
             :to="item.to"
             :class="{ active: route.path === item.to || (item.to === '/admin/articles' && route.path.startsWith('/admin/articles/') && route.path !== '/admin/articles/new') }"
           >
-            <span class="admin-nav-emoji">{{ item.icon }}</span>
+            <span class="admin-nav-code">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
           </NuxtLink>
         </div>
@@ -156,9 +156,17 @@ async function logout() {
 .admin-nav-group {
   margin-bottom: 18px;
 }
-.admin-nav-emoji {
+.admin-nav-code {
   margin-right: 8px;
-  font-size: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--admin-muted);
+  min-width: 20px;
+}
+.admin-navigation a.active .admin-nav-code {
+  color: var(--accent);
 }
 .admin-sidebar {
   overflow-y: auto;

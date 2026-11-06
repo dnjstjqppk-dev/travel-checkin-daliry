@@ -14,3 +14,15 @@ ADMIN_BOOTSTRAP_TOKEN=dev-admin-bootstrap-token-change-in-production
 # External Gemini API Key (optional fallback for AI article generation)
 GEMINI_API_KEY=AIzaSyDummyKeyForDevelopment
 
+# Newsletter provider keys (leave empty to keep mail dispatch disabled)
+RESEND_API_KEY=
+SENDGRID_API_KEY=
+
+# Web Push VAPID keys (leave empty to keep push disabled)
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:admin@checkindaily.news
+
+# Shared secret for /api/cron/* endpoints (minimum 16 chars)
+CRON_TOKEN=dev-cron-token-change-me-0000
+

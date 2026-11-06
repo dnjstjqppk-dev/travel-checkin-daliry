@@ -245,7 +245,6 @@ useHead(() => ({
       <div class="ttr-terminal-header">
         <div class="header-left">
           <div class="title-row">
-            <span class="pulse-icon">📡</span>
             <h1 class="main-title">TRAVEL INTELLIGENCE FEED</h1>
           </div>
           <p class="sub-title">글로벌 항공 · 호텔 · 여행지 · 여행 정책 뉴스</p>
@@ -272,7 +271,7 @@ useHead(() => ({
           :class="{ active: activeTab === 'major' }"
           @click="activeTab = 'major'"
         >
-          ⭐ 주요뉴스 <span class="tab-count">15</span>
+          주요뉴스 <span class="tab-count">15</span>
         </button>
         <button
           type="button"
@@ -280,7 +279,7 @@ useHead(() => ({
           :class="{ active: activeTab === 'airline' }"
           @click="activeTab = 'airline'"
         >
-          ✈️ 항공·노선 <span class="tab-count">18</span>
+          항공·노선 <span class="tab-count">18</span>
         </button>
         <button
           type="button"
@@ -288,7 +287,7 @@ useHead(() => ({
           :class="{ active: activeTab === 'hotel' }"
           @click="activeTab = 'hotel'"
         >
-          🏨 호텔·스테이 <span class="tab-count">16</span>
+          호텔·스테이 <span class="tab-count">16</span>
         </button>
         <button
           type="button"
@@ -296,7 +295,7 @@ useHead(() => ({
           :class="{ active: activeTab === 'destination' }"
           @click="activeTab = 'destination'"
         >
-          🗺️ 여행지·비자 <span class="tab-count">17</span>
+          여행지·비자 <span class="tab-count">17</span>
         </button>
         <button
           type="button"
@@ -304,7 +303,7 @@ useHead(() => ({
           :class="{ active: activeTab === 'realtime' }"
           @click="activeTab = 'realtime'"
         >
-          🔥 실시간속보 <span class="tab-count">12</span>
+          실시간속보 <span class="tab-count">12</span>
         </button>
       </div>
 
@@ -388,7 +387,7 @@ useHead(() => ({
           <div class="news-section-panel">
             <div class="panel-header">
               <div class="panel-title">
-                <span class="panel-icon">📰</span>
+
                 <span>실시간 항공 &amp; 호텔 레이더</span>
               </div>
               <span class="panel-live-tag">
@@ -413,7 +412,7 @@ useHead(() => ({
                 :class="{ on: radarFilter === 'airline' }"
                 @click="radarFilter = 'airline'"
               >
-                ✈️ 항공·노선
+               항공·노선
               </button>
               <button
                 type="button"
@@ -421,7 +420,7 @@ useHead(() => ({
                 :class="{ on: radarFilter === 'hotel' }"
                 @click="radarFilter = 'hotel'"
               >
-                🏨 호텔·스테이
+               호텔·스테이
               </button>
             </div>
 
@@ -459,11 +458,11 @@ useHead(() => ({
             <CurrencyRates />
           </div>
 
-          <!-- Widget 2: 🏆 실시간 랭킹 (Top Stories 1~5) -->
+          <!-- Widget 2:실시간 랭킹 (Top Stories 1~5) -->
           <div class="side-panel-wrap top-stories-panel">
             <div class="panel-header">
               <div class="panel-title">
-                <span class="panel-icon">🏆</span>
+
                 <span>실시간 인기 기사 TOP 5</span>
               </div>
               <NuxtLink :to="locUrl('/news/realtime')" class="panel-more-link">MORE ↗</NuxtLink>
@@ -484,11 +483,11 @@ useHead(() => ({
             </ol>
           </div>
 
-          <!-- Widget 3: 💡 여행자 공식 제휴 혜택 (Partners CTA) -->
+          <!-- Widget 3:여행자 공식 제휴 혜택 (Partners CTA) -->
           <div class="side-panel-wrap partner-cta-panel">
             <div class="panel-header">
               <div class="panel-title">
-                <span class="panel-icon">💡</span>
+
                 <span>여행자 공식 혜택 레이더</span>
               </div>
             </div>
@@ -517,7 +516,7 @@ useHead(() => ({
           <div class="side-panel-wrap newsletter-panel">
             <div class="panel-header">
               <div class="panel-title">
-                <span class="panel-icon">📬</span>
+
                 <span>INTELLIGENCE BRIEFING</span>
               </div>
             </div>
@@ -616,8 +615,7 @@ useHead(() => ({
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent, #00d4aa);
-  box-shadow: 0 0 8px var(--accent, #00d4aa);
+  background: var(--accent);
   animation: blink 2s infinite;
 }
 
@@ -652,18 +650,18 @@ useHead(() => ({
 }
 
 .news-tab-btn:hover {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .news-tab-btn.active {
-  border-bottom-color: var(--accent, #00d4aa);
-  color: var(--accent, #00d4aa);
+  border-bottom-color: var(--accent);
+  color: var(--accent);
   font-weight: 700;
 }
 
 .tab-count {
-  background: rgba(0, 212, 170, 0.12);
-  color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
   padding: 1px 6px;
@@ -690,7 +688,7 @@ useHead(() => ({
 }
 
 .ttr-hero-card:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .hero-link {
@@ -743,8 +741,8 @@ useHead(() => ({
 .cat-badge {
   background: rgba(13, 14, 26, 0.85);
   backdrop-filter: blur(4px);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.35);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
@@ -792,7 +790,7 @@ useHead(() => ({
 }
 
 .ttr-hero-card:hover .hero-headline {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .hero-summary {
@@ -816,7 +814,7 @@ useHead(() => ({
   gap: 6px;
   font-size: 10.5px;
   font-weight: 800;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
@@ -842,7 +840,7 @@ useHead(() => ({
   content: '•';
   position: absolute;
   left: 0;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 900;
 }
 
@@ -852,7 +850,7 @@ useHead(() => ({
   gap: 6px;
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 /* Sub-lead 2-Card Grid */
@@ -871,7 +869,7 @@ useHead(() => ({
 }
 
 .sublead-card:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
   transform: translateY(-2px);
 }
 
@@ -900,8 +898,8 @@ useHead(() => ({
   bottom: 8px;
   left: 8px;
   background: rgba(13, 14, 26, 0.85);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -976,7 +974,7 @@ useHead(() => ({
   align-items: center;
   gap: 5px;
   font-size: 10.5px;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -984,7 +982,7 @@ useHead(() => ({
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--accent, #00d4aa);
+  background: var(--accent);
   animation: blink 2s infinite;
 }
 
@@ -1009,9 +1007,9 @@ useHead(() => ({
 }
 
 .nf-chip.on {
-  border-color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.12);
-  color: var(--accent, #00d4aa);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .radar-feed-list {
@@ -1060,18 +1058,18 @@ useHead(() => ({
   padding: 1px 5px;
   border-radius: 3px;
   font-weight: 700;
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .cat-pill.airline {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .cat-pill.hotel {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: var(--amber-dim);
+  color: var(--amber);
 }
 
 .radar-feed-title {
@@ -1088,7 +1086,7 @@ useHead(() => ({
 }
 
 .radar-feed-link:hover .radar-feed-title {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .radar-feed-snippet {
@@ -1125,7 +1123,7 @@ useHead(() => ({
 }
 
 .panel-more-link {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-size: 11.5px;
   font-weight: 700;
   text-decoration: none;
@@ -1178,9 +1176,9 @@ useHead(() => ({
 }
 
 .rank-badge.top-three {
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.15);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
 }
 
 .rank-info {
@@ -1202,7 +1200,7 @@ useHead(() => ({
 }
 
 .rank-title:hover {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .rank-meta {
@@ -1214,7 +1212,7 @@ useHead(() => ({
 }
 
 .cat-tag {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 /* Partner Benefits Panel */
@@ -1239,7 +1237,7 @@ useHead(() => ({
 }
 
 .partner-card:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
@@ -1252,16 +1250,16 @@ useHead(() => ({
 .p-badge {
   font-size: 9px;
   font-weight: 800;
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.1);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 1px 4px;
   border-radius: 3px;
   width: fit-content;
 }
 
 .p-badge.tour {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+  color: var(--amber);
+  background: var(--amber-dim);
 }
 
 .partner-info strong {
@@ -1278,8 +1276,8 @@ useHead(() => ({
 .p-cta {
   font-size: 11px;
   font-weight: 700;
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.12);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 4px 8px;
   border-radius: 4px;
 }
@@ -1313,12 +1311,12 @@ useHead(() => ({
 }
 
 .newsletter-form input:focus {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .newsletter-form button {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 6px;
   padding: 8px 14px;
@@ -1329,9 +1327,9 @@ useHead(() => ({
 }
 
 .success-box {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -1361,7 +1359,7 @@ useHead(() => ({
 .stream-bar {
   width: 4px;
   height: 16px;
-  background: var(--accent, #00d4aa);
+  background: var(--accent);
   border-radius: 2px;
 }
 
@@ -1375,7 +1373,7 @@ useHead(() => ({
 
 .stream-more {
   font-size: 12px;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 600;
   text-decoration: none;
 }

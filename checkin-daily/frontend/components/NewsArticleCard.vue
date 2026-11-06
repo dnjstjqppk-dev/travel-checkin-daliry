@@ -81,7 +81,7 @@ function getCategoryLabel(cat: string) {
 
 .ttr-card:hover {
   transform: translateY(-3px);
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
@@ -138,9 +138,9 @@ function getCategoryLabel(cat: string) {
 }
 
 .ttr-rank-badge.top-three {
-  background: rgba(0, 212, 170, 0.2);
-  color: var(--accent, #00d4aa);
-  border-color: rgba(0, 212, 170, 0.4);
+  background: var(--accent);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .ttr-card-tag {
@@ -149,8 +149,8 @@ function getCategoryLabel(cat: string) {
   left: 10px;
   background: rgba(13, 14, 26, 0.85);
   backdrop-filter: blur(4px);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   font-size: 10.5px;
   font-weight: 700;
   padding: 2px 8px;
@@ -173,13 +173,13 @@ function getCategoryLabel(cat: string) {
 }
 
 .ttr-verified-dot {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 800;
   font-size: 10px;
-  background: rgba(0, 212, 170, 0.1);
+  background: var(--accent-dim);
   padding: 1px 5px;
   border-radius: 3px;
-  border: 1px solid rgba(0, 212, 170, 0.25);
+  border: 1px solid var(--accent);
 }
 
 .ttr-card-headline {
@@ -197,7 +197,7 @@ function getCategoryLabel(cat: string) {
 }
 
 .ttr-card:hover .ttr-card-headline {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .ttr-card-desc {
@@ -247,6 +247,6 @@ function getCategoryLabel(cat: string) {
 }
 
 .ttr-card-save:hover {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 </style>

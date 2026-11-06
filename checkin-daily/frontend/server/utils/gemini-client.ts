@@ -132,7 +132,7 @@ export async function generateNewsWithGemini(options: GeminiGenerateOptions): Pr
     : siteConfig.affiliates.find((a) => a.id === 'tripscanner') || siteConfig.affiliates[0]
   ) as NonNullable<(typeof siteConfig.affiliates)[0]>
 
-  const ctaMarkdown = `\n\n> 💡 **[에디터 추천 공식 파트너]** ${targetAffiliate.name} — ${targetAffiliate.description}\n> 👉 [${targetAffiliate.ctaText}](${targetAffiliate.url})\n> *(본 기사는 공정거래위원회 및 구글 검색 가이드라인을 준수하며, 파트너사 제휴 활동을 통해 일정 수수료를 지급받을 수 있습니다.)*`
+  const ctaMarkdown = `\n\n> **[에디터 추천 공식 파트너]** ${targetAffiliate.name} — ${targetAffiliate.description}\n> → [${targetAffiliate.ctaText}](${targetAffiliate.url})\n> *(본 기사는 공정거래위원회 및 구글 검색 가이드라인을 준수하며, 파트너사 제휴 활동을 통해 일정 수수료를 지급받을 수 있습니다.)*`
 
   // Prompt construction with Google Helpful Content, E-E-A-T, and AI Grounding (SGE/Perplexity) Optimization
   const prompt = `당신은 글로벌 독립 여행 탐사 저널리즘 미디어 '체크인데일리 (Check-in Daily)'의 수석 데스크 에디터(Senior Investigative Editor)입니다.

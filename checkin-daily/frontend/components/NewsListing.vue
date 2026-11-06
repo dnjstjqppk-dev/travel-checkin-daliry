@@ -176,7 +176,7 @@ function formatViews(views = 0) {
       <!-- Left: Article cards grid -->
       <section class="ttr-col-main">
         <div v-if="!store.articles.length" class="ttr-empty-state">
-          <span class="empty-icon">📡</span>
+
           <p>등록된 뉴스가 없습니다. 새 기사가 동기화되면 즉시 표시됩니다.</p>
         </div>
         <div v-else class="ttr-card-grid-2">
@@ -256,11 +256,11 @@ function formatViews(views = 0) {
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-list-header-bar {
@@ -281,14 +281,14 @@ function formatViews(views = 0) {
 .ttr-color-bar {
   width: 4px;
   height: 48px;
-  background: #00d4aa;
+  background: var(--accent);
   border-radius: 2px;
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(0, 212, 170, 0.4);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-color-bar.realtime {
-  background: #ff5252;
+  background: var(--red);
   box-shadow: 0 0 12px rgba(255, 82, 82, 0.5);
 }
 
@@ -299,7 +299,7 @@ function formatViews(views = 0) {
   font-size: 10px;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 4px;
 }
@@ -308,22 +308,21 @@ function formatViews(views = 0) {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .ttr-list-page-title {
   margin: 0;
   font-size: 26px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   letter-spacing: -0.6px;
 }
 
 .ttr-realtime-sublabel {
   margin: 6px 0 0;
   font-size: 12px;
-  color: #ff7b72;
+  color: var(--red);
   font-weight: 600;
   font-family: 'DM Mono', monospace;
 }
@@ -342,7 +341,7 @@ function formatViews(views = 0) {
   border: 1px solid var(--border, #23253a);
   padding: 2px 6px;
   border-radius: 3px;
-  color: #00d4aa;
+  color: var(--accent);
   font-size: 10px;
   font-weight: 700;
 }
@@ -381,7 +380,7 @@ function formatViews(views = 0) {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, transparent);
+  background: var(--accent);
 }
 
 .ttr-widget-header {
@@ -402,7 +401,7 @@ function formatViews(views = 0) {
 .ttr-widget-indicator {
   width: 3px;
   height: 14px;
-  background: #00d4aa;
+  background: var(--accent);
   border-radius: 1px;
 }
 
@@ -410,7 +409,7 @@ function formatViews(views = 0) {
   margin: 0;
   font-size: 14px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   letter-spacing: 0.6px;
   font-family: 'DM Mono', monospace;
 }
@@ -425,7 +424,7 @@ function formatViews(views = 0) {
 }
 
 .ttr-widget-more:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-ordered-list {
@@ -454,13 +453,13 @@ function formatViews(views = 0) {
   font-family: 'DM Mono', monospace;
   font-size: 18px;
   font-weight: 800;
-  color: #484f58;
+  color: var(--text-secondary);
   line-height: 1;
   text-align: center;
 }
 
 .ttr-rank-number.accent {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-body {
@@ -476,7 +475,7 @@ function formatViews(views = 0) {
 .ttr-rank-text {
   font-size: 13px;
   line-height: 1.45;
-  color: #c9d1d9;
+  color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -487,7 +486,7 @@ function formatViews(views = 0) {
 }
 
 .ttr-rank-line:hover .ttr-rank-text {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-rank-submeta {
@@ -500,13 +499,13 @@ function formatViews(views = 0) {
 }
 
 .ttr-rank-tag {
-  color: #58a6ff;
+  color: var(--accent);
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .ttr-rank-views {
-  color: #6e7681;
+  color: var(--text-muted);
 }
 
 .ttr-empty-state {
@@ -540,7 +539,7 @@ function formatViews(views = 0) {
 .ttr-load-more-btn {
   background: var(--bg-surface, #13141f);
   border: 1px solid var(--border, #23253a);
-  color: #e6edf3;
+  color: var(--text-primary);
   padding: 13px 36px;
   font-size: 12px;
   font-weight: 700;
@@ -552,10 +551,10 @@ function formatViews(views = 0) {
 }
 
 .ttr-load-more-btn:hover {
-  border-color: #00d4aa;
-  color: #00d4aa;
+  border-color: var(--accent);
+  color: var(--accent);
   background: var(--bg-card, #181927);
-  box-shadow: 0 0 16px rgba(0, 212, 170, 0.2);
+  box-shadow: var(--shadow-card);
 }
 
 @media (max-width: 900px) {

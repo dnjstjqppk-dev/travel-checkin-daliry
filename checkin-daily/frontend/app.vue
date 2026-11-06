@@ -2,7 +2,7 @@
 const route = useRoute()
 const router = useRouter()
 const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
-const darkMode = useState('site-dark-mode', () => true)
+const darkMode = useState('site-dark-mode', () => false)
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 const isArticleRoute = computed(() => route.path.includes('/article/'))
 const isMobileDrawerOpen = ref(false)
@@ -17,7 +17,7 @@ useHead(() => ({
   script: [
     {
       key: 'theme-fouc-guard',
-      innerHTML: `(function(){try{var t=localStorage.getItem('checkin-theme');if(t==='light'){document.documentElement.dataset.theme='light';}else{document.documentElement.dataset.theme='dark';}}catch(e){}})();`,
+      innerHTML: `(function(){try{var t=localStorage.getItem('checkin-theme');if(t==='dark'){document.documentElement.dataset.theme='dark';}else{document.documentElement.dataset.theme='light';}}catch(e){}})();`,
     },
   ],
 }))
@@ -72,7 +72,7 @@ onMounted(() => {
   onUnmounted(() => clearInterval(interval))
 
   const savedTheme = localStorage.getItem('checkin-theme')
-  darkMode.value = savedTheme !== 'light'
+  darkMode.value = savedTheme === 'dark'
   document.documentElement.dataset.theme = darkMode.value ? 'dark' : 'light'
 })
 
@@ -139,10 +139,7 @@ async function submitSearch() {
           </button>
 
           <NuxtLink :to="locUrl('/news')" class="ttr-brand" title="Check-in Daily">
-            <div class="ttr-brand-mark">
-              <span class="ttr-live-ping" />
-              <span class="ttr-brand-icon">📡</span>
-            </div>
+            <div class="ttr-brand-mark" aria-hidden="true">C</div>
             <div class="ttr-brand-text">
               <span class="ttr-brand-title">CHECK-IN <b>DAILY</b></span>
               <span class="ttr-brand-kicker">TRAVEL INTELLIGENCE</span>
@@ -159,19 +156,19 @@ async function submitSearch() {
             {{ t('major') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/news/airline')" class="nav-tab" active-class="active">
-            ✈️ {{ t('airline') }}
+            {{ t('airline') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/news/hotel')" class="nav-tab" active-class="active">
-            🏨 {{ t('hotel') }}
+            {{ t('hotel') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/news/destination')" class="nav-tab" active-class="active">
-            🗺️ {{ t('destination') }}
+            {{ t('destination') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/news/realtime')" class="nav-tab" active-class="active">
-            🔥 {{ t('realtime') }}
+            {{ t('realtime') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/news/region')" class="nav-tab" active-class="active">
-            🌏 {{ t('region') }}
+            {{ t('region') }}
           </NuxtLink>
           <NuxtLink :to="locUrl('/saved')" class="nav-tab" active-class="active">
             ★ {{ t('saved') }}
@@ -258,7 +255,6 @@ async function submitSearch() {
       >
         <div class="ttr-drawer-header">
           <div class="ttr-drawer-brand">
-            <span class="ttr-live-ping" />
             <span class="ttr-brand-title">CHECK-IN <b>DAILY</b></span>
           </div>
           <button class="ttr-drawer-close-btn" type="button" aria-label="메뉴 닫기" @click="closeMobileDrawer">
@@ -267,14 +263,13 @@ async function submitSearch() {
         </div>
 
         <div class="ttr-drawer-time">
-          <span class="ttr-clock-icon">⏱</span>
           <span>{{ currentDateTime }}</span>
         </div>
 
         <!-- Mobile 6-Language Grid Selector -->
         <div class="ttr-drawer-lang-selector">
           <div class="ttr-drawer-lang-header">
-            <span>🌐 SELECT LANGUAGE (언어 선택)</span>
+            <span>언어 선택 · SELECT LANGUAGE</span>
           </div>
           <div class="ttr-drawer-lang-grid">
             <button
@@ -294,59 +289,59 @@ async function submitSearch() {
 
         <!-- Drawer Navigation Links -->
         <nav class="ttr-drawer-nav">
-          <div class="ttr-drawer-sec-label">TERMINAL CHANNELS</div>
+          <div class="ttr-drawer-sec-label">섹션 · SECTIONS</div>
           <ul class="ttr-drawer-list">
             <li>
               <NuxtLink :to="locUrl('/news')" @click="closeMobileDrawer">
-                <span class="icon">📰</span>
+                
                 <span>{{ t('all_news') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/major')" @click="closeMobileDrawer">
-                <span class="icon">⭐</span>
+                
                 <span>{{ t('major') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/airline')" @click="closeMobileDrawer">
-                <span class="icon">✈️</span>
+                
                 <span>{{ t('airline') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/hotel')" @click="closeMobileDrawer">
-                <span class="icon">🏨</span>
+                
                 <span>{{ t('hotel') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/destination')" @click="closeMobileDrawer">
-                <span class="icon">🗺️</span>
+                
                 <span>{{ t('destination') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/realtime')" @click="closeMobileDrawer">
-                <span class="icon">🔥</span>
+                
                 <span>{{ t('realtime') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/news/region')" @click="closeMobileDrawer">
-                <span class="icon">🌏</span>
+                
                 <span>{{ t('region') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink :to="locUrl('/saved')" @click="closeMobileDrawer">
-                <span class="icon">★</span>
+                
                 <span>{{ t('saved') }}</span>
               </NuxtLink>
             </li>
             <li>
               <NuxtLink to="/admin/login" @click="closeMobileDrawer">
-                <span class="icon">⚙️</span>
+                
                 <span>EDITORIAL DESK (관리자)</span>
               </NuxtLink>
             </li>
@@ -376,7 +371,7 @@ async function submitSearch() {
         <div class="ttr-lang-modal" role="dialog" aria-labelledby="lang-modal-title" aria-modal="true">
           <div class="ttr-lang-modal-head">
             <div class="ttr-lang-modal-title-wrap">
-              <span class="ttr-lang-modal-icon">🌐</span>
+
               <div>
                 <h3 id="lang-modal-title" class="ttr-lang-modal-title">Select Edition &amp; Language</h3>
                 <p class="ttr-lang-modal-sub">다국어 글로벌 에디션을 선택하세요</p>
@@ -465,7 +460,7 @@ async function submitSearch() {
 .ttr-root {
   background: var(--bg-primary, #0d0e1a);
   color: var(--text-secondary, #d2d9e3);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -517,26 +512,17 @@ async function submitSearch() {
 }
 
 .ttr-brand-mark {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ttr-live-ping {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent, #00d4aa);
-  box-shadow: 0 0 8px var(--accent, #00d4aa);
-  animation: blink 2s infinite;
-}
-
-.ttr-brand-icon {
-  font-size: 20px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .ttr-brand-text {
@@ -546,14 +532,15 @@ async function submitSearch() {
 }
 
 .ttr-brand-title {
-  color: var(--text-primary, #f0f4f8);
-  font-size: 15px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 
 .ttr-brand-title b {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .ttr-brand-kicker {
@@ -591,14 +578,13 @@ async function submitSearch() {
 }
 
 .nav-tab:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--bg-surface);
 }
 
 .nav-tab.active {
-  color: var(--accent, #00d4aa);
-  background: var(--accent-dim, rgba(0, 212, 170, 0.12));
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  color: var(--accent);
+  background: var(--accent-dim);
   font-weight: 700;
 }
 
@@ -622,7 +608,7 @@ async function submitSearch() {
 }
 
 .ttr-search-box:focus-within {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .ttr-search-box input {
@@ -660,7 +646,7 @@ async function submitSearch() {
 }
 
 .ttr-lang-pill:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .ttr-lang-pill .flag {
@@ -686,26 +672,26 @@ async function submitSearch() {
 }
 
 .ttr-theme-btn:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .ttr-desk-btn {
-  background: rgba(0, 212, 170, 0.12);
-  border: 1px solid rgba(0, 212, 170, 0.35);
-  border-radius: 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
   padding: 6px 12px;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
   letter-spacing: 0.5px;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .ttr-desk-btn:hover {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* Mobile Search Bar Dropdown */
@@ -736,8 +722,8 @@ async function submitSearch() {
 }
 
 .ttr-mobile-search-submit {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 6px;
   padding: 4px 10px;
@@ -778,7 +764,7 @@ async function submitSearch() {
   flex-direction: column;
   transform: translateX(-100%);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   overflow-y: auto;
 }
 
@@ -852,9 +838,9 @@ async function submitSearch() {
 }
 
 .ttr-dlang-card.active {
-  border-color: var(--accent, #00d4aa);
-  color: var(--accent, #00d4aa);
-  background: var(--accent-dim, rgba(0, 212, 170, 0.12));
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
   font-weight: 700;
 }
 
@@ -899,8 +885,8 @@ async function submitSearch() {
 
 .ttr-drawer-list a:hover,
 .ttr-drawer-list a.router-link-active {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .ttr-drawer-footer {
@@ -946,9 +932,9 @@ async function submitSearch() {
   max-width: 500px;
   background: var(--bg-secondary, #13141f);
   border: 1px solid var(--border, #23253a);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-lang-modal-head {
@@ -1011,13 +997,13 @@ async function submitSearch() {
 }
 
 .ttr-lang-option-card:hover {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 
 .ttr-lang-option-card.active {
-  border-color: var(--accent, #00d4aa);
-  background: var(--accent-dim, rgba(0, 212, 170, 0.12));
+  border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .ttr-lang-option-card .left {
@@ -1055,19 +1041,19 @@ async function submitSearch() {
 .ttr-lang-option-card .badge {
   font-size: 10.5px;
   font-weight: 700;
-  color: var(--text-muted, #8e99aa);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  background: var(--bg-surface);
   padding: 2px 5px;
   border-radius: 4px;
 }
 
 .ttr-lang-option-card.active .badge {
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.2);
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .ttr-lang-option-card .check {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   font-weight: 900;
   font-size: 14px;
 }
@@ -1086,8 +1072,8 @@ async function submitSearch() {
 }
 
 .ttr-lang-modal-foot code {
-  color: var(--accent, #00d4aa);
-  background: rgba(0, 212, 170, 0.1);
+  color: var(--accent);
+  background: var(--accent-dim);
   padding: 1px 4px;
   border-radius: 3px;
 }
@@ -1124,7 +1110,7 @@ async function submitSearch() {
 
 .ttr-bnav-item:hover,
 .ttr-bnav-item.active {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 /* Responsive Breakpoints */

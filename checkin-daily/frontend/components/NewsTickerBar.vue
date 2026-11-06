@@ -121,13 +121,13 @@ const dynamicTrendingItems = computed(() => {
 }
 
 .ticker-item .green {
-  color: var(--green, #00d4aa);
+  color: var(--green, var(--accent));
   font-weight: 700;
   font-size: 11.5px;
 }
 
 .ticker-item .red {
-  color: var(--red, #f6465d);
+  color: var(--red);
   font-weight: 700;
   font-size: 11.5px;
 }
@@ -137,7 +137,7 @@ const dynamicTrendingItems = computed(() => {
 }
 
 .ticker-item.news-item:hover .news-text {
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -159,14 +159,18 @@ const dynamicTrendingItems = computed(() => {
 }
 
 .mint-badge {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent, #00d4aa);
-  border: 1px solid rgba(0, 212, 170, 0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .red-badge {
-  background: rgba(246, 70, 93, 0.15);
-  color: var(--red, #f6465d);
-  border: 1px solid rgba(246, 70, 93, 0.3);
+  background: var(--red-dim);
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-scroll {
+    animation: none;
+  }
 }
 </style>

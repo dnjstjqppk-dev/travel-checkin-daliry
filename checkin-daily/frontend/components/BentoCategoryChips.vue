@@ -69,9 +69,9 @@ function selectCategory(id: string) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #334155;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
   padding: 8px 16px;
   border-radius: 9999px;
   font-size: 13px;
@@ -83,16 +83,16 @@ function selectCategory(id: string) {
 }
 
 .chip-pill:hover {
-  border-color: #0284c7;
-  color: #0284c7;
+  border-color: var(--accent);
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
 .chip-pill.active {
-  background: #0284c7;
-  border-color: #0284c7;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 12px var(--shadow-card);
 }
 </style>
 

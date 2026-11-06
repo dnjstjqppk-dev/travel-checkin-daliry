@@ -62,7 +62,7 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover' },
         { name: 'description', content: '글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어' },
-        { name: 'theme-color', content: '#0d0e1a' },
+        { name: 'theme-color', content: '#ffffff' },
         { property: 'og:site_name', content: 'Check-in Daily' },
         { property: 'og:type', content: 'website' },
         { property: 'og:image', content: '/images/og-default.png' },

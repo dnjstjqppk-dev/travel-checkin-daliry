@@ -30,19 +30,19 @@ useSeoMeta({
 
     <div class="about-grid">
       <section class="about-card">
-        <div class="card-icon">✈️</div>
+        <div class="card-icon">01</div>
         <h2>항공 & 모빌리티 저널리즘</h2>
         <p>국제항공운송협회(IATA) 및 전 세계 주요 항공사들의 공식 운항 스케줄, 신규 취항, 항공권 발권 동향, 마일리지 정책 개편을 심층 취재합니다.</p>
       </section>
 
       <section class="about-card">
-        <div class="card-icon">🏨</div>
+        <div class="card-icon">02</div>
         <h2>호스피탈리티 & 리조트 인텔리전스</h2>
         <p>글로벌 호텔 체인, 풀빌라, 부티크 리조트의 개관 및 오프닝, 멤버십 프로그램, 로컬 미식 다이닝 트렌드를 객관적인 시각으로 검증 보도합니다.</p>
       </section>
 
       <section class="about-card">
-        <div class="card-icon">🌐</div>
+        <div class="card-icon">03</div>
         <h2>관광 정책 & 비자 정보</h2>
         <p>각국 정부 관광청(TAT 등), 이민국, 외교부의 공식 발표에 근거하여 입국 규정, 비자(DTV 등), 여행 안전 정보를 왜곡 없이 신속하게 전합니다.</p>
       </section>
@@ -92,15 +92,15 @@ useSeoMeta({
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-bc-current {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -117,7 +117,7 @@ useSeoMeta({
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 10px;
 }
@@ -126,14 +126,13 @@ useSeoMeta({
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .about-title {
   font-size: 28px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 14px;
   line-height: 1.3;
   letter-spacing: -0.6px;
@@ -165,7 +164,7 @@ useSeoMeta({
 }
 
 .about-card:hover {
-  border-color: #00d4aa;
+  border-color: var(--accent);
 }
 
 .about-card::before {
@@ -175,18 +174,21 @@ useSeoMeta({
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, transparent);
+  background: var(--accent);
 }
 
 .card-icon {
-  font-size: 32px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .about-card h2 {
   font-size: 17px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 10px;
 }
 
@@ -207,7 +209,7 @@ useSeoMeta({
 .about-legal-section h2 {
   font-size: 17px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 16px;
   font-family: 'DM Mono', monospace;
   letter-spacing: 0.5px;
@@ -235,7 +237,7 @@ useSeoMeta({
 
 .legal-table td {
   padding: 12px 16px;
-  color: #c9d1d9;
+  color: var(--text-secondary);
   border-bottom: 1px solid var(--border, #23253a);
 }
 

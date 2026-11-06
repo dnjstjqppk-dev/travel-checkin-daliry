@@ -52,8 +52,8 @@ async function saveStaff(user: Staff) {
 const roleColors: Record<string, string> = {
   super_admin: '#ff5252',
   admin: '#ff7b72',
-  editor_in_chief: '#00d4aa',
-  editor: '#38bdf8',
+  editor_in_chief: 'var(--accent)',
+  editor: 'var(--accent)',
   reporter: '#fbbf24',
   translator: '#a78bfa',
   auditor: '#94a3b8',
@@ -72,19 +72,19 @@ const roleColors: Record<string, string> = {
 
     <div class="rbac-role-guide">
       <div class="guide-item">
-        <span class="role-pill" style="border-color: #ff5252; color: #ff5252;">SUPER ADMIN</span>
+        <span class="role-pill" style="border-color: var(--red); color: var(--red);">SUPER ADMIN</span>
         <p>전체 시스템 설정, API 키, 데이터베이스 백업 및 모든 권한 관리</p>
       </div>
       <div class="guide-item">
-        <span class="role-pill" style="border-color: #00d4aa; color: #00d4aa;">EDITOR IN CHIEF</span>
+        <span class="role-pill" style="border-color: var(--accent); color: var(--accent);">EDITOR IN CHIEF</span>
         <p>기사 최종 승인, 예약 발행, 정정 및 취소, 대시보드 통계 열람</p>
       </div>
       <div class="guide-item">
-        <span class="role-pill" style="border-color: #38bdf8; color: #38bdf8;">EDITOR</span>
+        <span class="role-pill" style="border-color: var(--accent); color: var(--accent);">EDITOR</span>
         <p>기사 작성, 편집, AI 단건 및 대량 생성, 번역 및 미디어 관리</p>
       </div>
       <div class="guide-item">
-        <span class="role-pill" style="border-color: #fbbf24; color: #fbbf24;">REPORTER</span>
+        <span class="role-pill" style="border-color: var(--amber); color: var(--amber);">REPORTER</span>
         <p>신규 기사 초안(Draft) 작성 및 편집국 검토(needs_review) 요청</p>
       </div>
     </div>
@@ -226,7 +226,7 @@ const roleColors: Record<string, string> = {
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 11px;
   font-weight: 800;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   letter-spacing: 0.5px;
 }
 
@@ -250,8 +250,8 @@ const roleColors: Record<string, string> = {
 }
 
 .ttr-back-btn:hover {
-  border-color: var(--accent, #00d4aa);
-  color: var(--accent, #00d4aa);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .rbac-role-guide {
@@ -299,7 +299,7 @@ const roleColors: Record<string, string> = {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--admin-heading);
 }
 
 .create-form {
@@ -326,7 +326,7 @@ const roleColors: Record<string, string> = {
 input, select {
   background: var(--bg-input, #11121d);
   border: 1px solid var(--border, #23253a);
-  color: #ffffff;
+  color: var(--admin-text);
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 13.5px;
@@ -335,12 +335,12 @@ input, select {
 }
 
 input:focus, select:focus {
-  border-color: var(--accent, #00d4aa);
+  border-color: var(--accent);
 }
 
 .ttr-submit-btn {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   padding: 11px 22px;
   border-radius: 6px;
@@ -390,7 +390,7 @@ input:focus, select:focus {
 .user-avatar-dot {
   width: 8px;
   height: 8px;
-  background: var(--accent, #00d4aa);
+  background: var(--accent);
   border-radius: 50%;
 }
 
@@ -415,18 +415,18 @@ input:focus, select:focus {
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(255, 82, 82, 0.15);
-  color: #ff5252;
+  color: var(--red);
 }
 
 .status-tag.active {
-  background: rgba(0, 212, 170, 0.15);
-  color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .save-btn {
   background: var(--bg-surface, #13141f);
   border: 1px solid var(--border, #23253a);
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   padding: 6px 14px;
   border-radius: 6px;
   font-weight: 700;
@@ -436,14 +436,14 @@ input:focus, select:focus {
 }
 
 .save-btn:hover {
-  background: rgba(0, 212, 170, 0.1);
-  border-color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  border-color: var(--accent);
 }
 
 .alert-info {
-  background: rgba(0, 212, 170, 0.1);
-  border: 1px solid rgba(0, 212, 170, 0.3);
-  color: var(--accent, #00d4aa);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -453,7 +453,7 @@ input:focus, select:focus {
 .alert-error {
   background: rgba(255, 82, 82, 0.1);
   border: 1px solid rgba(255, 82, 82, 0.3);
-  color: #ff5252;
+  color: var(--red);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 20px;

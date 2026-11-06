@@ -69,7 +69,7 @@ async function handleSubmit() {
 
     <div class="contact-grid">
       <section class="contact-card">
-        <div class="card-icon">📰</div>
+        <div class="card-icon">01</div>
         <h2>보도자료 배포 및 취재 제보</h2>
         <p>항공 운항 스케줄 변경, 신규 취항, 호텔 오프닝, 관광청 프로모션 등 공식 프레스 릴리스를 전달해 주세요.</p>
         <div class="channel-info">
@@ -79,7 +79,7 @@ async function handleSubmit() {
       </section>
 
       <section class="contact-card">
-        <div class="card-icon">🤝</div>
+        <div class="card-icon">02</div>
         <h2>광고 및 플랫폼 비즈니스 제휴</h2>
         <p>TripScanner(항공권 검색 엔진), GetForTrip(글로벌 투어 액티비티)과의 오디언스 연계 광고 및 제휴를 협의합니다.</p>
         <div class="channel-info">
@@ -89,7 +89,7 @@ async function handleSubmit() {
       </section>
 
       <section class="contact-card">
-        <div class="card-icon">⚖️</div>
+        <div class="card-icon">03</div>
         <h2>독자 권익 및 정정보도 청구</h2>
         <p>기사 내용의 오류 정정 요청 또는 청소년 보호 관련 고충은 신속하게 전담 고충처리인을 통해 접수 및 처리됩니다.</p>
         <div class="channel-info">
@@ -201,15 +201,15 @@ async function handleSubmit() {
 }
 
 .ttr-bc-link:hover {
-  color: #00d4aa;
+  color: var(--accent);
 }
 
 .ttr-bc-sep {
-  color: #383b52;
+  color: var(--text-dim);
 }
 
 .ttr-bc-current {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -226,7 +226,7 @@ async function handleSubmit() {
   font-size: 11px;
   font-family: 'DM Mono', monospace;
   font-weight: 700;
-  color: #00d4aa;
+  color: var(--accent);
   letter-spacing: 1px;
   margin-bottom: 10px;
 }
@@ -235,14 +235,13 @@ async function handleSubmit() {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00d4aa;
-  box-shadow: 0 0 8px #00d4aa;
+  background: var(--accent);
 }
 
 .contact-title {
   font-size: 28px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 14px;
   line-height: 1.3;
   letter-spacing: -0.6px;
@@ -276,7 +275,7 @@ async function handleSubmit() {
 }
 
 .contact-card:hover {
-  border-color: #00d4aa;
+  border-color: var(--accent);
 }
 
 .contact-card::before {
@@ -286,18 +285,21 @@ async function handleSubmit() {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #00d4aa, transparent);
+  background: var(--accent);
 }
 
 .card-icon {
-  font-size: 30px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .contact-card h2 {
   font-size: 16px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 8px;
 }
 
@@ -311,13 +313,13 @@ async function handleSubmit() {
 
 .channel-info {
   font-size: 13px;
-  color: #c9d1d9;
+  color: var(--text-secondary);
   border-top: 1px dashed var(--border, #23253a);
   padding-top: 12px;
 }
 
 .channel-info a {
-  color: #00d4aa;
+  color: var(--accent);
   font-weight: 700;
   text-decoration: underline;
   margin-left: 4px;
@@ -334,7 +336,7 @@ async function handleSubmit() {
 .inquiry-form-section h2 {
   font-size: 20px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 6px;
   letter-spacing: -0.4px;
 }
@@ -373,7 +375,7 @@ async function handleSubmit() {
   border-radius: 6px;
   font-size: 13.5px;
   background: var(--bg-card, #181927);
-  color: #e6edf3;
+  color: var(--text-primary);
   transition: all 0.15s;
 }
 
@@ -381,8 +383,8 @@ async function handleSubmit() {
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: #00d4aa;
-  box-shadow: 0 0 12px rgba(0, 212, 170, 0.2);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card);
 }
 
 .form-submit-row {
@@ -392,8 +394,8 @@ async function handleSubmit() {
 }
 
 .ttr-btn-primary {
-  background: #00d4aa;
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   border: 0;
   padding: 13px 32px;
   font-size: 13px;
@@ -406,8 +408,8 @@ async function handleSubmit() {
 }
 
 .ttr-btn-primary:hover:not(:disabled) {
-  background: #20eec4;
-  box-shadow: 0 0 16px rgba(0, 212, 170, 0.4);
+  background: var(--accent-hover);
+  box-shadow: var(--shadow-card);
 }
 
 .ttr-btn-primary:disabled {
@@ -418,21 +420,21 @@ async function handleSubmit() {
 .submit-success {
   text-align: center;
   padding: 40px 20px;
-  background: #0d261e;
-  border: 1px solid #00d4aa;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
   border-radius: 8px;
 }
 
 .success-icon {
   font-size: 36px;
-  color: #00d4aa;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .submit-success h3 {
   font-size: 18px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 8px;
 }
 
@@ -445,8 +447,8 @@ async function handleSubmit() {
 .ttr-btn-explore {
   display: inline-block;
   background: var(--bg-card, #181927);
-  border: 1px solid #00d4aa;
-  color: #00d4aa;
+  border: 1px solid var(--accent);
+  color: var(--accent);
   padding: 10px 24px;
   border-radius: 4px;
   font-size: 12px;
@@ -465,7 +467,7 @@ async function handleSubmit() {
 .office-info-section h2 {
   font-size: 17px;
   font-weight: 800;
-  color: #e6edf3;
+  color: var(--text-primary);
   margin: 0 0 16px;
   font-family: 'DM Mono', monospace;
 }
@@ -492,7 +494,7 @@ async function handleSubmit() {
 
 .office-table td {
   padding: 12px 16px;
-  color: #c9d1d9;
+  color: var(--text-secondary);
   border-bottom: 1px solid var(--border, #23253a);
 }
 

@@ -102,28 +102,28 @@ const verticalLinks = computed(() => {
   return [
     {
       id: 'flights',
-      icon: '✈️',
-      label: `항공권 검색 (ICN➔${dest.iata})`,
+      icon: '',
+      label: `항공권 검색 (ICN${dest.iata})`,
       url: `https://tripscanner.io/flights?origin=ICN&destination=${dest.iata}&depart=${dates.depart}&return=${dates.ret}&adults=1&utm_source=checkindaily&utm_medium=vertical_flights`,
       external: true,
     },
     {
       id: 'hotels',
-      icon: '🏨',
+      icon: '',
       label: `${dest.name} 호텔·숙박 비교`,
       url: `https://tripscanner.io/hotels?city=${dest.cityId}&checkin=${dates.depart}&checkout=${dates.ret}&rooms=1&adults=2&utm_source=checkindaily&utm_medium=vertical_hotels`,
       external: true,
     },
     {
       id: 'tours',
-      icon: '🎟️',
+      icon: '',
       label: `${dest.name} 투어·티켓·패스`,
       url: `https://getfortrip.com/search?city=${dest.cityId}&category=tours_tickets&utm_source=checkindaily&utm_medium=vertical_tours`,
       external: true,
     },
     {
       id: 'hub',
-      icon: '📍',
+      icon: '',
       label: `${dest.name} 여행지 뉴스 허브`,
       url: `/news/region`,
       external: false,
@@ -141,7 +141,7 @@ const verticalLinks = computed(() => {
           {{ primaryTarget.badgeText }}
         </span>
         <span class="cta-network-label">
-          🛰️ {{ detectedDestination.name }} ({{ detectedDestination.iata }}) 여행 커머스 인텔리전스 연결
+          {{ detectedDestination.name }} ({{ detectedDestination.iata }}) 여행 커머스 인텔리전스 연결
         </span>
       </div>
 
@@ -186,7 +186,6 @@ const verticalLinks = computed(() => {
             class="cta-vertical-pill"
             @click="trackAffiliateClick(`vertical_${v.id}`)"
           >
-            <span class="v-icon">{{ v.icon }}</span>
             <span class="v-label">{{ v.label }}</span>
             <span class="v-arrow">↗</span>
           </a>
@@ -195,7 +194,6 @@ const verticalLinks = computed(() => {
             :to="v.url"
             class="cta-vertical-pill is-internal"
           >
-            <span class="v-icon">{{ v.icon }}</span>
             <span class="v-label">{{ v.label }}</span>
             <span class="v-arrow">→</span>
           </NuxtLink>
@@ -209,7 +207,7 @@ const verticalLinks = computed(() => {
 
     <!-- 2. Inline Bar Format -->
     <div v-else-if="variant === 'inline'" class="affiliate-inline-bar">
-      <div class="inline-icon">✈️</div>
+      <div class="inline-icon"></div>
       <div class="inline-text">
         <strong>{{ primaryTarget.name }} [{{ detectedDestination.name }} 특가]:</strong>
         본 기사와 연계된 최저가 항공권 및 호텔 실시간 요금을 비교해 보세요.
@@ -257,7 +255,7 @@ const verticalLinks = computed(() => {
 .affiliate-card {
   background: var(--bg-card, #181927);
   border: 1px solid var(--border, #23253a);
-  border-left: 4px solid var(--accent, #00d4aa);
+  border-left: 4px solid var(--accent);
   border-radius: 12px;
   padding: 22px 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -267,8 +265,8 @@ const verticalLinks = computed(() => {
 }
 
 .affiliate-card:hover {
-  border-color: rgba(0, 212, 170, 0.5);
-  box-shadow: 0 6px 24px rgba(0, 212, 170, 0.12);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card);
 }
 
 .cta-top-row {
@@ -311,7 +309,7 @@ const verticalLinks = computed(() => {
 .cta-brand-title {
   font-size: 13px;
   font-weight: 800;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
   margin: 0 0 4px 0;
   letter-spacing: 0.5px;
 }
@@ -354,7 +352,7 @@ const verticalLinks = computed(() => {
 
 .cta-primary-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 212, 170, 0.25);
+  box-shadow: var(--shadow-card);
 }
 
 .cta-secondary-link {
@@ -368,7 +366,7 @@ const verticalLinks = computed(() => {
 
 .cta-secondary-link:hover {
   text-decoration: underline;
-  color: var(--accent, #00d4aa);
+  color: var(--accent);
 }
 
 .cta-vertical-grid {
@@ -403,8 +401,8 @@ const verticalLinks = computed(() => {
 }
 
 .cta-vertical-pill:hover {
-  border-color: var(--accent, #00d4aa);
-  color: var(--accent, #00d4aa);
+  border-color: var(--accent);
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
@@ -438,7 +436,7 @@ const verticalLinks = computed(() => {
   gap: 12px;
   background: var(--bg-card, #181927);
   border: 1px solid var(--border, #23253a);
-  border-left: 3px solid var(--accent, #00d4aa);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 13px;
@@ -455,8 +453,8 @@ const verticalLinks = computed(() => {
 }
 
 .inline-btn {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a !important;
+  background: var(--accent);
+  color: var(--on-accent) !important;
   padding: 6px 14px;
   border-radius: 6px;
   font-weight: 800;
@@ -487,8 +485,8 @@ const verticalLinks = computed(() => {
 }
 
 .bar-badge {
-  background: var(--accent, #00d4aa);
-  color: #0d0e1a;
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 800;
   padding: 2px 6px;

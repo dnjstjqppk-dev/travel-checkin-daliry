@@ -46,7 +46,7 @@ const affiliates = siteConfig.affiliates
     </div>
 
     <div class="clone-architecture-box">
-      <h3>🚀 향후 멀티 도메인 확장성 (Clone-Ready Base Architecture)</h3>
+      <h3>향후 멀티 도메인 확장성 (Clone-Ready Base Architecture)</h3>
       <p>
         본 플랫폼은 코인(CoinScanner), 주식(StockScanner) 등 타 산업군 뉴스 미디어로 즉시 복제 가능한 마스터 템플릿입니다.
         <code>checkin-daily/frontend/config/site.config.ts</code>의 `affiliates` 설정과 `brandName`만 변경하면 즉시 새 산업군 트래픽 허브로 전환됩니다.
@@ -138,7 +138,7 @@ const affiliates = siteConfig.affiliates
 .clone-architecture-box h3 {
   margin: 0 0 8px;
   font-size: 15px;
-  color: #10b981;
+  color: var(--accent);
 }
 .clone-architecture-box p {
   margin: 0;

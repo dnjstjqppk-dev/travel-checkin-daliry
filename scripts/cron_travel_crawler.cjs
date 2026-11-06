@@ -186,23 +186,11 @@ async function runCrawler() {
   }
 
   if (collectedArticles.length === 0) {
-    console.log('[Crawler] No external items fetched, generating live automated seed batch...');
-    // 폴백 생성기
-    const fallbackItems = [
-      {
-        title: '보잉·에어버스 2026 차세대 기단 인도 가속… 태평양 횡단 노선 프리미엄 좌석 경쟁 격화',
-        description: '글로벌 항공사들이 친환경 고효율 기단으로 전환을 서두르면서 장거리 노선의 비즈니스 스위트 좌석 경쟁이 한층 치열해지고 있습니다.',
-        link: 'https://simpleflying.com',
-      },
-      {
-        title: '도쿄·방콕 럭셔리 어번 리조트 예약률 90% 돌파… 2026 아시아 미식 투어 열풍',
-        description: '미쉐린 스타 다이닝과 웰니스 스파를 결합한 어번 리조트 상품이 글로벌 하이엔드 여행객들로부터 폭발적인 인기를 얻고 있습니다.',
-        link: 'https://travelweekly.com',
-      },
-    ];
-    for (const item of fallbackItems) {
-      collectedArticles.push(transformToArticle(item, 'airline'));
-    }
+    // Fail closed: never invent and publish fabricated articles when every
+    // feed fails. Exit non-zero so the scheduler surfaces the outage.
+    console.error('[Crawler] All RSS feeds failed — aborting without publishing. No fabricated fallback articles are inserted.');
+    process.exitCode = 1;
+    return;
   }
 
   console.log(`[Crawler] Total ${collectedArticles.length} articles prepared for D1 insertion.`);
@@ -232,6 +220,7 @@ ON CONFLICT(slug) DO UPDATE SET
     console.log('[Crawler] ✅ Successfully updated Cloudflare D1 database with latest travel news!');
   } catch (err) {
     console.error('[Crawler] Error executing D1 query:', err.message);
+    process.exitCode = 1;
   }
 }
 

@@ -58,7 +58,7 @@ export function buildNewsletterHtml(
     <!-- Header -->
     <div style="border-bottom: 1px solid #23253a; padding-bottom: 18px; margin-bottom: 24px; text-align: left;">
       <div style="font-size: 11px; font-family: monospace; color: #00d4aa; letter-spacing: 1px; font-weight: bold;">
-        📡 CHECK-IN DAILY // INTELLIGENCE WIRE
+        CHECK-IN DAILY // INTELLIGENCE WIRE
       </div>
       <h1 style="margin: 6px 0 4px 0; font-size: 22px; color: #ffffff; font-weight: 800;">
         오늘의 글로벌 여행 인텔리전스 모닝 브리핑

@@ -146,7 +146,7 @@ const mediaStandards = [
 
     <!-- 미디어 파일 업로드 패널 -->
     <div class="upload-panel">
-      <h2>📤 신규 미디어 업로드</h2>
+      <h2>신규 미디어 업로드</h2>
       <p class="upload-desc">
         JPEG, PNG, WebP, GIF, AVIF 형식의 이미지 파일을 업로드할 수 있습니다 (장당 최대 5MB).
       </p>
@@ -160,7 +160,7 @@ const mediaStandards = [
           @change="handleUpload"
         >
         <div class="upload-box-content">
-          <span class="upload-icon">📁</span>
+
           <span>{{ uploading ? '업로드 및 시그니처 검증 중...' : '클릭하여 이미지 파일 선택 (다중 파일 지원)' }}</span>
         </div>
       </div>
@@ -194,14 +194,14 @@ const mediaStandards = [
                 class="button button-sm btn-copy"
                 @click="copyMarkdown(asset)"
               >
-                {{ copiedId === asset.id ? '✓ 복사됨!' : '📋 MD 태그 복사' }}
+                {{ copiedId === asset.id ? '✓ 복사됨!' : 'MD 태그 복사' }}
               </button>
               <button
                 type="button"
                 class="button button-sm btn-del"
                 @click="deleteAsset(asset.id)"
               >
-                🗑️
+               
               </button>
             </div>
           </div>
@@ -238,7 +238,7 @@ const mediaStandards = [
 
     <!-- 편집국 가이드라인 -->
     <div class="media-guidelines-box">
-      <h3>💡 편집국 이미지 가이드라인</h3>
+      <h3>편집국 이미지 가이드라인</h3>
       <ul>
         <li>모든 기사는 발행 시 대표 커버 이미지를 제외하고 **최소 4장, 최대 10장의 본문 이미지**가 필수적으로 포함되어야 합니다.</li>
         <li>이미지 파일의 ALT 속성(대체 텍스트)과 캡션을 구체적으로 작성하여 시각 장애인 접근성과 SEO 순위를 극대화하십시오.</li>
@@ -313,8 +313,8 @@ const mediaStandards = [
 .alert-success {
   margin-top: 12px;
   padding: 10px 14px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
+  background: var(--accent-dim);
+  color: var(--accent);
   border-radius: 6px;
   font-weight: 700;
   font-size: 13px;
@@ -323,8 +323,8 @@ const mediaStandards = [
 .alert-error {
   margin-top: 12px;
   padding: 10px 14px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  background: var(--red-dim);
+  color: var(--red);
   border-radius: 6px;
   font-weight: 700;
   font-size: 13px;
@@ -377,7 +377,7 @@ const mediaStandards = [
 .thumb-wrap {
   position: relative;
   height: 140px;
-  background: #E2E8F0;
+  background: var(--bg-surface);
 }
 
 .thumb-wrap img {
@@ -391,7 +391,7 @@ const mediaStandards = [
   bottom: 4px;
   right: 4px;
   background: rgba(0, 0, 0, 0.75);
-  color: #FFFFFF;
+  color: var(--on-accent);
   font-size: 10px;
   font-weight: 700;
   padding: 2px 6px;
@@ -430,7 +430,7 @@ const mediaStandards = [
 .btn-copy {
   flex: 1;
   background: var(--accent);
-  color: #0d0e1a;
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 700;
   padding: 6px 8px;
@@ -487,6 +487,6 @@ const mediaStandards = [
   font-family: monospace;
 }
 
-.badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-.badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.badge-success { background: var(--accent-dim); color: var(--accent); }
+.badge-danger { background: var(--red-dim); color: var(--red); }
 </style>
