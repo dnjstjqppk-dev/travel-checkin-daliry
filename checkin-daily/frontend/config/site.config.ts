@@ -45,8 +45,18 @@ export interface SiteConfig {
   affiliates: AffiliateTarget[]
 }
 
+/** Fallback origin used only when SITE_URL / NUXT_PUBLIC_SITE_URL are not configured. */
+export const DEFAULT_SITE_URL = 'https://travel-checkin-daily.dnjstjqppk.workers.dev'
+
+/** Canonical public origin from operator configuration (never from request Host headers). */
+export function configuredSiteUrl(): string {
+  const env = typeof process !== 'undefined' ? process.env : undefined
+  const value = env?.SITE_URL || env?.NUXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL
+  return value.trim().replace(/\/+$/, '')
+}
+
 export const siteConfig: SiteConfig = {
-  domain: (typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+  get domain() { return configuredSiteUrl() },
   siteId: 'travel-news',
   brandName: 'CHECK-IN',
   brandSubname: 'DAILY',

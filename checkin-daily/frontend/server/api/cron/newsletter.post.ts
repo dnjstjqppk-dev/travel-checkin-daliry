@@ -161,7 +161,7 @@ export default defineEventHandler(async (event) => {
     'SELECT email, lang FROM newsletter_subscriptions WHERE is_active = 1 LIMIT 1000',
   )
 
-  const siteUrl = (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
+  const siteUrl = siteConfig.domain
   const emailHtml = buildNewsletterHtml(articles, dateStr, siteUrl)
   const emailSubject = `[Check-in Daily] ${dateStr} 모닝 여행 인텔리전스 브리핑`
   const recipientEmails = subscribers.map((s) => s.email)

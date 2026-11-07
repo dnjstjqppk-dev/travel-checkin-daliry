@@ -36,6 +36,50 @@ async function updatePolicy(key: string, value: string) {
     isSaving.value = false
   }
 }
+
+interface GenerationLog {
+  id: number
+  trigger_type: string
+  status: string
+  source_title: string
+  source_url: string
+  model: string
+  char_count: number
+  article_id: number | null
+  article_title: string | null
+  error_code: string
+  error_detail: string
+  duration_ms: number
+  created_at: string
+}
+interface OpsResponse {
+  logs: GenerationLog[]
+  totals7d: Record<string, number>
+  publishedByCategory: Array<{ category: string; n: number }>
+  backlog: number
+}
+
+const statusLabel: Record<string, string> = {
+  started: '진행 중', drafted: '초안 저장', published: '자동 발행', duplicate: '중복 차단', rejected: '품질 차단', failed: '실패',
+}
+const { data: ops, refresh: refreshOps } = await useFetch<OpsResponse>('/api/admin/generation-logs')
+const running = ref(false)
+const runMessage = ref('')
+
+async function runPipelineOnce() {
+  running.value = true
+  runMessage.value = ''
+  try {
+    const result = await $fetch<{ message: string }>('/api/cron/generate', { method: 'POST', body: {} })
+    runMessage.value = result.message
+  } catch (error) {
+    const e = error as { data?: { statusMessage?: string }; message?: string }
+    runMessage.value = `실행 실패: ${e.data?.statusMessage || e.message || 'unknown error'}`
+  } finally {
+    running.value = false
+    await refreshOps()
+  }
+}
 </script>
 
 <template>
@@ -126,11 +170,95 @@ async function updatePolicy(key: string, value: string) {
           <small class="help-text">엔터키를 치거나 다른 곳을 클릭하면 자동 저장됩니다.</small>
         </div>
       </div>
+
+      <!-- 5. 원문 이미지 사용 -->
+      <div class="policy-card">
+        <div class="policy-header">
+          <h3>원문 대표 이미지 사용 (RSS media / og:image)</h3>
+          <span class="badge" :class="policyMap.use_source_media === '1' ? 'badge-danger' : 'badge-success'">
+            {{ policyMap.use_source_media === '1' ? '원문 이미지 사용' : '라이선스 자료 사진만' }}
+          </span>
+        </div>
+        <p class="policy-desc">켜면 원문 매체의 대표 이미지를 썸네일로 사용합니다. 이미지 저작권은 원문 매체에 있으므로 사용 허락을 확인한 출처에서만 켜세요. 실패 시 카테고리 자료 사진으로 대체됩니다.</p>
+        <button type="button" class="btn-toggle" :class="{ active: policyMap.use_source_media === '1' }"
+          @click="updatePolicy('use_source_media', policyMap.use_source_media === '1' ? '0' : '1')">
+          {{ policyMap.use_source_media === '1' ? 'ON' : 'OFF' }}
+        </button>
+      </div>
+
+      <!-- 6. 회당 생성 건수 -->
+      <div class="policy-card">
+        <div class="policy-header">
+          <h3>크론 1회당 최대 AI 생성 건수</h3>
+        </div>
+        <p class="policy-desc">Workers 실행 시간 한도를 지키기 위해 1~5건을 권장합니다. 남은 후보는 다음 실행에서 처리됩니다.</p>
+        <div class="keyword-editor">
+          <input :value="policyMap.max_generations_per_run" type="number" min="0" max="10" class="input-keywords"
+            @change="(e: Event) => updatePolicy('max_generations_per_run', (e.target as HTMLInputElement).value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- AI 엔진 운영 패널 -->
+    <div class="ops-panel">
+      <div class="policy-header">
+        <h3>AI 자동 글쓰기 엔진 운영 현황</h3>
+        <div class="ops-actions">
+          <button type="button" class="btn-toggle active" :disabled="running" @click="runPipelineOnce">
+            {{ running ? '실행 중… (최대 수 분 소요)' : 'AI 자동 기사 즉시 생성 (1회 실행)' }}
+          </button>
+          <button type="button" class="btn-toggle" :disabled="running" @click="() => refreshOps()">새로고침</button>
+        </div>
+      </div>
+      <p v-if="runMessage" class="policy-desc run-message">{{ runMessage }}</p>
+
+      <div class="ops-stats">
+        <div class="ops-stat"><span>대기 후보</span><strong>{{ ops?.backlog ?? 0 }}</strong></div>
+        <div v-for="status in ['published', 'drafted', 'duplicate', 'rejected', 'failed']" :key="status" class="ops-stat">
+          <span>7일 {{ statusLabel[status] }}</span><strong>{{ ops?.totals7d?.[status] ?? 0 }}</strong>
+        </div>
+      </div>
+      <div class="ops-categories">
+        <span v-for="row in ops?.publishedByCategory || []" :key="row.category" class="badge">{{ row.category }} · {{ row.n }}</span>
+      </div>
+
+      <div class="ops-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>시각</th><th>트리거</th><th>상태</th><th>원문 / 생성 기사</th><th>모델</th><th>소요</th><th>사유</th></tr>
+          </thead>
+          <tbody>
+            <tr v-if="!ops?.logs?.length"><td colspan="7">아직 실행 기록이 없습니다.</td></tr>
+            <tr v-for="log in ops?.logs || []" :key="log.id">
+              <td>{{ new Date(log.created_at).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) }}</td>
+              <td>{{ log.trigger_type }}</td>
+              <td><span class="badge" :class="log.status === 'published' || log.status === 'drafted' ? 'badge-success' : log.status === 'failed' ? 'badge-danger' : ''">{{ statusLabel[log.status] || log.status }}</span></td>
+              <td>
+                <NuxtLink v-if="log.article_id" :to="`/admin/articles/${log.article_id}`">{{ log.article_title || `#${log.article_id}` }}</NuxtLink>
+                <div class="log-source">{{ log.source_title }}</div>
+              </td>
+              <td>{{ log.model || '-' }}</td>
+              <td>{{ log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : '-' }}</td>
+              <td class="log-reason">{{ log.error_code ? `[${log.error_code}] ` : '' }}{{ log.error_detail }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+.ops-panel { margin-top: 24px; background: var(--admin-card); border: 1px solid var(--admin-border); border-radius: 6px; padding: 24px; }
+.ops-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.run-message { margin-top: 12px; }
+.ops-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 18px 0 12px; }
+.ops-stat { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--admin-border); border-radius: 6px; font-size: 12px; color: var(--admin-muted); }
+.ops-stat strong { font-size: 22px; color: var(--admin-heading); }
+.ops-categories { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.ops-table-wrap { overflow-x: auto; }
+.log-source { font-size: 11.5px; color: var(--admin-muted); margin-top: 2px; }
+.log-reason { max-width: 320px; font-size: 12px; color: var(--admin-muted); }
 .save-toast {
   color: var(--accent);
   font-weight: 700;

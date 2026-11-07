@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
      LIMIT 3`,
   )
 
-  const siteUrl = (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
+  const siteUrl = siteConfig.domain
   const emailHtml = buildNewsletterHtml(articles, dateStr, siteUrl)
   const emailSubject = `[TEST] [Check-in Daily] ${dateStr} 모닝 여행 인텔리전스 브리핑`
 

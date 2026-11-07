@@ -1,20 +1,19 @@
 import { siteConfig } from '~/config/site.config'
 
+/**
+ * Canonical origin for links, canonical tags and structured data.
+ * Uses the configured public site URL so preview hosts (workers.dev, localhost)
+ * never become canonical once a custom domain is bound.
+ */
 export function useSiteDomain() {
-  const reqUrl = useRequestURL()
   const config = useRuntimeConfig()
+  const reqUrl = useRequestURL()
 
   const origin = computed(() => {
-    // 1. SSR / Client current origin from request or window
-    if (reqUrl.origin && !reqUrl.origin.includes('localhost') && reqUrl.origin !== 'null') {
-      return reqUrl.origin.replace(/\/+$/, '')
-    }
-    // 2. Runtime public siteUrl
-    if (config.public?.siteUrl) {
-      return String(config.public.siteUrl).replace(/\/+$/, '')
-    }
-    // 3. Fallback
-    return siteConfig.domain.replace(/\/+$/, '')
+    const configured = String(config.public?.siteUrl || '').trim().replace(/\/+$/, '')
+    if (configured) return configured
+    if (reqUrl.origin && reqUrl.origin !== 'null') return reqUrl.origin.replace(/\/+$/, '')
+    return siteConfig.domain
   })
 
   function canonicalUrl(path: string): string {
@@ -22,9 +21,5 @@ export function useSiteDomain() {
     return `${origin.value}${cleanPath}`
   }
 
-  return {
-    origin,
-    canonicalUrl,
-  }
+  return { origin, canonicalUrl }
 }
-

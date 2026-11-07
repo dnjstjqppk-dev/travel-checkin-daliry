@@ -12,51 +12,63 @@ const store = useArticlesStore()
 const router = useRouter()
 const categories = await store.loadCategories(true)
 
-// Mode tab: 'ai' or 'manual'
+// Mode tab: 'ai' | 'manual' | 'batch'
 const activeTab = ref<'ai' | 'manual' | 'batch'>('ai')
 
-// AI Generation state
-const aiKeyword = ref('')
+interface GenerationResponse {
+  success: boolean
+  status: string
+  articleId?: number
+  title?: string
+  charCount?: number
+  qualityScore?: number
+  translations?: string[]
+  reason?: string
+  editUrl?: string
+  message: string
+}
+
+// Single-source AI generation state
+const aiTitle = ref('')
+const aiSourceUrl = ref('')
 const aiContextText = ref('')
+const aiSourceName = ref('')
+const aiLicenseInfo = ref('')
 const aiCategory = ref(categories[0]?.slug || 'major')
 const generating = ref(false)
-const publishing = ref(false)
-const aiResult = ref<any>(null)
-const aiMessage = ref('')
+const aiResult = ref<GenerationResponse | null>(null)
 const aiError = ref('')
 
-// Batch Generation state
-const batchKeywords = ref('')
+// Batch (URL list) generation state
+const batchUrls = ref('')
 const batchCategory = ref(categories[0]?.slug || 'major')
-const batchContextText = ref('')
+const batchLicenseInfo = ref('')
 const batchRunning = ref(false)
-const batchResult = ref<any>(null)
-const batchMessage = ref('')
+interface BatchResponse { results: Array<{ url: string; success: boolean; articleId?: number; title?: string; message: string }>; message: string }
+const batchResult = ref<BatchResponse | null>(null)
 const batchError = ref('')
 
+function errorMessage(err: unknown, fallback: string): string {
+  const e = err as { data?: { statusMessage?: string; message?: string }; statusMessage?: string; message?: string }
+  return e?.data?.statusMessage || e?.statusMessage || e?.data?.message || e?.message || fallback
+}
+
 async function runBatchGeneration() {
-  const lines = batchKeywords.value.split('\n').map(s => s.trim()).filter(s => s.length >= 2)
+  const lines = batchUrls.value.split('\n').map(s => s.trim()).filter(s => /^https:\/\//i.test(s))
   if (lines.length === 0) {
-    batchError.value = '최소 1개 이상의 키워드를 입력해 주세요.'
+    batchError.value = '한 줄에 하나씩 HTTPS 원문 URL을 입력해 주세요.'
     return
   }
   batchRunning.value = true
   batchError.value = ''
-  batchMessage.value = ''
   batchResult.value = null
   try {
-    const res = await $fetch<any>('/api/admin/generate-batch', {
+    batchResult.value = await $fetch<BatchResponse>('/api/admin/generate-batch', {
       method: 'POST',
-      body: {
-        keywords: lines,
-        category: batchCategory.value,
-        contextText: batchContextText.value.trim() || undefined,
-      },
+      body: { urls: lines.slice(0, 10), category: batchCategory.value, licenseInfo: batchLicenseInfo.value.trim() || undefined },
     })
-    batchResult.value = res
-    batchMessage.value = res.message
-  } catch (err: any) {
-    batchError.value = err?.data?.statusMessage || err?.message || '대량 생성에 실패했습니다.'
+  } catch (err) {
+    batchError.value = errorMessage(err, '대량 생성에 실패했습니다.')
   } finally {
     batchRunning.value = false
   }
@@ -101,9 +113,9 @@ const canPublish = computed(() => isTextLengthValid.value && isImageCountValid.v
 
 // Dirty state tracking for navigation protection
 const isDirty = computed(() => {
-  if (isSubmittedSuccessfully.value || saving.value || publishing.value) return false
+  if (isSubmittedSuccessfully.value || saving.value || generating.value) return false
   if (activeTab.value === 'ai') {
-    return !!aiKeyword.value.trim()
+    return !!(aiContextText.value.trim() || aiSourceUrl.value.trim())
   }
   return !!(form.title.trim() || form.content.trim() || form.summary.trim())
 })
@@ -148,59 +160,33 @@ function slugify() {
   }
 }
 
-// 1. AI 기사 생성 (미리보기)
+// AI 기사 생성 → 검수 대기 초안으로 저장
 async function generateAiDraft() {
-  if (!aiKeyword.value.trim()) {
-    aiError.value = '기사 작성을 위한 키워드를 입력해 주세요.'
+  if (!aiTitle.value.trim() && !aiSourceUrl.value.trim() && !aiContextText.value.trim()) {
+    aiError.value = '원문 URL, 원문 텍스트 또는 원문 제목 중 하나 이상을 입력해 주세요.'
     return
   }
   generating.value = true
   aiError.value = ''
-  aiMessage.value = ''
+  aiResult.value = null
   try {
-    const res = await $fetch<any>('/api/admin/generate-article', {
+    aiResult.value = await $fetch<GenerationResponse>('/api/admin/generate-article', {
       method: 'POST',
       body: {
-        keyword: aiKeyword.value.trim(),
+        title: aiTitle.value.trim() || undefined,
+        sourceUrl: aiSourceUrl.value.trim() || undefined,
         contextText: aiContextText.value.trim() || undefined,
+        sourceName: aiSourceName.value.trim() || undefined,
+        licenseInfo: aiLicenseInfo.value.trim() || undefined,
         category: aiCategory.value,
-        publishNow: false,
       },
     })
-    aiResult.value = res.draft
-    aiMessage.value = res.message
-  } catch (err: any) {
-    aiError.value = err?.data?.statusMessage || err?.message || '기사 생성에 실패했습니다.'
+    isSubmittedSuccessfully.value = true
+  } catch (err) {
+    aiError.value = errorMessage(err, '기사 생성에 실패했습니다.')
   } finally {
     generating.value = false
   }
-}
-
-// 2. AI 기사 즉시 발행 (1클릭 D1 배포)
-async function generateAndPublishNow() {
-  publishing.value = true
-  try {
-    await generateAiDraft()
-    if (aiResult.value) loadAiResultToForm()
-  } finally { publishing.value = false }
-}
-
-// 3. AI 결과를 수동 편집 폼으로 가져오기
-function loadAiResultToForm() {
-  if (!aiResult.value) return
-  form.title = aiResult.value.title
-  form.slug = aiResult.value.slug
-  form.summary = aiResult.value.summary
-  form.content = aiResult.value.content
-  form.category = aiResult.value.category
-  form.author = aiResult.value.author
-  form.coverImage = aiResult.value.coverImage
-  form.status = 'draft'
-  form.cityIds = []
-  form.sourceName = aiResult.value.sourceName || ''
-  form.sourceUrl = aiResult.value.sourceUrl || ''
-  form.licenseInfo = ''
-  activeTab.value = 'manual'
 }
 
 // 4. 수동 폼 저장 (Draft or Publish)
@@ -252,168 +238,114 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
 
     <!-- 탭 선택기 -->
     <div class="pipeline-tabs">
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'ai' }"
-        type="button"
-        @click="activeTab = 'ai'"
-      >
-        ⚡ AI 키워드 원클릭 자동 생성기 (300~1,000자 & 이미지 4~10장 규격 자동화)
+      <button class="tab-btn" :class="{ active: activeTab === 'ai' }" type="button" @click="activeTab = 'ai'">
+        AI 기사 생성 (원문 기반)
       </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'manual' }"
-        type="button"
-        @click="activeTab = 'manual'"
-      >
-       수동 에디터 모드
+      <button class="tab-btn" :class="{ active: activeTab === 'manual' }" type="button" @click="activeTab = 'manual'">
+        수동 에디터
       </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'batch' }"
-        type="button"
-        @click="activeTab = 'batch'"
-      >
-       대량 일괄 생성 모드 (Batch Mode)
+      <button class="tab-btn" :class="{ active: activeTab === 'batch' }" type="button" @click="activeTab = 'batch'">
+        URL 일괄 생성
       </button>
     </div>
 
-    <!-- 1. AI 키워드 자동 생성 탭 -->
+    <!-- 1. 원문 기반 AI 생성 -->
     <div v-if="activeTab === 'ai'" class="ai-generator-panel">
       <div class="ai-card">
         <div class="ai-card-header">
-          <h2>키워드 기반 원클릭 뉴스 기사 생성 파이프라인</h2>
-          <span class="spec-badge">발행 규격: 본문 800~2,000자 · 이미지 4~10장 · 사용권 확인 · 편집 승인</span>
+          <h2>원문 기반 AI 기사 생성</h2>
+          <span class="spec-badge">본문 {{ ARTICLE_RULES.MIN_BODY_CHARS }}~{{ ARTICLE_RULES.MAX_BODY_CHARS }}자 · 소제목 3개 · 5개 국어 번역 · 검수 대기열 저장</span>
         </div>
         <p class="ai-desc">
-          핵심 키워드를 입력하면 메이저 언론사 문체의 300~1,000자 심층 보도 기사, 
-          <strong>엄선된 에디토리얼 이미지 4장</strong>, 
-          <strong>TripScanner</strong> / <strong>GetForTrip</strong> 문맥 맞춤형 트래픽 유도 CTA, 
-          그리고 5개 국어(영어·중국어·태국어·베트남어·스페인어) 번역이 완전 자동으로 완성됩니다.
+          원문 URL 또는 보도자료 텍스트를 입력하면 Gemini가 원문에 있는 사실만으로 기사를 재구성합니다.
+          중복 기사·짧은 원문·AI 거부 응답·규격 미달 결과는 자동 차단되며, 통과한 기사는 <strong>검수 대기 초안</strong>으로 저장됩니다.
         </p>
 
         <div class="ai-input-grid">
           <label class="field full">
-            기사 생성 키워드 *
-            <input
-              v-model="aiKeyword"
-              placeholder="예: 방콕 수완나품 공항 입국 패스트트랙, 치앙마이 DTV 비자, 푸켓 럭셔리 풀빌라 특가 등"
-              required
-              @keydown.enter.prevent="generateAiDraft"
-            >
+            원문 URL
+            <input v-model="aiSourceUrl" type="url" placeholder="https://www.example-tourism.org/press/2026-visa-update">
+          </label>
+          <label class="field full">
+            원문 텍스트 / 보도자료 (URL을 읽을 수 없는 경우 필수, 160자 이상)
+            <textarea v-model="aiContextText" rows="6" placeholder="보도자료 원문 또는 확인된 사실 메모를 붙여넣으세요."></textarea>
           </label>
           <label class="field">
-            분야 카테고리
+            원문 제목 (선택)
+            <input v-model="aiTitle" placeholder="원문 헤드라인">
+          </label>
+          <label class="field">
+            출처명 (선택)
+            <input v-model="aiSourceName" placeholder="예: 일본정부관광국(JNTO)">
+          </label>
+          <label class="field">
+            사용권 정보
+            <input v-model="aiLicenseInfo" placeholder="예: Official Press Release">
+          </label>
+          <label class="field">
+            카테고리
             <select v-model="aiCategory">
               <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
             </select>
           </label>
-          <label class="field full">
-            참고 보도자료 원문 또는 팩트 메모 (선택 사항 - Gemini 심층 취재 모드)
-            <textarea
-              v-model="aiContextText"
-              rows="3"
-              placeholder="외신 원문, 항공사/관광청 보도자료 텍스트, 팩트 수치를 입력하면 Gemini 3.5 Flash가 이를 분석하여 고품질 전문 기사로 재작성합니다."
-            ></textarea>
-          </label>
         </div>
 
         <div v-if="aiError" class="alert alert-error">{{ aiError }}</div>
-        <div v-if="aiMessage" class="alert alert-success">{{ aiMessage }}</div>
 
         <div class="ai-actions">
-          <button
-            class="button button-primary action-btn-large"
-            type="button"
-            :disabled="generating || publishing"
-            @click="generateAndPublishNow"
-          >
-            {{ publishing ? '초안 준비 중...' : '초안 생성 후 편집하기' }}
-          </button>
-          <button
-            class="button action-btn-secondary"
-            type="button"
-            :disabled="generating || publishing"
-            @click="generateAiDraft"
-          >
-            {{ generating ? '고품질 기사 작성 중...' : '미리보기 생성' }}
+          <button class="button button-primary action-btn-large" type="button" :disabled="generating" @click="generateAiDraft">
+            {{ generating ? 'AI 기사 작성 중… (최대 1~2분)' : 'AI 기사 생성 후 초안 저장' }}
           </button>
         </div>
       </div>
 
-      <!-- AI 생성 결과 미리보기 카드 -->
       <div v-if="aiResult" class="ai-preview-card">
         <div class="preview-header">
           <div class="badges-row">
-            <span class="char-count-badge" :class="{ valid: aiResult.charCount >= 300 && aiResult.charCount <= 1000 }">
-              ✓ 본문 텍스트: {{ aiResult.charCount }}자 (300~1,000자 규격 충족)
-            </span>
-            <span class="image-count-badge" :class="{ valid: aiResult.imageCount >= 4 && aiResult.imageCount <= 10 }">
-              ✓ 본문 이미지: {{ aiResult.imageCount }}장 (4~10장 규격 충족)
-            </span>
-            <span class="cta-badge">연동 타겟 CTA: {{ aiResult.ctaTarget }}</span>
+            <span class="char-count-badge valid">본문 {{ aiResult.charCount }}자</span>
+            <span class="image-count-badge valid">품질점수 {{ aiResult.qualityScore }}</span>
+            <span class="cta-badge">번역: {{ aiResult.translations?.length ? aiResult.translations.join(', ').toUpperCase() : '없음' }}</span>
           </div>
-          <button class="button button-sm" type="button" @click="loadAiResultToForm">
-           수동 에디터로 가져와 수정하기
-          </button>
+          <NuxtLink v-if="aiResult.editUrl" class="button button-sm" :to="aiResult.editUrl">편집기에서 검토하기 →</NuxtLink>
         </div>
-
         <h3 class="preview-title">{{ aiResult.title }}</h3>
-        <p class="preview-lead">{{ aiResult.summary }}</p>
-        <div class="preview-body">
-          <pre class="content-preview">{{ aiResult.content }}</pre>
-        </div>
+        <p class="preview-lead">{{ aiResult.message }}</p>
+        <p v-if="aiResult.reason" class="preview-lead">{{ aiResult.reason }}</p>
       </div>
     </div>
 
-    <!-- 1-B. 대량 일괄 생성 탭 (Batch Mode) -->
+    <!-- 1-B. URL 일괄 생성 -->
     <div v-else-if="activeTab === 'batch'" class="ai-generator-panel">
       <div class="ai-card">
         <div class="ai-card-header">
-          <h2>대량 일괄 기사 생성 파이프라인 (Batch Mode)</h2>
-          <span class="spec-badge">최대 10개 키워드 동시 생성 · 자동 초안 보관</span>
+          <h2>원문 URL 일괄 생성</h2>
+          <span class="spec-badge">1회 최대 10건 · 건별 품질 게이트 · 검수 대기열 저장</span>
         </div>
-        <p class="ai-desc">
-          줄바꿈(Enter)으로 구분하여 여러 개의 여행 뉴스 키워드를 입력하면 각 키워드별로 심층 보도 기사 초안과 다국어 번역을 일괄 생성하여 편집국 대기열에 저장합니다.
-        </p>
+        <p class="ai-desc">한 줄에 하나씩 원문 기사 URL을 입력하면 각 원문을 읽어 기사 초안을 생성합니다.</p>
 
         <div class="ai-input-grid">
           <label class="field full">
-            일괄 생성할 키워드 목록 (줄바꿈으로 구분, 1회 최대 10개) *
-            <textarea
-              v-model="batchKeywords"
-              rows="5"
-              placeholder="방콕 수완나품 공항 자동출입국심사 확대&#10;일본 엔화 환율 변동의 한국인 여행객 영향&#10;다낭 미케비치 신규 5성급 리조트 오픈"
-              required
-            ></textarea>
+            원문 URL 목록 *
+            <textarea v-model="batchUrls" rows="6" placeholder="https://...&#10;https://..." required></textarea>
           </label>
           <label class="field">
-            기본 분야 카테고리
+            기본 카테고리
             <select v-model="batchCategory">
               <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }} ({{ cat.slug }})</option>
             </select>
           </label>
-          <label class="field full">
-            공통 참고 배경 정보 / 보도자료 메모 (선택 사항)
-            <textarea
-              v-model="batchContextText"
-              rows="3"
-              placeholder="일괄 생성 시 공통으로 반영할 팩트 메모나 출처 기준을 입력하세요."
-            ></textarea>
+          <label class="field">
+            사용권 정보
+            <input v-model="batchLicenseInfo" placeholder="예: Official Press Release">
           </label>
         </div>
 
         <div v-if="batchError" class="alert alert-error">{{ batchError }}</div>
-        <div v-if="batchMessage" class="alert alert-success">{{ batchMessage }}</div>
+        <div v-if="batchResult" class="alert alert-success">{{ batchResult.message }}</div>
 
         <div class="ai-actions">
-          <button
-            class="button button-primary action-btn-large"
-            type="button"
-            :disabled="batchRunning"
-            @click="runBatchGeneration"
-          >
-            {{ batchRunning ? '대량 기사 일괄 생성 진행 중...' : '선택 키워드 일괄 생성 시작' }}
+          <button class="button button-primary action-btn-large" type="button" :disabled="batchRunning" @click="runBatchGeneration">
+            {{ batchRunning ? '일괄 생성 진행 중…' : '일괄 생성 시작' }}
           </button>
         </div>
       </div>
@@ -421,30 +353,21 @@ async function submitManual(targetStatus?: 'draft' | 'published') {
       <div v-if="batchResult?.results?.length" class="ai-preview-card">
         <div class="preview-header">
           <strong>일괄 생성 결과 ({{ batchResult.results.length }}건)</strong>
-          <NuxtLink to="/admin/articles" class="button button-sm">기사 목록에서 확인 →</NuxtLink>
+          <NuxtLink to="/admin/review" class="button button-sm">검수 대기열 →</NuxtLink>
         </div>
         <table class="admin-table">
           <thead>
-            <tr>
-              <th>키워드</th>
-              <th>생성된 제목</th>
-              <th>상태</th>
-              <th>관리</th>
-            </tr>
+            <tr><th>원문</th><th>결과</th><th>상태</th><th>관리</th></tr>
           </thead>
           <tbody>
             <tr v-for="(item, idx) in batchResult.results" :key="idx">
-              <td><strong>{{ item.keyword }}</strong></td>
-              <td>{{ item.title || item.error || '-' }}</td>
+              <td>{{ item.url }}</td>
+              <td>{{ item.title || item.message }}</td>
               <td>
-                <span class="char-count-badge" :class="{ valid: item.success }">
-                  {{ item.success ? '✓ 생성 완료' : '✕ 실패' }}
-                </span>
+                <span class="char-count-badge" :class="{ valid: item.success }">{{ item.success ? '초안 저장' : '차단/실패' }}</span>
               </td>
               <td>
-                <NuxtLink v-if="item.articleId" :to="`/admin/articles/${item.articleId}`" class="button button-sm">
-                  편집기 열기 ↗
-                </NuxtLink>
+                <NuxtLink v-if="item.articleId" :to="`/admin/articles/${item.articleId}`" class="button button-sm">편집 ↗</NuxtLink>
               </td>
             </tr>
           </tbody>

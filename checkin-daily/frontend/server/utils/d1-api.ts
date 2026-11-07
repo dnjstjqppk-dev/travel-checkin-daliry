@@ -24,6 +24,8 @@ import {
 } from './d1-auth'
 import { d1All, d1First, d1Run, getWorkerEnvironment, type D1Database } from './d1'
 import { validateArticleForPublish } from './article-validator'
+import { siteConfig } from '../../config/site.config'
+import { publicArticleSql } from './sitemap-data'
 
 const maxRequestBytes = 2 * 1024 * 1024
 const dummyPasswordHash = 'pbkdf2-sha256$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -103,6 +105,22 @@ interface ArticleRow {
   retraction_reason?: string
   quality_score?: number
   review_status?: string
+  meta_description?: string
+  key_takeaways_json?: string
+  generated_by?: string
+}
+
+/** Sentence boundary for Latin (". " etc.) and CJK ("。", "！", "？" with or without a following space). */
+const SENTENCE_BREAK = /(?<=[.!?])\s+|(?<=[。！？])\s*/
+
+function parseStringArray(value: unknown): string[] {
+  if (typeof value !== 'string' || !value.trim()) return []
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0) : []
+  } catch {
+    return []
+  }
 }
 
 interface ArticleJoinRow extends ArticleRow {
@@ -277,8 +295,8 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const id = Number(path[1] ?? '')
     if (!Number.isSafeInteger(id) || id < 1) return respond(event, { error: 'article not found' }, 404)
     const category = canonicalCategory(normalizeSlug(url.searchParams.get('category') ?? ''))
-    const condition = category ? 'a.id = ? AND a.status = ? AND a.category = ?' : 'a.id = ? AND a.status = ?'
-    const values: Array<string | number> = category ? [id, 'published', category] : [id, 'published']
+    const condition = category ? `a.id = ? AND ${publicArticleSql} AND a.category = ?` : `a.id = ? AND ${publicArticleSql}`
+    const values: Array<string | number> = category ? [id, category] : [id]
     await incrementArticleView(event, database, id, category || undefined)
     const article = await getArticle(database, condition, lang, ...values)
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
@@ -287,19 +305,12 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const slug = normalizeSlug(path[0] ?? '')
     const existing = await d1First<{ id: number }>(
       database,
-      'SELECT id FROM articles WHERE slug = ? AND status = ?',
+      `SELECT a.id FROM articles a WHERE a.slug = ? AND ${publicArticleSql}`,
       slug,
-      'published',
     )
     if (!existing) return respond(event, { error: 'article not found' }, 404)
     await incrementArticleView(event, database, existing.id)
-    const article = await getArticle(
-      database,
-      'a.slug = ? AND a.status = ?',
-      lang,
-      slug,
-      'published',
-    )
+    const article = await getArticle(database, `a.slug = ? AND ${publicArticleSql}`, lang, slug)
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
   if (method === 'GET' && path.length === 1 && admin) {
@@ -318,7 +329,7 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
   const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   const clauses: string[] = []
   const values: Array<string | number> = []
-  if (!admin) clauses.push("a.status = 'published'")
+  if (!admin) clauses.push(publicArticleSql)
 
   const category = normalizeSlug(url.searchParams.get('category') ?? '')
   if (category && category !== 'realtime') {
@@ -333,10 +344,19 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
       values.push(...rawIds)
     }
   }
-  const search = (url.searchParams.get('q') ?? '').trim()
+  const search = (url.searchParams.get('q') ?? '').trim().slice(0, 100)
   if (search) {
-    clauses.push('(a.title LIKE ? OR a.summary LIKE ?)')
-    values.push(`%${search}%`, `%${search}%`)
+    // '!' is the LIKE escape character so user-entered % and _ match literally.
+    const pattern = `%${search.replace(/[!%_]/g, (char) => `!${char}`)}%`
+    clauses.push(`(a.title LIKE ? ESCAPE '!' OR a.summary LIKE ? ESCAPE '!'
+      OR EXISTS (SELECT 1 FROM article_translations st WHERE st.article_id = a.id AND (st.title LIKE ? ESCAPE '!' OR st.summary LIKE ? ESCAPE '!'))
+      OR EXISTS (SELECT 1 FROM article_tags sat JOIN tags stg ON stg.id = sat.tag_id WHERE sat.article_id = a.id AND stg.name LIKE ? ESCAPE '!'))`)
+    values.push(pattern, pattern, pattern, pattern, pattern)
+  }
+  const tag = normalizeSlug(url.searchParams.get('tag') ?? '')
+  if (tag) {
+    clauses.push('EXISTS (SELECT 1 FROM article_tags fat JOIN tags ftg ON ftg.id = fat.tag_id WHERE fat.article_id = a.id AND ftg.slug = ?)')
+    values.push(tag)
   }
   const country = (url.searchParams.get('country') ?? '').trim().toUpperCase()
   const city = (url.searchParams.get('city') ?? '').trim()
@@ -463,7 +483,7 @@ async function getArticle(
        a.subtitle, a.source_name, a.source_url, a.license_info, a.is_breaking,
        a.first_published_at, a.source_first_published_at, a.source_updated_at,
        a.ingested_at, a.fact_checked_at, a.scheduled_at, a.retracted_at,
-       a.retraction_reason, a.quality_score, a.review_status,
+       a.retraction_reason, a.quality_score, a.review_status, a.meta_description, a.key_takeaways_json, a.generated_by,
        COALESCE(t.title, a.title) AS title,
        COALESCE(t.summary, a.summary) AS summary,
        COALESCE(t.content, a.content) AS content,
@@ -496,14 +516,26 @@ async function getArticle(
       // Prev & Next articles for bidirectional reader navigation
       const prev = await d1First<{ id: number; title: string; category: string; slug: string }>(
         database,
-        "SELECT id, title, category, slug FROM articles WHERE id < ? AND status = 'published' ORDER BY id DESC LIMIT 1",
+        `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
+         LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
+         WHERE a.id < ? AND ${publicArticleSql} ORDER BY a.id DESC LIMIT 1`,
+        normLang,
         articleId,
       )
       const next = await d1First<{ id: number; title: string; category: string; slug: string }>(
         database,
-        "SELECT id, title, category, slug FROM articles WHERE id > ? AND status = 'published' ORDER BY id ASC LIMIT 1",
+        `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
+         LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
+         WHERE a.id > ? AND ${publicArticleSql} ORDER BY a.id ASC LIMIT 1`,
+        normLang,
         articleId,
       )
+      const tags = await d1All<{ slug: string; name: string }>(database,
+        'SELECT tg.slug, tg.name FROM article_tags at JOIN tags tg ON tg.id = at.tag_id WHERE at.article_id = ? ORDER BY tg.name', articleId)
+      const languages = await d1All<{ lang: string }>(database,
+        "SELECT lang FROM article_translations WHERE article_id = ? AND trim(title) <> '' AND trim(content) <> '' ORDER BY lang", articleId)
+      ;(article as Record<string, unknown>).tags = tags
+      ;(article as Record<string, unknown>).availableLanguages = ['ko', ...languages.map(row => row.lang)]
       ;(article as Record<string, unknown>).prevArticle = prev || null
       ;(article as Record<string, unknown>).nextArticle = next || null
     } catch {
@@ -520,7 +552,7 @@ async function getArticle(
     const summaryText = String((article as Record<string, unknown>).summary || '').trim()
     const summarySentenceSet = new Set(
       summaryText
-        .split(/(?<=[.!?])\s+/)
+        .split(SENTENCE_BREAK)
         .map((s) => s.trim())
         .filter(Boolean),
     )
@@ -534,9 +566,9 @@ async function getArticle(
     const extractedTakeaways: string[] = []
     for (const para of bodyParagraphs) {
       const sentences = para
-        .split(/(?<=[.!?])\s+/)
+        .split(SENTENCE_BREAK)
         .map((s) => s.trim())
-        .filter((s) => s.length >= 20 && s.length <= 180)
+        .filter((s) => [...s].length >= 12 && [...s].length <= 180)
       for (const s of sentences) {
         if (
           !summarySentenceSet.has(s)
@@ -551,7 +583,9 @@ async function getArticle(
       if (extractedTakeaways.length >= 4) break
     }
 
-    ;(article as Record<string, unknown>).keyTakeaways = extractedTakeaways.length >= 2
+    const stored = normLang === 'ko' ? parseStringArray((article as Record<string, unknown>).storedTakeaways) : []
+    delete (article as Record<string, unknown>).storedTakeaways
+    ;(article as Record<string, unknown>).keyTakeaways = stored.length >= 2 ? stored : extractedTakeaways.length >= 2
       ? extractedTakeaways.slice(0, 4)
       : Array.from(summarySentenceSet).slice(0, 3)
   }
@@ -592,6 +626,9 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         viewCount: row.view_count,
+        ...(row.meta_description !== undefined ? { metaDescription: row.meta_description || '' } : {}),
+        ...(row.key_takeaways_json !== undefined ? { storedTakeaways: row.key_takeaways_json } : {}),
+        ...(row.generated_by !== undefined ? { isAiGenerated: Boolean(row.generated_by) } : {}),
       }
       articles.set(row.id, article)
     }
@@ -1377,18 +1414,19 @@ async function handleSettings(event: H3Event, database: D1Database, path: string
       dbMap[r.key] = r.value
     }
 
+    // Statutory publisher fields are returned only as configured — never with invented defaults.
     const merged = {
-      company_name: dbMap.company_name || '체크인데일리 미디어그룹',
-      representative: dbMap.representative || '원섭',
-      business_number: dbMap.business_number || '2026-04-52914',
-      mail_order_number: dbMap.mail_order_number || '2026-서울중구-0123',
-      newspaper_number: dbMap.newspaper_number || '서울 아-52914',
-      youth_protection_officer: dbMap.youth_protection_officer || '원섭',
-      publisher: dbMap.publisher || '원섭',
-      address: dbMap.address || '서울특별시 중구 을지로 100 파인에비뉴 B동',
-      contact_email: dbMap.contact_email || 'editorial@checkindaily.com',
-      contact_phone: dbMap.contact_phone || '02-738-2026',
-      site_url: dbMap.site_url || (typeof process !== 'undefined' && process.env?.SITE_URL) || 'https://travel-checkin-daily.dnjstjqppk.workers.dev',
+      company_name: dbMap.company_name || '',
+      representative: dbMap.representative || '',
+      business_number: dbMap.business_number || '',
+      mail_order_number: dbMap.mail_order_number || '',
+      newspaper_number: dbMap.newspaper_number || '',
+      youth_protection_officer: dbMap.youth_protection_officer || '',
+      publisher: dbMap.publisher || '',
+      address: dbMap.address || '',
+      contact_email: dbMap.contact_email || '',
+      contact_phone: dbMap.contact_phone || '',
+      site_url: dbMap.site_url || siteConfig.domain,
       brand_name: dbMap.brand_name || 'CHECK-IN',
       brand_subname: dbMap.brand_subname || 'DAILY',
       slogan: dbMap.slogan || '글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어',

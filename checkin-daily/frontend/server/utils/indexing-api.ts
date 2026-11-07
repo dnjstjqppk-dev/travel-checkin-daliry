@@ -1,3 +1,4 @@
+import { siteConfig } from '../../config/site.config'
 // checkin-daily/frontend/server/utils/indexing-api.ts
 // Google Indexing API v3 & IndexNow Integration for Rapid URL Grounding and Indexation
 
@@ -13,6 +14,13 @@ export interface IndexingResult {
  * Submit URLs to Bing / Yandex / Naver via IndexNow protocol
  * Spec: https://www.indexnow.org/documentation
  */
+/** IndexNow key from INDEXNOW_KEY (8-128 chars of a-z, A-Z, 0-9, '-'), or '' when unset/invalid. */
+export function configuredIndexNowKey(): string {
+  const env = typeof process !== 'undefined' ? process.env : undefined
+  const value = (env?.INDEXNOW_KEY || env?.NUXT_INDEXNOW_KEY || '').trim()
+  return /^[A-Za-z0-9-]{8,128}$/.test(value) ? value : ''
+}
+
 export async function pushUrlToIndexNow(
   urls: string | string[],
   options?: { host?: string; key?: string },
@@ -24,9 +32,9 @@ export async function pushUrlToIndexNow(
 
   const primaryUrl = new URL(urlList[0]!)
   const host = options?.host || primaryUrl.host
-  const key = options?.key
-    || (typeof process !== 'undefined' ? (process.env.INDEXNOW_KEY || (process.env as Record<string, string>).NUXT_INDEXNOW_KEY) : '')
-    || 'checkindaily2026indexkey'
+  const key = options?.key || configuredIndexNowKey()
+  // The key must also be served at /{key}.txt (server/routes/[indexnow].txt.ts) for IndexNow to accept it.
+  if (!key) return { success: false, count: 0, error: 'INDEXNOW_KEY is not configured' }
 
   try {
     const payload = {
@@ -40,7 +48,7 @@ export async function pushUrlToIndexNow(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'User-Agent': 'CheckInDaily-IndexBot/2.0 (+https://checkindaily.com)',
+        'User-Agent': `CheckInDaily-IndexBot/2.1 (+${siteConfig.domain})`,
       },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(6000),

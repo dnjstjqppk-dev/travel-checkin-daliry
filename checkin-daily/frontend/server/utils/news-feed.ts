@@ -1,3 +1,4 @@
+import { LOCALES } from '../../config/locales'
 import { createError, getQuery, setResponseHeader, type H3Event } from 'h3'
 import { d1All, getD1Database } from './d1'
 import { publicArticleSql } from './sitemap-data'
@@ -8,7 +9,7 @@ interface FeedRow { id: number; title: string; summary: string; category: string
 export async function newsFeed(event: H3Event, format: 'rss' | 'atom', categoryOverride?: string): Promise<string> {
   const query = getQuery(event)
   const lang = typeof query.lang === 'string' ? query.lang : 'ko'
-  if (!['ko', 'en', 'zh', 'th', 'vi', 'es'].includes(lang)) throw createError({ statusCode: 400, statusMessage: 'Unsupported feed language' })
+  if (!(LOCALES as readonly string[]).includes(lang)) throw createError({ statusCode: 400, statusMessage: 'Unsupported feed language' })
   const category = categoryOverride || (typeof query.cat === 'string' ? query.cat : '')
   if (category && !['latest', 'breaking', 'major', 'airline', 'hotel', 'destination', 'realtime'].includes(category)) {
     throw createError({ statusCode: 404, statusMessage: 'Feed not found' })

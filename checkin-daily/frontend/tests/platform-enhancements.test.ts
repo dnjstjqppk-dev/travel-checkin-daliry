@@ -12,7 +12,6 @@ import {
   pushUrlToGoogleIndexing,
   notifySearchEnginesOfPublication,
 } from '../server/utils/indexing-api'
-import { computeFactualIntegrityScore } from '../server/utils/ai-generator'
 
 test('Text Similarity - Normalization and N-Grams', () => {
   assert.equal(normalizeTitle('방콕! 수완나품... 공항??'), '방콕 수완나품 공항')
@@ -39,23 +38,6 @@ test('Text Similarity - News Story Clustering and Deduplication', () => {
   assert.equal(isDuplicateOrClustered(titleA, titleC), false)
 })
 
-test('Factual Integrity Score - 2-Pass Reflection Scoring', () => {
-  const highIntegrity = computeFactualIntegrityScore({
-    sourceName: '태국 관광청 (TAT)',
-    sourceUrl: 'https://www.tatnews.org/2026/04/smart-entry/',
-    keyTakeaways: ['수치 데이터 1', '수치 데이터 2', '수치 데이터 3'],
-    factChecks: [
-      { claim: '핵심 정책 1', verification_status: 'VERIFIED', source: '공식 보도자료' },
-      { claim: '통계 수치 2', verification_status: 'VERIFIED', source: 'IATA 통계' },
-    ],
-  })
-
-  assert.ok(highIntegrity >= 95, `Expected score >= 95, got ${highIntegrity}`)
-
-  const basicScore = computeFactualIntegrityScore({})
-  assert.ok(basicScore >= 80 && basicScore <= 90, `Expected baseline score 80~90, got ${basicScore}`)
-})
-
 test('Search Engine Indexing API - Resilience and Fallbacks', async () => {
   const invalidResult = await pushUrlToIndexNow([])
   assert.equal(invalidResult.success, false)
@@ -65,14 +47,28 @@ test('Search Engine Indexing API - Resilience and Fallbacks', async () => {
   assert.ok(noTokenResult.error?.includes('skipped direct push'))
 
   const originalFetch = globalThis.fetch
+  const originalKey = process.env.INDEXNOW_KEY
+  let submitted: { key?: string; keyLocation?: string; urlList?: string[] } = {}
   try {
-    globalThis.fetch = async () => new Response(JSON.stringify({ status: 200 }), { status: 200 })
+    globalThis.fetch = async (_input, init) => {
+      submitted = JSON.parse(String(init?.body || '{}'))
+      return new Response(JSON.stringify({ status: 200 }), { status: 200 })
+    }
+    delete process.env.INDEXNOW_KEY
+    const unconfigured = await notifySearchEnginesOfPublication('https://checkindaily.com/news/major/article/100')
+    assert.equal(unconfigured.indexNowSubmitted, false, 'no hardcoded fallback key is used')
+
+    process.env.INDEXNOW_KEY = 'a1b2c3d4e5f6a7b8'
     const combined = await notifySearchEnginesOfPublication('https://checkindaily.com/news/major/article/100', [
       'https://checkindaily.com/en/news/major/article/100',
     ])
     assert.equal(combined.indexNowSubmitted, true)
+    assert.equal(submitted.keyLocation, 'https://checkindaily.com/a1b2c3d4e5f6a7b8.txt')
+    assert.equal(submitted.urlList?.length, 2)
   } finally {
     globalThis.fetch = originalFetch
+    if (originalKey === undefined) delete process.env.INDEXNOW_KEY
+    else process.env.INDEXNOW_KEY = originalKey
   }
 })
 

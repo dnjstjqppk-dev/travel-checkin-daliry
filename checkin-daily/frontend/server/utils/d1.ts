@@ -53,7 +53,8 @@ export function getD1Database(event?: H3Event): D1Database | undefined {
     if (env?.DB) return env.DB
   }
   if (cachedDb) return cachedDb
-  return undefined
+  // Last binding seen by server/plugins/d1-cache.ts (or injected by the local QA harness).
+  return (globalThis as { __cf_db?: D1Database }).__cf_db
 }
 
 export function setTestD1Database(db: D1Database | undefined) {

@@ -1,329 +1,311 @@
-// checkin-daily/frontend/server/utils/gemini-client.ts
-// Production Gemini Newsroom Engine for Check-in Daily
-// Powered by Google Gemini 3.5 Flash / Flash Lite with Structured JSON output
+import { PREFIXED_LOCALES } from '../../config/locales'
+// Gemini newsroom client: schema-enforced JSON generation with retry, timeout and
+// refusal detection. This module never invents filler text — if the model output
+// does not meet the editorial contract, the caller receives a typed GenerationError.
 
-import { siteConfig } from '../../config/site.config'
-import {
-  calculateBodyTextLength,
-  extractBodyImages,
-} from '../../utils/article-validator'
-import {
-  computeFactualIntegrityScore,
-  enforceCharacterCount,
-  type GeneratedArticle,
-} from './ai-generator'
+export const GENERATION_LANGS = PREFIXED_LOCALES
+export type GenerationLang = typeof PREFIXED_LOCALES[number]
+export const ARTICLE_CATEGORIES = ['major', 'airline', 'hotel', 'destination'] as const
 
-interface GeminiArticlePayload {
+export interface GeminiArticle {
   title: string
   summary: string
+  metaDescription: string
   keyTakeaways: string[]
   content: string
-  category?: string
-  sourceName?: string
-  sourceUrl?: string
-  faqs?: Array<{ question: string; answer: string }>
-  factChecks?: Array<{ claim: string; verification_status: string; source?: string }>
-  translations: {
-    en: { title: string; summary: string; content: string }
-    zh: { title: string; summary: string; content: string }
-    th: { title: string; summary: string; content: string }
-    vi: { title: string; summary: string; content: string }
-    es: { title: string; summary: string; content: string }
+  category: string
+  tags: string[]
+  claims: string[]
+}
+
+export interface GeminiTranslation { title: string; summary: string; content: string }
+
+export type GenerationErrorCode =
+  | 'NO_API_KEY' | 'RATE_LIMITED' | 'UPSTREAM' | 'TIMEOUT' | 'INVALID_JSON'
+  | 'REFUSAL' | 'QUALITY' | 'DUPLICATE' | 'THIN_SOURCE' | 'BLOCKED'
+
+export class GenerationError extends Error {
+  constructor(public code: GenerationErrorCode, message: string, public retryable = false) {
+    super(message)
+    this.name = 'GenerationError'
   }
 }
 
-// Curated high-resolution editorial photography (Unsplash Editorial Reference)
-const curatedImagesPool: Record<string, string[]> = {
-  airline: [
-    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
-  ],
-  hotel: [
-    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
-  ],
-  destination: [
-    'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80',
-  ],
-  major: [
-    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1503220317375-aaad61436b1b?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=1200&q=80',
-  ],
-  realtime: [
-    'https://images.unsplash.com/photo-1517840901100-8179e982acb7?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80',
-  ],
+export interface GeminiRuntime {
+  apiKey: string
+  models?: string[]
+  fetchImpl?: typeof fetch
+  timeoutMs?: number
+  maxAttempts?: number
+  sleep?: (ms: number) => Promise<void>
 }
 
-function getCuratedImages(category: string): { cover: string; bodyImages: string[] } {
-  const pool = curatedImagesPool[category] || curatedImagesPool.major || []
-  const shuffled = [...pool].sort(() => 0.5 - Math.random())
-  const cover = shuffled[0] || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80'
-  const bodyImages = shuffled.length >= 5 ? shuffled.slice(1, 5) : [
-    'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80',
-  ]
-  return { cover, bodyImages }
+const DEFAULT_MODELS = ['gemini-3.5-flash', 'gemini-3.5-flash-lite']
+const REFUSAL_PATTERN = /(죄송하지만|죄송합니다|도와드릴 수 없|제공할 수 없|작성할 수 없|AI 언어 모델|언어 모델로서|as an ai\b|i'm sorry|i am sorry|i cannot|i can't|i can not|unable to (help|assist|comply|provide)|cannot assist|against my guidelines)/i
+const ARTIFACT_PATTERN = /(lorem ipsum|\[object object\]|\bundefined\b|\bnull\b|\bT[O]DO\b|\{\{|\}\}|<\/?script|INSERT_|PLACEHOLDER|\[출처 필요\])/i
+
+export function resolveGeminiModels(env: Record<string, unknown> | undefined): string[] {
+  const read = (key: string) => {
+    const value = env?.[key] ?? (typeof process !== 'undefined' ? process.env?.[key] : undefined)
+    return typeof value === 'string' ? value.trim() : ''
+  }
+  const configured = [read('GEMINI_MODEL'), read('GEMINI_FALLBACK_MODEL')].filter(Boolean)
+  return [...new Set(configured.length ? configured : DEFAULT_MODELS)]
 }
 
-function slugify(text: string): string {
-  const base = text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .slice(0, 80)
-  return base || `article-${Date.now()}`
+export function containsRefusal(text: string): boolean {
+  return REFUSAL_PATTERN.test(text)
 }
 
-export interface GeminiGenerateOptions {
-  keyword: string
-  contextText?: string
-  preferredCategory?: string
-  apiKey?: string
+export function containsGenerationArtifact(text: string): boolean {
+  return ARTIFACT_PATTERN.test(text)
 }
 
-export async function generateNewsWithGemini(options: GeminiGenerateOptions): Promise<GeneratedArticle> {
-  const { keyword, contextText, preferredCategory } = options
-  const cleanKeyword = keyword.trim()
+const defaultSleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
 
-  if (!cleanKeyword) {
-    throw new Error('기사 생성을 위한 키워드를 입력해 주세요.')
+export function backoffDelay(attempt: number, retryAfterSeconds?: number): number {
+  if (retryAfterSeconds && Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return Math.min(retryAfterSeconds * 1000, 20_000)
   }
+  const base = 1000 * 2 ** Math.max(0, attempt - 1)
+  return Math.min(base + Math.floor(Math.random() * 250), 16_000)
+}
 
-  const effectiveApiKey = options.apiKey
-    || (typeof process !== 'undefined' ? (process.env.GEMINI_API_KEY || (process.env as Record<string, string>).NUXT_GEMINI_API_KEY) : '')
-
-  if (!effectiveApiKey) {
-    throw new Error('Gemini API 키가 설정되지 않았습니다. Cloudflare Worker 환경변수(GEMINI_API_KEY) 또는 사이트 설정(site_settings)에서 등록해 주세요.')
+/**
+ * Recovers a JSON object from model output that may be wrapped in markdown fences
+ * or prose: keeps the first "{" through the last "}" and strips control characters
+ * that are illegal inside JSON strings. Returns null when nothing parseable remains.
+ */
+export function safeParseArticleJson(text: string): unknown {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start === -1 || end <= start) return null
+  // eslint-disable-next-line no-control-regex -- removing control characters is the point
+  const body = text.slice(start, end + 1).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+  try {
+    return JSON.parse(body)
+  } catch {
+    try {
+      // Raw newlines/tabs inside string literals are the most common model defect.
+      return JSON.parse(body.replace(/\r?\n/g, '\\n').replace(/\t/g, '\\t'))
+    } catch {
+      return null
+    }
   }
+}
 
-  // Determine category
-  let category = preferredCategory || 'major'
-  if (!preferredCategory) {
-    if (/항공|공항|비행|노선|수완나품|나리타|하네다|취항/i.test(cleanKeyword)) category = 'airline'
-    else if (/호텔|리조트|풀빌라|숙소|오성급|투숙/i.test(cleanKeyword)) category = 'hotel'
-    else if (/여행지|비자|명소|축제|방콕|도쿄|파리|휴양/i.test(cleanKeyword)) category = 'destination'
-    else if (/속보|실시간|급상승|인기/i.test(cleanKeyword)) category = 'realtime'
-  }
+interface GeminiResponseBody {
+  candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>
+  promptFeedback?: { blockReason?: string }
+}
 
-  // Affiliate target
-  const isTourOrActivity = /투어|입장권|비자|체험|DTV|액티비티|페스티벌|eSIM|티켓|패스/i.test(cleanKeyword)
-  const targetAffiliate = (isTourOrActivity
-    ? siteConfig.affiliates.find((a) => a.id === 'getfortrip') || siteConfig.affiliates[1] || siteConfig.affiliates[0]
-    : siteConfig.affiliates.find((a) => a.id === 'tripscanner') || siteConfig.affiliates[0]
-  ) as NonNullable<(typeof siteConfig.affiliates)[0]>
-
-  const ctaMarkdown = `\n\n> **[에디터 추천 공식 파트너]** ${targetAffiliate.name} — ${targetAffiliate.description}\n> → [${targetAffiliate.ctaText}](${targetAffiliate.url})\n> *(본 기사는 공정거래위원회 및 구글 검색 가이드라인을 준수하며, 파트너사 제휴 활동을 통해 일정 수수료를 지급받을 수 있습니다.)*`
-
-  // Prompt construction with Google Helpful Content, E-E-A-T, and AI Grounding (SGE/Perplexity) Optimization
-  const prompt = `당신은 글로벌 독립 여행 탐사 저널리즘 미디어 '체크인데일리 (Check-in Daily)'의 수석 데스크 에디터(Senior Investigative Editor)입니다.
-구글 서치 센트럴(Google Search Central)의 'Helpful Content & E-E-A-T 가이드라인'과 AI 검색엔진(Google SGE, Perplexity, SearchGPT) 인용 최적화(Grounding Optimization) 기준을 100% 충족하는 최고 등급의 심층 보도 기사를 작성하세요.
-
-주제 키워드: "${cleanKeyword}"
-카테고리: ${category}
-${contextText ? `참고 보도자료/원문 팩트(1차 소스):\n"""\n${contextText.slice(0, 3000)}\n"""` : ''}
-
-[구글 품질 평가 & AI 검색 최적화(GEO) 필수 지침]
-1. 제목 (Headline):
-   - 사실(Fact)과 파급 효과(Impact) 중심의 정통 스트레이트 헤드라인.
-   - 클릭베이트, 과장, 낚시성 어휘 전면 금지.
-2. 요약 리드문 (Lead Paragraph):
-   - 기사의 첫 1~2문장은 AI 검색엔진이 정답 스니펫으로 직접 인용할 수 있도록 5W1H(육하원칙)와 핵심 수치를 직격으로 서술하세요.
-3. 핵심 요약 (keyTakeaways):
-   - 독자와 AI 검색 봇이 5초 만에 핵심 사실을 검증할 수 있는 정량적 팩트 3가지 (구체적 날짜, 금액, 제도명, 대상자 필수 포함).
-4. 본문 (Content):
-   - 소제목(## ) 3개 이상으로 논리적으로 분할:
-     ## 1. [핵심 정책 및 사실 개요] (구체적 시행 일자, 대상, 수치 데이터 명시)
-     ## 2. [산업 및 시장 파급 효과] (항공사, 호텔, 여행업계 동향 및 배경 심층 분석)
-     ## 3. [여행자 실무 체크리스트 및 주의사항] (입국 심사, 예약 팁, 환불/수수료 등 실질적 팁)
-   - [AI 상투어(Cliché) 전면 금지]:
-     ❌ 금지: "현대 사회에서...", "최근 여행 트렌드는...", "많은 여행객들이 찾고 있습니다", "주목받고 있습니다", "살펴보겠습니다", "알아보겠습니다", "결론적으로...", "지금까지 ~에 대해 알아보았습니다", "행복한 추억을 만들어보세요".
-     대신 건조하고 신뢰성 높은 저널리즘 어조로 팩트와 인과관계를 서술하세요.
-   - [문장 리듬 및 다양성(Burstiness)]: 짧은 단문과 데이터 중심의 복문을 교차하여 자연스럽고 권위 있는 문체를 유지하세요.
-   - 순수 한국어 본문 텍스트 길이는 850자 이상 1,400자 이하로 빈틈없이 작성하세요 (이미지 태그나 광고 링크 제외).
-5. 여행자 실무 FAQ (faqs):
-   - 독자가 가장 궁금해할 실무 질문과 정답 3쌍 (FAQPage JSON-LD 스키마 최적화).
-6. 팩트체크 검증 데이터 (factChecks):
-   - 기사 내에서 핵심적으로 검증된 사실 주장 2~3개와 출처 판정을 JSON 내에 포함하세요.
-7. 5개국어 네이티브 번역:
-   - 영어(en), 중국어 간체(zh), 태국어(th), 베트남어(vi), 스페인어(es)로 각국 현지 주요 신문사(Reuters, BBC, Bangkok Post 등) 어조에 맞춰 고품질 번역을 제공하세요.
-8. 반드시 아래 JSON 스키마 규격으로만 응답하세요.
-
-[JSON 스키마 규격]
-{
-  "title": "한국어 정통 헤드라인",
-  "summary": "한국어 5W1H 핵심 요약 리드문",
-  "keyTakeaways": ["정량적 팩트 1", "구체적 날짜/수치 포함 팩트 2", "여행자 실무 팩트 3"],
-  "content": "한국어 마크다운 본문 (## 소제목 3개 포함, 순수 텍스트 850~1400자)",
-  "sourceName": "공식 1차 출처 기관/기업명 (예: 태국 관광체육부 / IATA / 국토교통부)",
-  "sourceUrl": "공식 출처 URL 또는 포털 공지 URL",
-  "faqs": [
-    { "question": "실무 질문 1", "answer": "구체적 수치/일정에 기반한 답변" },
-    { "question": "예약/비용 관련 질문 2", "answer": "실무 가이드 답변" },
-    { "question": "공식 팩트 검증 질문 3", "answer": "공식 출처 기반 답변" }
-  ],
-  "factChecks": [
-    { "claim": "검증된 사실 명제 1", "verification_status": "VERIFIED", "source": "공식 기관 발표" },
-    { "claim": "검증된 사실 명제 2", "verification_status": "VERIFIED", "source": "산업 공식 통계" }
-  ],
-  "translations": {
-    "en": { "title": "English Headline", "summary": "English lead", "content": "English markdown body" },
-    "zh": { "title": "中文标题", "summary": "中文导语", "content": "中文正文" },
-    "th": { "title": "หัวข้อข่าวภาษาไทย", "summary": "สรุปข่าวภาษาไทย", "content": "เนื้อหาข่าวภาษาไทย" },
-    "vi": { "title": "Tiêu đề tiếng Việt", "summary": "Tóm tắt tiếng Việt", "content": "Nội dung tiếng Việt" },
-    "es": { "title": "Título en español", "summary": "Resumen en español", "content": "Contenido en español" }
-  }
-}`
-
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash']
-  let lastError: unknown = null
-  let parsedPayload: GeminiArticlePayload | null = null
+/**
+ * Calls Gemini with a response schema. Retries rate limits, 5xx, timeouts and
+ * malformed JSON with exponential backoff, then falls through to the next model.
+ */
+export async function callGeminiJson<T>(
+  runtime: GeminiRuntime,
+  prompt: string,
+  responseSchema: Record<string, unknown>,
+  validate: (value: unknown) => T,
+): Promise<{ value: T; model: string; attempts: number }> {
+  if (!runtime.apiKey) throw new GenerationError('NO_API_KEY', 'GEMINI_API_KEY is not configured')
+  const fetchImpl = runtime.fetchImpl ?? fetch
+  const sleep = runtime.sleep ?? defaultSleep
+  const models = runtime.models?.length ? runtime.models : DEFAULT_MODELS
+  const maxAttempts = runtime.maxAttempts ?? 3
+  let attempts = 0
+  let lastError: GenerationError | null = null
 
   for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${effectiveApiKey}`
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      attempts++
+      let retryAfter: number | undefined
+      try {
+        const response = await fetchImpl(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': runtime.apiKey },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.4 },
+            }),
+            signal: AbortSignal.timeout(runtime.timeoutMs ?? 90_000),
           },
-        }),
-      })
-
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(`Gemini API error [${model}] status ${response.status}: ${errText}`)
-      }
-
-      const resData = (await response.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
-      const rawJson = resData.candidates?.[0]?.content?.parts?.[0]?.text
-      if (rawJson) {
-        parsedPayload = JSON.parse(rawJson) as GeminiArticlePayload
-        break
-      }
-    } catch (err: unknown) {
-      lastError = err
-    }
-  }
-
-  if (!parsedPayload) {
-    const errorMsg = lastError instanceof Error ? lastError.message : String(lastError || '응답을 파싱할 수 없습니다.')
-    throw new Error(`Gemini 기사 생성 실패: ${errorMsg}`)
-  }
-
-  // Pick 4 curated body images matching category
-  const { cover, bodyImages } = getCuratedImages(category)
-
-  // Weave 4 images and CTA into Korean content
-  const sections = parsedPayload.content.split('\n\n## ')
-  let wovenContent = sections[0] || parsedPayload.content
-
-  for (let i = 1; i < sections.length; i++) {
-    const imgIdx = (i - 1) % bodyImages.length
-    const imageTag = `\n\n![${cleanKeyword} 보도 사진 ${i}](${bodyImages[imgIdx]} "${cleanKeyword} 현장 취재 및 공식 인프라 사진")\n\n`
-    wovenContent += imageTag + '## ' + sections[i]
-  }
-
-  // Ensure all 4 images are present
-  const presentImages = extractBodyImages(wovenContent, cover)
-  if (presentImages.length < 4) {
-    for (let k = presentImages.length; k < 4; k++) {
-      wovenContent += `\n\n![${cleanKeyword} 추가 보도 자료](${bodyImages[k]} "${cleanKeyword} 상세 데이터")`
-    }
-  }
-
-  // Append CTA and source citation
-  wovenContent = wovenContent + ctaMarkdown + `\n\n[출처: ${parsedPayload.sourceName || '체크인데일리 글로벌 뉴스룸'} 공식 보도자료]`
-
-  // Enforce character count (800~2,000 characters)
-  wovenContent = enforceCharacterCount(wovenContent, cleanKeyword, ctaMarkdown, 800, 2000)
-
-  // Also weave images and CTA into 5 translations
-  const langKeys = ['en', 'zh', 'th', 'vi', 'es'] as const
-  const finalTranslations: Record<string, { title: string; summary: string; content: string }> = {}
-
-  for (const lang of langKeys) {
-    const t = parsedPayload.translations?.[lang]
-    if (t && t.content) {
-      let tContent = t.content
-      const tSections = tContent.split('\n\n## ')
-      let wovenTrans = tSections[0] || tContent
-      for (let j = 1; j < tSections.length; j++) {
-        const imgIdx = (j - 1) % bodyImages.length
-        wovenTrans += `\n\n![Editorial Reference ${j}](${bodyImages[imgIdx]} "Check-in Daily Verified")\n\n## ` + tSections[j]
-      }
-      finalTranslations[lang] = {
-        title: t.title,
-        summary: t.summary,
-        content: wovenTrans + `\n\n> ✈️ [TripScanner & GetForTrip Global Booking Partner](https://tripscanner.com)`,
-      }
-    } else {
-      finalTranslations[lang] = {
-        title: `${parsedPayload.title} (${lang.toUpperCase()})`,
-        summary: parsedPayload.summary,
-        content: wovenContent,
+        )
+        if (response.status === 404) {
+          lastError = new GenerationError('UPSTREAM', `Model ${model} is not available`)
+          break // try the next model
+        }
+        if (response.status === 429 || response.status >= 500) {
+          retryAfter = Number(response.headers.get('retry-after') || '') || undefined
+          throw new GenerationError(response.status === 429 ? 'RATE_LIMITED' : 'UPSTREAM',
+            `Gemini ${model} HTTP ${response.status}`, true)
+        }
+        if (!response.ok) {
+          const detail = (await response.text().catch(() => '')).slice(0, 300)
+          throw new GenerationError('UPSTREAM', `Gemini ${model} HTTP ${response.status}: ${detail}`)
+        }
+        const body = await response.json() as GeminiResponseBody
+        if (body.promptFeedback?.blockReason) {
+          throw new GenerationError('BLOCKED', `Prompt blocked: ${body.promptFeedback.blockReason}`)
+        }
+        const candidate = body.candidates?.[0]
+        if (candidate?.finishReason && !['STOP', 'MAX_TOKENS'].includes(candidate.finishReason)) {
+          throw new GenerationError('BLOCKED', `Generation stopped: ${candidate.finishReason}`)
+        }
+        const raw = candidate?.content?.parts?.map(part => part.text || '').join('') || ''
+        if (!raw.trim()) throw new GenerationError('INVALID_JSON', 'Empty model response', true)
+        if (containsRefusal(raw.slice(0, 400))) throw new GenerationError('REFUSAL', 'Model refused the request')
+        const parsed = safeParseArticleJson(raw)
+        if (parsed === null) throw new GenerationError('INVALID_JSON', 'Model returned malformed JSON', true)
+        return { value: validate(parsed), model, attempts }
+      } catch (error) {
+        const normalized = error instanceof GenerationError
+          ? error
+          : (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError'))
+            ? new GenerationError('TIMEOUT', `Gemini ${model} timed out`, true)
+            : new GenerationError('UPSTREAM', error instanceof Error ? error.message : String(error), true)
+        lastError = normalized
+        if (!normalized.retryable) {
+          if (normalized.code === 'QUALITY' || normalized.code === 'REFUSAL' || normalized.code === 'BLOCKED') throw normalized
+          break
+        }
+        if (attempt < maxAttempts) await sleep(backoffDelay(attempt, retryAfter))
       }
     }
   }
+  throw lastError ?? new GenerationError('UPSTREAM', 'Gemini generation failed')
+}
 
-  const finalCharCount = calculateBodyTextLength(wovenContent)
-  const finalImageCount = extractBodyImages(wovenContent, cover).length
+const stringArray = (value: unknown, max: number, maxLength = 200): string[] =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+      .map(item => item.replace(/\s+/g, ' ').trim()).filter(Boolean)
+      .map(item => item.slice(0, maxLength)).slice(0, max)
+    : []
 
-  // 2-Pass Self-Reflection Fact Checking Pass:
-  const factualIntegrityScore = computeFactualIntegrityScore({
-    sourceName: parsedPayload.sourceName,
-    sourceUrl: parsedPayload.sourceUrl,
-    factChecks: parsedPayload.factChecks,
-    keyTakeaways: parsedPayload.keyTakeaways,
-  })
+const text = (value: unknown, maxLength: number): string =>
+  typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 
-  return {
-    title: parsedPayload.title,
-    slug: slugify(parsedPayload.title),
-    summary: parsedPayload.summary,
-    content: wovenContent,
-    category,
-    author: 'Check-in Daily Desk (Verified & Edited)',
-    coverImage: cover,
-    publishedAt: new Date().toISOString(),
-    charCount: finalCharCount,
-    imageCount: finalImageCount,
-    ctaTarget: targetAffiliate.id,
-    keyTakeaways: parsedPayload.keyTakeaways || [],
-    faqs: parsedPayload.faqs || [
-      { question: `${cleanKeyword} 관련 핵심 요약은 무엇인가요?`, answer: parsedPayload.summary },
-      { question: '출국 전 필수 주의사항은 무엇인가요?', answer: '공식 관광 당국의 최신 발표 및 비자 규정을 사전에 확인하세요.' },
-      { question: '최저가 항공/호텔 예약 팁은 무엇인가요?', answer: '출발 45~60일 전 조기 예약 및 공식 파트너 가격 비교를 권장합니다.' },
-    ],
-    sourceName: parsedPayload.sourceName || '공식 1차 보도자료',
-    sourceUrl: parsedPayload.sourceUrl || '',
-    factChecks: parsedPayload.factChecks || [
-      { claim: `${cleanKeyword} 관련 핵심 정책 및 수치`, verification_status: 'VERIFIED', source: 'Check-in Daily Fact Desk' },
-    ],
-    factualIntegrityScore,
-    translations: finalTranslations as unknown as GeneratedArticle['translations'],
+const articleSchema = {
+  type: 'OBJECT',
+  properties: {
+    title: { type: 'STRING', description: 'Korean news headline, 18-70 characters, factual, no clickbait' },
+    summary: { type: 'STRING', description: 'Korean lead paragraph answering who/what/when/where, 1-2 sentences' },
+    metaDescription: { type: 'STRING', description: 'Korean SEO meta description, 80-155 characters' },
+    keyTakeaways: { type: 'ARRAY', items: { type: 'STRING' }, description: '3-4 Korean bullet facts taken from the source' },
+    content: { type: 'STRING', description: 'Korean markdown body with at least three "## " subheadings, 1500-1900 characters of prose' },
+    category: { type: 'STRING', enum: [...ARTICLE_CATEGORIES] },
+    tags: { type: 'ARRAY', items: { type: 'STRING' }, description: '3-6 short Korean or proper-noun topic tags' },
+    claims: { type: 'ARRAY', items: { type: 'STRING' }, description: '2-3 checkable factual claims stated in the source' },
+  },
+  required: ['title', 'summary', 'metaDescription', 'keyTakeaways', 'content', 'category', 'tags', 'claims'],
+  propertyOrdering: ['title', 'summary', 'metaDescription', 'keyTakeaways', 'content', 'category', 'tags', 'claims'],
+}
+
+export function parseGeminiArticle(value: unknown): GeminiArticle {
+  if (!value || typeof value !== 'object') throw new GenerationError('INVALID_JSON', 'Response is not an object', true)
+  const input = value as Record<string, unknown>
+  const article: GeminiArticle = {
+    title: text(input.title, 180),
+    summary: text(input.summary, 500),
+    metaDescription: text(input.metaDescription, 200),
+    keyTakeaways: stringArray(input.keyTakeaways, 4, 220),
+    // Generated bodies must not carry links or images; the pipeline attaches media itself.
+    content: text(input.content, 12_000)
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+      .replace(/\[([^\]]+)\]\((?:[^)]*)\)/g, '$1')
+      .replace(/\n{3,}/g, '\n\n'),
+    category: (ARTICLE_CATEGORIES as readonly string[]).includes(String(input.category)) ? String(input.category) : 'major',
+    tags: stringArray(input.tags, 6, 40),
+    claims: stringArray(input.claims, 3, 300),
   }
+  if (!article.title || !article.summary || !article.content) {
+    throw new GenerationError('INVALID_JSON', 'Required article fields are empty', true)
+  }
+  return article
+}
+
+export interface SourceMaterial {
+  title: string
+  text: string
+  sourceName: string
+  sourceUrl: string
+  publishedAt?: string
+  preferredCategory?: string
+}
+
+export function buildArticlePrompt(source: SourceMaterial, feedback = ''): string {
+  return `당신은 여행 전문 디지털 언론사의 데스크 기자입니다. 아래 "원천 자료"만을 근거로 한국어 스트레이트 뉴스 기사를 작성하세요.
+
+[원천 자료]
+- 출처: ${source.sourceName}
+- 원문 URL: ${source.sourceUrl}
+- 원문 발행일: ${source.publishedAt || '미상'}
+- 원문 제목: ${source.title}
+"""
+${source.text.slice(0, 6000)}
+"""
+
+[작성 규칙 — 반드시 준수]
+1. 사실성: 원천 자료에 있는 사실만 사용하세요. 자료에 없는 수치·날짜·인명·인용문·정책을 만들어내지 마세요. 불확실한 부분은 "출처에 따르면" 등으로 귀속하세요.
+2. 표절 금지: 원문 문장을 그대로 옮기지 말고 독자적인 문장 구조로 재구성하세요. 직접 인용은 20자 이내로만 허용합니다.
+3. 헤드라인: 사실과 영향 중심, 18~70자, 과장·낚시성 표현 금지.
+4. 리드(summary): 첫 1~2문장에 핵심(누가·무엇을·언제·어디서)을 담으세요.
+5. 본문(content): 마크다운. "## " 소제목 3개 이상(예: 핵심 내용 / 배경과 업계 영향 / 여행자가 확인할 점). 이미지·링크·표·HTML 금지. 순수 본문(공백 포함) 1,500~1,900자. 배경·쟁점·영향은 원천 자료가 뒷받침하는 범위에서만 서술하세요.
+6. keyTakeaways: 원천 자료에서 확인되는 핵심 사실 3~4개(각 80자 이내).
+7. metaDescription: 검색 결과용 80~155자 요약.
+8. tags: 3~6개 (도시·국가·기관·주제).
+9. claims: 독자가 원문에서 검증할 수 있는 사실 명제 2~3개.
+9-1. 외국 고유명사(항공사·공항·도시·기관·인명)는 국내 주요 언론의 표준 표기(국립국어원 외래어 표기법)를 따르세요. 예: Qantas → 콴타스항공, Iberia → 이베리아항공. 확신이 없으면 첫 언급에 원어를 괄호로 병기하세요.
+10. 상투어 금지: "알아보겠습니다", "주목받고 있습니다", "결론적으로", "행복한 여행" 등.
+11. 원천 자료가 기사로 쓸 만한 정보를 담고 있지 않다면 content를 빈 문자열로 반환하세요.
+${source.preferredCategory ? `12. 카테고리는 "${source.preferredCategory}"를 우선 고려하세요.` : ''}
+${feedback ? `\n[이전 시도 피드백]\n${feedback}` : ''}`
+}
+
+export async function generateArticleFromSource(runtime: GeminiRuntime, source: SourceMaterial, feedback = '') {
+  return callGeminiJson(runtime, buildArticlePrompt(source, feedback), articleSchema, parseGeminiArticle)
+}
+
+const translationSchema = {
+  type: 'OBJECT',
+  properties: Object.fromEntries(GENERATION_LANGS.map(lang => [lang, {
+    type: 'OBJECT',
+    properties: { title: { type: 'STRING' }, summary: { type: 'STRING' }, content: { type: 'STRING' } },
+    required: ['title', 'summary', 'content'],
+  }])),
+  required: [...GENERATION_LANGS],
+}
+
+export function parseTranslations(value: unknown): Partial<Record<GenerationLang, GeminiTranslation>> {
+  if (!value || typeof value !== 'object') throw new GenerationError('INVALID_JSON', 'Translation response is not an object', true)
+  const out: Partial<Record<GenerationLang, GeminiTranslation>> = {}
+  for (const lang of GENERATION_LANGS) {
+    const entry = (value as Record<string, unknown>)[lang] as Record<string, unknown> | undefined
+    const translation = {
+      title: text(entry?.title, 220),
+      summary: text(entry?.summary, 700),
+      content: text(entry?.content, 16_000),
+    }
+    const combined = `${translation.title}\n${translation.content}`
+    if (translation.title && translation.content.length >= 200 && !containsRefusal(combined) && !containsGenerationArtifact(combined)) {
+      out[lang] = translation
+    }
+  }
+  return out
+}
+
+export async function translateArticle(runtime: GeminiRuntime, article: { title: string; summary: string; content: string }) {
+  const prompt = `Translate the following Korean travel news article into English (en), Japanese (ja), Simplified Chinese (zh), Thai (th), Vietnamese (vi) and Spanish (es). Write each version in the native register of that market's major newspapers.
+Keep the markdown structure exactly: keep every "## " heading and every image line "![...](...)" unchanged in position (translate only the alt text).
+Use the neutral register of a major wire service. Do not add facts, opinions or links.
+
+TITLE: ${article.title}
+SUMMARY: ${article.summary}
+CONTENT:
+${article.content}`
+  return callGeminiJson(runtime, prompt, translationSchema, parseTranslations)
 }

@@ -1,3 +1,4 @@
+import { HREFLANG, PREFIXED_LOCALES } from '../../config/locales'
 import { createError, getQuery, type H3Event } from 'h3'
 import { d1All, d1First, type D1Database } from './d1'
 import { escapeXml, publicationDate } from './syndication'
@@ -12,7 +13,7 @@ export async function articleCount(database: D1Database): Promise<number> {
   return (await d1First<{ n: number }>(database, `SELECT COUNT(*) n FROM articles a WHERE ${publicArticleSql}`))?.n ?? 0
 }
 export interface SitemapRow { id: number; category: string; published_at: string; updated_at: string; languages: string | null }
-const languages: Record<string, string> = { en: 'en', zh: 'zh-Hans', th: 'th', vi: 'vi', es: 'es' }
+const languages: Record<string, string> = Object.fromEntries(PREFIXED_LOCALES.map(code => [code, HREFLANG[code]]))
 export async function articleSitemap(database: D1Database, base: string, page: number): Promise<string> {
   const count = await articleCount(database)
   if (page > Math.max(1, Math.ceil(count / articleShardSize))) throw createError({ statusCode: 404, statusMessage: 'Sitemap page not found' })

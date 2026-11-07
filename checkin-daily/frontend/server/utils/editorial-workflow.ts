@@ -1,3 +1,4 @@
+import { PREFIXED_LOCALES } from '../../config/locales'
 import { createError } from 'h3'
 import { d1First, type D1Database } from './d1'
 import { assertArticlePublishable } from './publication-gate'
@@ -58,7 +59,7 @@ export async function transitionArticle(database: D1Database, input: {
     .bind(scheduled.toISOString(), token, input.articleId, token))
   statements.push(database.prepare(`INSERT INTO audit_logs (actor_type, actor_id, action, target_resource, details_json)
     SELECT ?, ?, ?, ?, ? FROM articles WHERE id = ? AND workflow_token = ?`)
-    .bind(input.actor === 'cron-scheduler' ? 'system' : 'editor', input.actor,
+    .bind(['cron-scheduler', 'ai-pipeline'].includes(input.actor) ? 'system' : 'editor', input.actor,
       `editorial_${review}`, `article:${input.articleId}`,
       JSON.stringify({ scheduledAt: scheduled?.toISOString(), jobId: input.jobId, note: input.editorNote || '' }),
       input.articleId, token))
@@ -67,10 +68,10 @@ export async function transitionArticle(database: D1Database, input: {
   if (!results[0]?.meta?.changes) throw createError({ statusCode: 409, statusMessage: 'Article changed; reload before publishing' })
 
   if (publishing) {
-    const origin = (siteConfig.domain || 'https://travel-checkin-daily.dnjstjqppk.workers.dev').replace(/\/+$/, '')
+    const origin = siteConfig.domain.replace(/\/+$/, '')
     const cat = before.category || 'major'
     const canonical = `${origin}/news/${cat}/article/${input.articleId}`
-    const alternateUrls = ['en', 'zh', 'th', 'vi', 'es'].map(
+    const alternateUrls = PREFIXED_LOCALES.map(
       (lang) => `${origin}/${lang}/news/${cat}/article/${input.articleId}`,
     )
     notifySearchEnginesOfPublication(canonical, alternateUrls).catch(() => {})

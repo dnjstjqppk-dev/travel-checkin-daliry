@@ -4,6 +4,7 @@
 import type { H3Event } from 'h3'
 import { getWorkerEnvironment } from './d1'
 import { assertSafeExternalUrl } from './ssrf-guard'
+import { siteConfig } from '../../config/site.config'
 
 export interface R2MirrorResult {
   url: string
@@ -44,7 +45,7 @@ export async function mirrorImageToR2(
     // 3. Fetch image stream with timeout
     const res = await fetch(imageUrl, {
       headers: {
-        'User-Agent': 'CheckInDaily-MediaBot/2.0 (+https://checkindaily.com)',
+        'User-Agent': `CheckInDaily-MediaBot/2.1 (+${siteConfig.domain})`,
         Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
       },
       signal: AbortSignal.timeout(8000),

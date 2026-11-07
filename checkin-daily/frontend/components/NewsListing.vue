@@ -12,23 +12,16 @@ const store = useArticlesStore()
 const requestFetch = useRequestFetch()
 const pageSize = 12
 
-const { locale, t, locUrl } = useI18n()
+const { locale, t, locUrl, formatNumber, categoryLabel, placeName } = useI18n()
 
-const categoryNames: Record<string, string> = {
-  major: locale.value === 'en' ? 'Major' : '주요뉴스',
-  airline: locale.value === 'en' ? 'Airlines' : '항공',
-  hotel: locale.value === 'en' ? 'Hotels' : '호텔',
-  destination: locale.value === 'en' ? 'Destinations' : '여행지',
-  realtime: locale.value === 'en' ? 'Top Stories' : '실시간 인기 뉴스',
-}
-
-const country = ref<{ code: string; nameKo: string } | null>(null)
-const city = ref<{ id: string; nameKo: string } | null>(null)
+const country = ref<{ code: string; nameKo: string; nameEn: string } | null>(null)
+const city = ref<{ id: string; nameKo: string; nameEn: string } | null>(null)
 const lastPageCount = ref(pageSize)
+const loadingMore = ref(false)
 const isRealtime = computed(() => props.category === 'realtime')
 
 const filters = computed(() => ({
-  // When category is realtime, query all categories sorted by views
+  // The realtime view ranks every category by views.
   category: isRealtime.value ? undefined : props.category,
   country: props.countryCode,
   city: props.cityId,
@@ -41,13 +34,14 @@ async function loadFirstPage() {
     ...(isRealtime.value ? { sort: 'views' as const } : {}),
     lang: locale.value,
   })
+  return true
 }
 
 await useAsyncData(`news-list-${route.fullPath}`, loadFirstPage)
 
 const { data: popularArticles } = await useAsyncData<Article[]>(
   `news-listing-popular-${locale.value}`,
-  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
+  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }).catch(() => [] as Article[]),
   { default: () => [] },
 )
 
@@ -70,115 +64,92 @@ watch(() => [props.countryCode, props.cityId], async ([countryCode, cityId]) => 
   }
 }, { immediate: true })
 
-const canLoadMore = computed(() => lastPageCount.value === pageSize)
+const canLoadMore = computed(() => lastPageCount.value === pageSize && store.articles.length < store.totalCount)
 
 const title = computed(() => {
-  if (city.value) return `${city.value.nameKo} 여행 뉴스`
-  if (country.value) return `${country.value.nameKo} 여행 뉴스`
-  if (isRealtime.value) return locale.value === 'en' ? 'Top Stories (Realtime)' : '실시간 인기 뉴스 (TOP STORIES)'
-  if (props.category === 'major') return locale.value === 'en' ? 'Major Stories' : '주요 뉴스 (MAJOR STORIES)'
-  return categoryNames[props.category || ''] || (locale.value === 'en' ? 'All News' : '전체 뉴스')
+  if (city.value) return t('news_in_place', { name: placeName(city.value) })
+  if (country.value) return t('news_in_place', { name: placeName(country.value) })
+  if (props.category) return categoryLabel(props.category)
+  return t('all_news')
 })
 
 const { origin: siteOrigin } = useSiteDomain()
-const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
 const listCanonicalUrl = computed(() => `${siteOrigin.value}${route.path}`)
 
+const breadcrumbs = computed(() => [
+  { label: t('home'), to: locUrl('/news') },
+  ...(props.category ? [{ label: categoryLabel(props.category), to: locUrl(`/news/${props.category}`) }] : []),
+  ...(country.value ? [{ label: placeName(country.value), to: locUrl(props.category ? `/news/${props.category}/${country.value.code}` : `/news/region/${country.value.code}`) }] : []),
+  ...(city.value ? [{ label: placeName(city.value), to: locUrl(route.path) }] : []),
+])
+
 useSeoMeta({
-  title: computed(() => `${title.value} | 체크인데일리 (Check-in Daily)`),
-  ogTitle: computed(() => `${title.value} | Check-in Daily`),
-  description: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드. 글로벌 항공, 호텔, 여행지 트렌드를 실시간으로 전해드립니다.`),
-  ogDescription: computed(() => `${title.value} - 체크인데일리 공식 뉴스 피드.`),
+  title: () => `${title.value} | Check-in Daily`,
+  ogTitle: () => `${title.value} | Check-in Daily`,
+  description: () => t('list_description', { name: title.value }),
+  ogDescription: () => t('list_description', { name: title.value }),
   ogType: 'website',
   ogUrl: listCanonicalUrl,
-  ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
-  twitterImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
+  ogImage: () => `${siteOrigin.value}/images/og-default.png`,
+  twitterImage: () => `${siteOrigin.value}/images/og-default.png`,
   twitterCard: 'summary_large_image',
 })
 
 useHead(() => ({
-  link: [
-    { rel: 'canonical', href: listCanonicalUrl.value },
-  ],
-  script: [
-    {
-      type: 'application/ld+json',
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: breadcrumbs.value.map((b, idx) => ({
-          '@type': 'ListItem',
-          position: idx + 1,
-          name: b.label,
-          item: `${siteOrigin.value}${b.to}`,
-        })),
-      }),
-    },
-  ],
+  link: [{ rel: 'canonical', href: listCanonicalUrl.value }],
+  script: [{
+    type: 'application/ld+json',
+    innerHTML: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbs.value.map((b, idx) => ({ '@type': 'ListItem', position: idx + 1, name: b.label, item: `${siteOrigin.value}${b.to}` })),
+    }),
+  }],
 }))
 
-const breadcrumbs = computed(() => [
-  { label: 'HOME', to: locUrl('/news') },
-  ...(props.category ? [{ label: (categoryNames[props.category] || props.category).toUpperCase(), to: locUrl(`/news/${props.category}`) }] : []),
-  ...(country.value ? [{ label: country.value.nameKo, to: locUrl(props.category ? `/news/${props.category}/${country.value.code}` : `/news/region/${country.value.code}`) }] : []),
-  ...(city.value ? [{ label: city.value.nameKo, to: locUrl(route.path) }] : []),
-])
-
 async function loadMore() {
-  lastPageCount.value = await store.load({
-    ...filters.value,
-    limit: pageSize,
-    offset: store.articles.length,
-    ...(isRealtime.value ? { sort: 'views' as const } : {}),
-    lang: locale.value,
-  }, false, true)
-}
-
-function formatViews(views = 0) {
-  return new Intl.NumberFormat('ko-KR').format(views)
+  loadingMore.value = true
+  try {
+    lastPageCount.value = await store.load({
+      ...filters.value,
+      limit: pageSize,
+      offset: store.articles.length,
+      ...(isRealtime.value ? { sort: 'views' as const } : {}),
+      lang: locale.value,
+    }, false, true)
+  } finally {
+    loadingMore.value = false
+  }
 }
 </script>
 
 <template>
   <div class="ttr-page-container ttr-listing-root">
-    <!-- Tetherrock Terminal Breadcrumb -->
-    <nav class="ttr-breadcrumb-nav" aria-label="현재 위치">
+    <nav class="ttr-breadcrumb-nav" :aria-label="t('breadcrumb')">
       <template v-for="(item, index) in breadcrumbs" :key="item.label">
         <span v-if="index" class="ttr-bc-sep">/</span>
         <NuxtLink :to="item.to" class="ttr-bc-link">{{ item.label }}</NuxtLink>
       </template>
     </nav>
 
-    <!-- Terminal Section Header Bar -->
     <div class="ttr-list-header-bar">
       <div class="ttr-list-title-group">
         <span class="ttr-color-bar" :class="{ realtime: isRealtime }" />
         <div>
-          <div class="ttr-kicker-tag">
-            <span class="ping-dot" />
-            <span>WIRE INTELLIGENCE</span>
-          </div>
-          <h1 class="ttr-list-page-title">
-            {{ title }}<span v-if="city"> · {{ city.nameKo }}</span><span v-else-if="country"> · {{ country.nameKo }}</span>
-          </h1>
-          <p v-if="isRealtime" class="ttr-realtime-sublabel">
-            ⚡ 독자 실시간 최다 조회순 및 트렌딩 랭킹 (조회수 기준 자동 집계)
-          </p>
+          <h1 class="ttr-list-page-title">{{ title }}</h1>
+          <p v-if="isRealtime" class="ttr-realtime-sublabel">{{ t('ranked_by_views') }}</p>
         </div>
       </div>
-      <div class="ttr-list-count">
-        <span class="count-badge">COUNT</span> {{ store.totalCount || store.articles.length }} ARTICLES
-      </div>
+      <div class="ttr-list-count">{{ t('results_count', { n: formatNumber(store.totalCount || store.articles.length) }) }}</div>
     </div>
 
-    <!-- Tetherrock 2-Column Terminal Layout (Left 68% : Right 32%) -->
     <div class="ttr-highlight-row">
-      <!-- Left: Article cards grid -->
       <section class="ttr-col-main">
-        <div v-if="!store.articles.length" class="ttr-empty-state">
-
-          <p>등록된 뉴스가 없습니다. 새 기사가 동기화되면 즉시 표시됩니다.</p>
+        <div v-if="store.loading && !store.articles.length" class="ttr-card-grid-2" aria-busy="true">
+          <div v-for="n in 4" :key="n" class="skeleton-card"><div class="sk sk-thumb" /><div class="sk sk-line" /><div class="sk sk-line short" /></div>
         </div>
+        <div v-else-if="store.error" class="ttr-empty-state"><p>{{ t(store.error) }}</p></div>
+        <div v-else-if="!store.articles.length" class="ttr-empty-state"><p>{{ t('no_articles') }}</p></div>
         <div v-else class="ttr-card-grid-2">
           <NewsArticleCard
             v-for="(article, idx) in store.articles"
@@ -186,25 +157,26 @@ function formatViews(views = 0) {
             :article="article"
             :rank="isRealtime ? idx + 1 : undefined"
           />
+          <template v-if="loadingMore">
+            <div v-for="n in 2" :key="`sk-${n}`" class="skeleton-card" aria-hidden="true"><div class="sk sk-thumb" /><div class="sk sk-line" /><div class="sk sk-line short" /></div>
+          </template>
         </div>
 
-        <!-- 더보기 버튼 -->
         <div v-if="canLoadMore" class="ttr-load-more-wrap">
-          <button class="ttr-load-more-btn" type="button" @click="loadMore">
-            LOAD MORE WIRE ARCHIVES ↓
+          <button class="ttr-load-more-btn" type="button" :disabled="loadingMore" @click="loadMore">
+            {{ loadingMore ? t('loading') : t('load_more') }}
           </button>
         </div>
       </section>
 
-      <!-- Right: Tetherrock TOP 5 & FX Rates Sidebar -->
       <aside class="ttr-col-side">
-        <div class="ttr-side-widget ttr-topstories-widget">
+        <div v-if="popularArticles.length" class="ttr-side-widget ttr-topstories-widget">
           <div class="ttr-widget-header">
             <div class="ttr-widget-title-wrap">
               <span class="ttr-widget-indicator" />
-              <h3>TOP READ WIRE</h3>
+              <h2>{{ t('most_read') }}</h2>
             </div>
-            <NuxtLink :to="locUrl('/news/realtime')" class="ttr-widget-more">MORE ↗</NuxtLink>
+            <NuxtLink :to="locUrl('/news/realtime')" class="ttr-widget-more">{{ t('more') }} →</NuxtLink>
           </div>
           <ol class="ttr-rank-ordered-list">
             <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="ttr-rank-line">
@@ -214,8 +186,8 @@ function formatViews(views = 0) {
                   <strong class="ttr-rank-text">{{ art.title }}</strong>
                 </NuxtLink>
                 <div class="ttr-rank-submeta">
-                  <span class="ttr-rank-tag">{{ categoryNames[art.category] || art.category }}</span>
-                  <span class="ttr-rank-views">{{ formatViews(art.viewCount) }} VIEWS</span>
+                  <span class="ttr-rank-tag">{{ categoryLabel(art.category) }}</span>
+                  <span class="ttr-rank-views">{{ t('views_count', { n: formatNumber(art.viewCount) }) }}</span>
                 </div>
               </div>
             </li>
@@ -229,6 +201,17 @@ function formatViews(views = 0) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.skeleton-card { display: grid; gap: 10px; }
+.sk { border-radius: 6px; background: linear-gradient(90deg, var(--bg-surface) 25%, var(--border) 50%, var(--bg-surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+.sk-thumb { aspect-ratio: 16 / 10; }
+.sk-line { height: 16px; }
+.sk-line.short { width: 60%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.ttr-load-more-btn:disabled { opacity: 0.6; cursor: progress; }
+.ttr-widget-title-wrap h2 { margin: 0; font-size: 15px; font-family: var(--font-sans); font-weight: 800; }
+</style>
 
 <style scoped>
 .ttr-listing-root {

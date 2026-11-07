@@ -22,7 +22,7 @@ export default defineNitroPlugin((nitroApp) => {
   carrier.hooks.hook('cloudflare:scheduled', async ({ env }: ScheduledHookPayload) => {
     try {
       if (env?.DB) {
-        await executeCronTasks(env.DB as Parameters<typeof executeCronTasks>[0])
+        await executeCronTasks(env.DB as Parameters<typeof executeCronTasks>[0], { env })
       } else {
         console.warn('[ScheduledHook] Scheduled trigger fired without D1 binding — skipping cron tasks')
       }

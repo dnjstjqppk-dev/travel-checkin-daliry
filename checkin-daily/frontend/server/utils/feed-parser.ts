@@ -9,6 +9,7 @@ export interface ParsedFeedItem {
   summary: string
   category: string
   contentHash: string
+  imageUrl: string
 }
 
 function cleanCdataAndXml(text: string): string {
@@ -23,6 +24,24 @@ function cleanCdataAndXml(text: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/** First image URL from media:content / media:thumbnail / image enclosure, if any. */
+export function extractMediaUrl(xml: string): string {
+  const patterns = [
+    /<media:content\b[^>]*\burl=["']([^"']+)["'][^>]*>/i,
+    /<media:thumbnail\b[^>]*\burl=["']([^"']+)["']/i,
+    /<enclosure\b[^>]*\burl=["']([^"']+)["'][^>]*type=["']image\/[^"']+["']/i,
+    /<enclosure\b[^>]*type=["']image\/[^"']+["'][^>]*\burl=["']([^"']+)["']/i,
+  ]
+  for (const pattern of patterns) {
+    const tag = pattern.exec(xml)
+    if (!tag?.[1]) continue
+    if (/medium=["'](?!image)/i.test(tag[0])) continue
+    const url = tag[1].replace(/&amp;/g, '&').trim()
+    if (/^https:\/\//i.test(url)) return url
+  }
+  return ''
 }
 
 export async function computeContentHash(title: string, link: string): Promise<string> {
@@ -60,7 +79,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
 
       if (title && link) {
         const contentHash = await computeContentHash(title, link)
-        items.push({ guid, title, link, pubDate, summary, category, contentHash })
+        items.push({ guid, title, link, pubDate, summary, category, contentHash, imageUrl: extractMediaUrl(entryXml) })
       }
     }
   } else {
@@ -85,7 +104,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
 
       if (title && link) {
         const contentHash = await computeContentHash(title, link)
-        items.push({ guid, title, link, pubDate, summary, category, contentHash })
+        items.push({ guid, title, link, pubDate, summary, category, contentHash, imageUrl: extractMediaUrl(itemXml) })
       }
     }
   }

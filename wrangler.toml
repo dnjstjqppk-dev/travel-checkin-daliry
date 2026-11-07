@@ -17,4 +17,15 @@ directory = "checkin-daily/frontend/.output/public"
 binding = "ASSETS"
 
 [triggers]
+# Every 2 hours: publish due scheduled jobs, ingest feeds, AI-write up to max_generations_per_run stories.
 crons = ["0 */2 * * *"]
+
+# Public (non-secret) runtime vars. When a custom domain is bound, change SITE_URL and
+# NUXT_PUBLIC_SITE_URL to it (e.g. https://checkindaily.com) — canonical tags, sitemaps,
+# RSS and IndexNow all derive from these. Secrets (GEMINI_API_KEY, SESSION_SECRET, CRON_TOKEN,
+# INDEXNOW_KEY, ...) go in `wrangler secret put`, never in this file.
+[vars]
+SITE_URL = "https://travel-checkin-daily.dnjstjqppk.workers.dev"
+NUXT_PUBLIC_SITE_URL = "https://travel-checkin-daily.dnjstjqppk.workers.dev"
+GEMINI_MODEL = "gemini-3.5-flash"
+GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite"

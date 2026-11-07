@@ -24,6 +24,15 @@ export interface Article {
   citations?: Array<{ source_name?: string; source_url?: string; published_date?: string; license_type?: string }>
   factChecks?: Array<{ claim?: string; verification_status?: string }>
   corrections?: Array<{ reason?: string; corrected_at?: string; original_statement?: string; corrected_statement?: string }>
+  tags?: Array<{ slug: string; name: string }>
+  availableLanguages?: string[]
+  keyTakeaways?: string[]
+  metaDescription?: string
+  readingTimeMinutes?: number
+  isBreaking?: boolean
+  isAiGenerated?: boolean
+  prevArticle?: { id: number; title: string; category: string } | null
+  nextArticle?: { id: number; title: string; category: string } | null
 }
 
 export interface Category {
@@ -53,6 +62,7 @@ export interface ArticleFilters {
   country?: string
   city?: string
   search?: string
+  tag?: string
   limit?: number
   offset?: number
   page?: number
@@ -96,6 +106,8 @@ export const useArticlesStore = defineStore('articles', () => {
           ...(filters.country ? { country: filters.country } : {}),
           ...(filters.city ? { city: filters.city } : {}),
           ...(filters.search ? { q: filters.search } : {}),
+          ...(filters.tag ? { tag: filters.tag } : {}),
+          with_meta: 'true',
           ...(filters.page ? { page: filters.page } : {}),
           ...(filters.limit ? { limit: filters.limit, offset: filters.offset || 0 } : {}),
           ...(filters.sort ? { sort: filters.sort } : {}),
@@ -118,7 +130,8 @@ export const useArticlesStore = defineStore('articles', () => {
       }
       return 0
     } catch {
-      error.value = '일시적인 네트워크 지연으로 기사를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+      // i18n key; components render it with t(store.error)
+      error.value = 'load_failed'
       if (!append) articles.value = []
       return 0
     } finally {

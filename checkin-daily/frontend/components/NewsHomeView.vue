@@ -1,561 +1,260 @@
 <script setup lang="ts">
 import type { Article } from '~/stores/articles'
+import { FALLBACK_COVER_IMAGE, categoryCoverImage } from '~/utils/editorial-media'
+import { HREFLANG, LOCALES } from '~/config/locales'
 
-const store = useArticlesStore()
+interface Paged { data: Article[]; total_count: number; total_pages: number; page: number }
+
 const route = useRoute()
-const requestFetch = useRequestFetch()
-const { locale, t, locUrl } = useI18n()
+const apiFetch = useRequestFetch()
+const { locale, t, locUrl, formatDate, formatNumber, categoryLabel } = useI18n()
 
-const categoryNames = computed<Record<string, string>>(() => ({
-  major: t('major'),
-  airline: t('airline'),
-  hotel: t('hotel'),
-  destination: t('destination'),
-  realtime: t('realtime'),
-}))
+const CURATED = ['major', 'airline', 'hotel', 'destination'] as const
+const FEED_PAGE = 12
 
-const activeTab = ref<'all' | 'major' | 'airline' | 'hotel' | 'destination' | 'realtime'>('all')
-const radarFilter = ref<'all' | 'airline' | 'hotel'>('all')
+const searchQuery = computed(() => (typeof route.query.q === 'string' ? route.query.q.trim().slice(0, 100) : ''))
+const searchPage = computed(() => Math.max(1, Number.parseInt(String(route.query.page || '1'), 10) || 1))
 
-const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '')
-const searchPage = computed(() => {
-  const p = route.query.page
-  return typeof p === 'string' ? Math.max(1, parseInt(p, 10) || 1) : 1
-})
+const emptyPage = (): Paged => ({ data: [], total_count: 0, total_pages: 0, page: 1 })
+const list = (query: Record<string, string | number>) =>
+  apiFetch<Paged>('/api/articles', { query: { lang: locale.value, with_meta: 'true', ...query } }).catch(() => null)
 
-await useAsyncData(
-  `news-home-${locale.value}-${searchQuery.value}-${searchPage.value}`,
-  () => store.load({
-    limit: searchQuery.value ? 12 : 24,
-    page: searchQuery.value ? searchPage.value : 1,
-    search: searchQuery.value,
-    lang: locale.value,
-  })
+// Search mode
+const { data: searchData, status: searchStatus } = await useAsyncData(
+  () => `home-search-${locale.value}-${searchQuery.value}-${searchPage.value}`,
+  async () => (searchQuery.value ? (await list({ q: searchQuery.value, page: searchPage.value, limit: FEED_PAGE })) ?? emptyPage() : emptyPage()),
+  { watch: [searchQuery, searchPage], default: emptyPage },
 )
 
-const { data: popularArticles, error: popularLoadError } = await useAsyncData<Article[]>(
-  `news-home-popular-${locale.value}`,
-  () => requestFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }),
-  { default: () => [] },
+// Home mode
+const { data: leadData } = await useAsyncData(
+  () => `home-lead-${locale.value}`,
+  async () => (await list({ page: 1, limit: 5 + FEED_PAGE })) ?? emptyPage(),
+  { default: emptyPage },
+)
+const { data: popular } = await useAsyncData(
+  () => `home-popular-${locale.value}`,
+  () => apiFetch<Article[]>('/api/articles', { query: { limit: 5, sort: 'views', lang: locale.value } }).catch(() => [] as Article[]),
+  { default: () => [] as Article[] },
+)
+const { data: curated } = await useAsyncData(
+  () => `home-curated-${locale.value}`,
+  async () => {
+    const sections = await Promise.all(CURATED.map(async slug => ({ slug, items: ((await list({ category: slug, page: 1, limit: 4 })) ?? emptyPage()).data })))
+    return sections.filter(section => section.items.length)
+  },
+  { default: () => [] as Array<{ slug: string; items: Article[] }> },
 )
 
-watch([searchQuery, searchPage], async ([search, page]) => {
-  await store.load({
-    limit: search ? 12 : 24,
-    page: search ? page : 1,
-    search,
-    lang: locale.value,
-  })
-})
-
-// Tabbed & Category-filtered views
-const filteredTabArticles = computed(() => {
-  if (activeTab.value === 'all') return store.articles
-  return store.articles.filter((a) => a.category === activeTab.value)
-})
-
-const featuredArticle = computed(() => filteredTabArticles.value[0] || store.articles[0])
-const subLeadArticles = computed(() => filteredTabArticles.value.slice(1, 3))
-
-// Radar Column articles (Airlines & Hotels feed)
-const radarArticles = computed(() => {
-  if (radarFilter.value === 'airline') {
-    return store.articles.filter((a) => a.category === 'airline').slice(0, 6)
-  }
-  if (radarFilter.value === 'hotel') {
-    return store.articles.filter((a) => a.category === 'hotel').slice(0, 6)
-  }
-  return store.articles.filter((a) => a.category === 'airline' || a.category === 'hotel').slice(0, 6)
-})
-
-// Bottom stream articles
-const bottomStreamArticles = computed(() => store.articles.slice(3, 15))
-
-function hasCoverImage(article: Article | undefined) {
-  return Boolean(article?.coverImage && (/^https?:\/\//i.test(article.coverImage) || article.coverImage.startsWith('/')))
-}
-
-function formatDate(date: string | null) {
-  if (!date) return 'LATEST WIRE'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Seoul',
-  }).format(new Date(date))
-}
-
-function formatViews(views = 0) {
-  return new Intl.NumberFormat('ko-KR').format(views)
-}
-
-// Newsletter state
-const newsletterEmail = ref('')
-const newsletterSubmitting = ref(false)
-const newsletterMessage = ref('')
-const newsletterSuccess = ref(false)
-
-async function handleNewsletterSubmit() {
-  if (!newsletterEmail.value) return
-  newsletterSubmitting.value = true
+const hero = computed(() => leadData.value.data[0])
+const subLeads = computed(() => leadData.value.data.slice(1, 5))
+const feed = ref<Article[]>([])
+watch(leadData, value => { feed.value = value.data.slice(5) }, { immediate: true })
+const feedOffset = computed(() => 5 + feed.value.length)
+const hasMoreFeed = computed(() => feedOffset.value < leadData.value.total_count)
+const loadingMore = ref(false)
+async function loadMore() {
+  loadingMore.value = true
   try {
-    const res = await $fetch<{ success: boolean; message: string }>('/api/newsletter/subscribe', {
-      method: 'POST',
-      body: { email: newsletterEmail.value },
-    })
-    newsletterSuccess.value = true
-    newsletterMessage.value = res.message || '인텔리전스 뉴스레터 구독이 완료되었습니다.'
-    newsletterEmail.value = ''
-  } catch {
-    newsletterSuccess.value = false
-    newsletterMessage.value = '구독 신청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'
+    const next = await $fetch<Article[]>('/api/articles', { query: { lang: locale.value, limit: FEED_PAGE, offset: feedOffset.value } })
+    const seen = new Set(feed.value.map(item => item.id))
+    feed.value = [...feed.value, ...next.filter(item => !seen.has(item.id))]
   } finally {
-    newsletterSubmitting.value = false
+    loadingMore.value = false
   }
 }
 
-const { origin: siteOrigin } = useSiteDomain()
-const currentLangPrefix = computed(() => locale.value === 'ko' ? '' : `/${locale.value}`)
-const homeCanonicalUrl = computed(() => `${siteOrigin.value}${currentLangPrefix.value}/news`)
+const heroCover = ref('')
+watch(hero, value => {
+  heroCover.value = value?.coverImage && /^(https?:\/\/|\/)/.test(value.coverImage) ? value.coverImage : categoryCoverImage(value?.category || 'major')
+}, { immediate: true })
+function onHeroError() {
+  heroCover.value = heroCover.value === FALLBACK_COVER_IMAGE ? '' : FALLBACK_COVER_IMAGE
+}
 
-useSeoMeta({
-  title: computed(() => locale.value === 'en'
-    ? 'Check-in Daily | Global Travel Intelligence & Newsroom'
-    : '체크인데일리 | 글로벌 항공·호텔·여행지 전문 인텔리전스 뉴스룸'),
-  ogTitle: computed(() => 'Check-in Daily — Global Travel Intelligence & Newsroom'),
-  description: computed(() => t('footer_tagline')),
-  ogDescription: computed(() => t('footer_tagline')),
-  ogImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
-  twitterImage: computed(() => `${siteOrigin.value}/images/og-default.png`),
-  ogType: 'website',
-  ogUrl: homeCanonicalUrl,
-  twitterCard: 'summary_large_image',
+const pageNumbers = computed(() => {
+  const total = searchData.value.total_pages
+  const current = searchPage.value
+  const start = Math.max(1, Math.min(current - 2, total - 4))
+  return Array.from({ length: Math.min(5, total) }, (_, i) => start + i)
 })
+const searchLink = (page: number) => ({ path: locUrl('/news'), query: { q: searchQuery.value, page } })
 
+// Newsletter
+const email = ref('')
+const subscribing = ref(false)
+const newsletterState = ref<'idle' | 'ok' | 'error'>('idle')
+async function subscribe() {
+  if (!email.value) return
+  subscribing.value = true
+  try {
+    await $fetch('/api/newsletter/subscribe', { method: 'POST', body: { email: email.value, lang: locale.value } })
+    newsletterState.value = 'ok'
+    email.value = ''
+  } catch {
+    newsletterState.value = 'error'
+  } finally {
+    subscribing.value = false
+  }
+}
+
+// SEO
+const { origin } = useSiteDomain()
+const prefix = (code: string) => (code === 'ko' ? '' : `/${code}`)
+const canonical = computed(() => `${origin.value}${prefix(locale.value)}/news`)
+useSeoMeta({
+  title: () => (searchQuery.value ? `${t('search_results_for', { q: searchQuery.value })} | Check-in Daily` : t('home_title')),
+  description: () => t('footer_tagline'),
+  ogTitle: () => t('home_title'),
+  ogDescription: () => t('footer_tagline'),
+  ogType: 'website',
+  ogUrl: canonical,
+  ogImage: () => `${origin.value}/images/og-default.png`,
+  twitterCard: 'summary_large_image',
+  robots: () => (searchQuery.value ? 'noindex, follow' : 'index, follow, max-image-preview:large'),
+})
 useHead(() => ({
   link: [
-    { rel: 'canonical', href: homeCanonicalUrl.value },
-    { rel: 'alternate', hreflang: 'ko', href: `${siteOrigin.value}/news` },
-    { rel: 'alternate', hreflang: 'en', href: `${siteOrigin.value}/en/news` },
-    { rel: 'alternate', hreflang: 'zh-Hans', href: `${siteOrigin.value}/zh/news` },
-    { rel: 'alternate', hreflang: 'th', href: `${siteOrigin.value}/th/news` },
-    { rel: 'alternate', hreflang: 'vi', href: `${siteOrigin.value}/vi/news` },
-    { rel: 'alternate', hreflang: 'es', href: `${siteOrigin.value}/es/news` },
-    { rel: 'alternate', hreflang: 'x-default', href: `${siteOrigin.value}/news` },
+    { rel: 'canonical', href: canonical.value },
+    ...LOCALES.map(code => ({ rel: 'alternate' as const, hreflang: HREFLANG[code], href: `${origin.value}${prefix(code)}/news` })),
+    { rel: 'alternate' as const, hreflang: 'x-default', href: `${origin.value}/news` },
   ],
-  script: [
-    {
-      type: 'application/ld+json',
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@graph': [
-          {
-            '@type': 'WebSite',
-            '@id': `${siteOrigin.value}/#website`,
-            name: 'Check-in Daily',
-            url: siteOrigin.value,
-            description: '글로벌 항공, 호텔, 여행지 트렌드를 심층 취재하고 데이터 기반으로 보도하는 독립 여행 저널리즘 미디어',
-            inLanguage: locale.value === 'zh' ? 'zh-Hans' : locale.value,
-            potentialAction: {
-              '@type': 'SearchAction',
-              target: {
-                '@type': 'EntryPoint',
-                urlTemplate: `${siteOrigin.value}${currentLangPrefix.value}/news?q={search_term_string}`,
-              },
-              'query-input': 'required name=search_term_string',
-            },
+  script: [{
+    type: 'application/ld+json',
+    innerHTML: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': `${origin.value}/#website`,
+          name: 'Check-in Daily',
+          url: origin.value,
+          inLanguage: HREFLANG[locale.value],
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: { '@type': 'EntryPoint', urlTemplate: `${origin.value}${prefix(locale.value)}/news?q={search_term_string}` },
+            'query-input': 'required name=search_term_string',
           },
-          {
-            '@type': 'NewsMediaOrganization',
-            '@id': `${siteOrigin.value}/#organization`,
-            name: 'Check-in Daily',
-            url: siteOrigin.value,
-            logo: {
-              '@type': 'ImageObject',
-              url: `${siteOrigin.value}/logo.svg`,
-              width: 310,
-              height: 52,
-            },
-            sameAs: [
-              'https://twitter.com/CheckInDaily',
-              'https://facebook.com/CheckInDailyNews',
-            ],
-            ethicsPolicy: `${siteOrigin.value}/policy`,
-            correctionsPolicy: `${siteOrigin.value}/corrections`,
-          },
-        ],
-      }),
-    },
-  ],
+        },
+        {
+          '@type': 'NewsMediaOrganization',
+          '@id': `${origin.value}/#organization`,
+          name: 'Check-in Daily',
+          url: origin.value,
+          logo: { '@type': 'ImageObject', url: `${origin.value}/logo.svg` },
+          ethicsPolicy: `${origin.value}/policy`,
+          correctionsPolicy: `${origin.value}/corrections`,
+        },
+      ],
+    }),
+  }],
 }))
 </script>
 
 <template>
-  <div class="ttr-page-wrap">
-    <!-- 0. Search Mode Overlay View -->
-    <section v-if="searchQuery" class="ttr-search-view">
-      <div class="ttr-section-header">
-        <div class="title-left">
-          <span class="bar-indicator" />
-          <h2>SEARCH RESULTS: “{{ searchQuery }}”</h2>
-        </div>
-        <span class="count-badge">총 {{ store.totalCount }}건 ({{ store.currentPage }} / {{ store.totalPages }} 페이지)</span>
+  <div class="home container">
+    <!-- Search mode -->
+    <section v-if="searchQuery" class="search" aria-live="polite">
+      <header class="search-head">
+        <h1>{{ t('search_results_for', { q: searchQuery }) }}</h1>
+        <span v-if="searchStatus !== 'pending'" class="count">{{ t('results_count', { n: formatNumber(searchData.total_count) }) }}</span>
+      </header>
+
+      <div v-if="searchStatus === 'pending'" class="grid-3" aria-busy="true">
+        <div v-for="n in 6" :key="n" class="skeleton-card"><div class="sk sk-thumb" /><div class="sk sk-line" /><div class="sk sk-line short" /></div>
       </div>
-
-      <p v-if="store.error" class="ttr-empty">{{ store.error }}</p>
-      <p v-else-if="!store.articles.length" class="ttr-empty">검색 결과가 없습니다.</p>
-      <div v-else>
-        <div class="ttr-card-grid-3">
-          <NewsArticleCard v-for="article in store.articles" :key="article.id" :article="article" />
+      <div v-else-if="!searchData.data.length" class="empty">
+        <p class="empty-title">{{ t('no_results', { q: searchQuery }) }}</p>
+        <p>{{ t('no_results_hint') }}</p>
+        <div class="empty-links">
+          <NuxtLink v-for="slug in CURATED" :key="slug" :to="locUrl(`/news/${slug}`)" class="chip">{{ categoryLabel(slug) }}</NuxtLink>
         </div>
-
-        <nav v-if="store.totalPages > 1" class="ttr-pagination-bar" aria-label="Search Pagination">
-          <NuxtLink
-            v-if="store.currentPage > 1"
-            :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage - 1 } }"
-            class="ttr-page-btn prev"
-          >
-            ← 이전
-          </NuxtLink>
-          <div class="ttr-page-numbers">
-            <NuxtLink
-              v-for="p in store.totalPages"
-              :key="p"
-              :to="{ path: locUrl('/news'), query: { q: searchQuery, page: p } }"
-              class="ttr-page-num"
-              :class="{ active: p === store.currentPage }"
-            >
-              {{ p }}
-            </NuxtLink>
-          </div>
-          <NuxtLink
-            v-if="store.currentPage < store.totalPages"
-            :to="{ path: locUrl('/news'), query: { q: searchQuery, page: store.currentPage + 1 } }"
-            class="ttr-page-btn next"
-          >
-            다음 →
-          </NuxtLink>
+      </div>
+      <template v-else>
+        <div class="grid-3">
+          <NewsArticleCard v-for="item in searchData.data" :key="item.id" :article="item" :highlight="searchQuery" />
+        </div>
+        <nav v-if="searchData.total_pages > 1" class="pagination" :aria-label="t('pagination')">
+          <NuxtLink v-if="searchPage > 1" :to="searchLink(searchPage - 1)" class="page-btn">← {{ t('prev_page') }}</NuxtLink>
+          <NuxtLink v-for="p in pageNumbers" :key="p" :to="searchLink(p)" class="page-num" :class="{ active: p === searchPage }"
+            :aria-current="p === searchPage ? 'page' : undefined">{{ p }}</NuxtLink>
+          <NuxtLink v-if="searchPage < searchData.total_pages" :to="searchLink(searchPage + 1)" class="page-btn">{{ t('next_page') }} →</NuxtLink>
         </nav>
-      </div>
+      </template>
     </section>
 
-    <!-- 1. Tetherrock Style Main Intelligence Terminal -->
+    <!-- Home mode -->
     <template v-else>
-      <!-- NEWS PAGE HEADER (Tetherrock Style) -->
-      <div class="ttr-terminal-header">
-        <div class="header-left">
-          <div class="title-row">
-            <h1 class="main-title">TRAVEL INTELLIGENCE FEED</h1>
-          </div>
-          <p class="sub-title">글로벌 항공 · 호텔 · 여행지 · 여행 정책 뉴스</p>
-        </div>
-        <div class="header-right">
-          <span class="live-pulse-dot" />
-          <span class="live-status-text">최신 게시 기사</span>
-        </div>
-      </div>
+      <h1 class="sr-only">{{ t('home_heading') }}</h1>
 
-      <!-- NEWS SECTION TABS (Tetherrock .news-tab-btn style) -->
-      <div class="ttr-tabs-bar">
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'all' }"
-          @click="activeTab = 'all'"
-        >
-          전체 <span class="tab-count">{{ store.totalCount || 66 }}</span>
-        </button>
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'major' }"
-          @click="activeTab = 'major'"
-        >
-          주요뉴스 <span class="tab-count">15</span>
-        </button>
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'airline' }"
-          @click="activeTab = 'airline'"
-        >
-          항공·노선 <span class="tab-count">18</span>
-        </button>
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'hotel' }"
-          @click="activeTab = 'hotel'"
-        >
-          호텔·스테이 <span class="tab-count">16</span>
-        </button>
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'destination' }"
-          @click="activeTab = 'destination'"
-        >
-          여행지·비자 <span class="tab-count">17</span>
-        </button>
-        <button
-          type="button"
-          class="news-tab-btn"
-          :class="{ active: activeTab === 'realtime' }"
-          @click="activeTab = 'realtime'"
-        >
-          실시간속보 <span class="tab-count">12</span>
-        </button>
-      </div>
+      <div v-if="!hero" class="empty"><p class="empty-title">{{ t('no_articles') }}</p></div>
 
-      <!-- 3 COLUMN INTELLIGENCE GRID (Tetherrock Terminal Structure) -->
-      <div class="ttr-3col-grid">
-        <!-- ── COLUMN 1: TOP LEAD STORY & IN-DEPTH WIRE ── -->
-        <div class="col-lead">
-          <!-- Featured Big Lead Story -->
-          <article v-if="featuredArticle" class="ttr-hero-card">
-            <NuxtLink :to="locUrl(`/news/${featuredArticle.category}/article/${featuredArticle.id}`)" class="hero-link">
-              <div class="hero-image-wrap">
-                <img
-                  v-if="hasCoverImage(featuredArticle)"
-                  :src="featuredArticle.coverImage"
-                  :alt="featuredArticle.title"
-                  fetchpriority="high"
-                >
-                <div v-else class="hero-fallback">
-                  <span>{{ categoryNames[featuredArticle.category] || featuredArticle.category }}</span>
-                </div>
-                <div class="hero-badges">
-                  <span class="cat-badge">
-                    {{ (categoryNames[featuredArticle.category] || featuredArticle.category).toUpperCase() }}
-                  </span>
-                </div>
+      <div v-else class="top-grid">
+        <section class="lead" :aria-label="t('top_story')">
+          <article class="hero">
+            <NuxtLink :to="locUrl(`/news/${hero.category}/article/${hero.id}`)" class="hero-link">
+              <div class="hero-media">
+                <img v-if="heroCover" :src="heroCover" :alt="hero.title" fetchpriority="high" decoding="async" @error="onHeroError">
               </div>
-
-              <div class="hero-body">
-                <div class="hero-meta">
-                  <span class="meta-date">{{ formatDate(featuredArticle.publishedAt) }}</span>
-                  <span class="meta-sep">·</span>
-                  <span class="meta-author">취재 데스크: <strong>{{ (featuredArticle.author || 'Senior Editor').toUpperCase() }}</strong></span>
-                  <span v-if="featuredArticle.viewCount" class="meta-sep">·</span>
-                  <span v-if="featuredArticle.viewCount" class="meta-views">{{ formatViews(featuredArticle.viewCount) }} VIEWS</span>
-                </div>
-
-                <h2 class="hero-headline">{{ featuredArticle.title }}</h2>
-                <p class="hero-summary">{{ featuredArticle.summary }}</p>
-
-                <!-- AI Key Takeaways Box (Tetherrock Card) -->
-                <div v-if="(featuredArticle as any).keyTakeaways?.length" class="hero-takeaways">
-                  <div class="takeaways-header">
-                    <span class="icon">⚡</span>
-                    <span class="label">KEY INTELLIGENCE 3-LINE TAKEAWAYS</span>
-                  </div>
-                  <ul class="takeaways-points">
-                    <li v-for="(pt, pIdx) in (featuredArticle as any).keyTakeaways" :key="pIdx">
-                      {{ pt }}
-                    </li>
-                  </ul>
-                </div>
-
-                <span class="hero-read-cta">
-                  {{ locale === 'en' ? 'READ FULL INVESTIGATION →' : '심층 보도 본문 읽기 →' }}
-                </span>
-              </div>
+              <p class="kicker">{{ categoryLabel(hero.category) }}</p>
+              <h2 class="hero-title">{{ hero.title }}</h2>
+              <p class="hero-summary">{{ hero.summary }}</p>
+              <p class="meta"><time v-if="hero.publishedAt" :datetime="hero.publishedAt">{{ formatDate(hero.publishedAt, true) }}</time></p>
             </NuxtLink>
           </article>
 
-          <!-- Sub-lead 2-Card Row -->
-          <div v-if="subLeadArticles.length" class="sublead-grid">
-            <article v-for="sub in subLeadArticles" :key="sub.id" class="sublead-card">
-              <NuxtLink :to="locUrl(`/news/${sub.category}/article/${sub.id}`)">
-                <div class="sublead-thumb">
-                  <img v-if="hasCoverImage(sub)" :src="sub.coverImage" :alt="sub.title" loading="lazy">
-                  <div v-else class="hero-fallback" />
-                  <span class="sublead-cat">{{ categoryNames[sub.category] || sub.category }}</span>
-                </div>
-                <div class="sublead-body">
-                  <div class="sublead-meta">{{ formatDate(sub.publishedAt) }}</div>
-                  <h3 class="sublead-title">{{ sub.title }}</h3>
-                  <p class="sublead-desc">{{ sub.summary }}</p>
-                </div>
-              </NuxtLink>
-            </article>
-          </div>
-        </div>
+          <ul v-if="subLeads.length" class="subleads">
+            <li v-for="item in subLeads" :key="item.id">
+              <NewsArticleCard :article="item" variant="compact" />
+            </li>
+          </ul>
+        </section>
 
-        <!-- ── COLUMN 2: AVIATION & HOTEL RADAR PANEL (Tetherrock .news-section-panel) ── -->
-        <div class="col-radar">
-          <div class="news-section-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-
-                <span>실시간 항공 &amp; 호텔 레이더</span>
-              </div>
-              <span class="panel-live-tag">
-                <span class="pulse-mini" />
-                <span>NEWS FEED</span>
-              </span>
-            </div>
-
-            <!-- Filter Chips -->
-            <div class="filter-chips">
-              <button
-                type="button"
-                class="nf-chip"
-                :class="{ on: radarFilter === 'all' }"
-                @click="radarFilter = 'all'"
-              >
-                전체
-              </button>
-              <button
-                type="button"
-                class="nf-chip"
-                :class="{ on: radarFilter === 'airline' }"
-                @click="radarFilter = 'airline'"
-              >
-               항공·노선
-              </button>
-              <button
-                type="button"
-                class="nf-chip"
-                :class="{ on: radarFilter === 'hotel' }"
-                @click="radarFilter = 'hotel'"
-              >
-               호텔·스테이
-              </button>
-            </div>
-
-            <!-- High-Density Feed Items -->
-            <div class="radar-feed-list">
-              <div v-for="item in radarArticles" :key="item.id" class="radar-feed-item">
-                <NuxtLink :to="locUrl(`/news/${item.category}/article/${item.id}`)" class="radar-feed-link">
-                  <div class="radar-feed-text">
-                    <div class="radar-feed-meta">
-                      <span class="cat-pill" :class="item.category">{{ categoryNames[item.category] || item.category }}</span>
-                      <span class="time">{{ formatDate(item.publishedAt) }}</span>
-                    </div>
-                    <h4 class="radar-feed-title">{{ item.title }}</h4>
-                    <p class="radar-feed-snippet">{{ item.summary }}</p>
-                  </div>
-                  <div v-if="hasCoverImage(item)" class="radar-feed-thumb">
-                    <img :src="item.coverImage" :alt="item.title" loading="lazy">
-                  </div>
-                </NuxtLink>
-              </div>
-            </div>
-
-            <div class="panel-footer">
-              <NuxtLink :to="locUrl('/news/airline')" class="panel-more-link">
-                항공·호텔 전문 피드 전체 보기 ↗
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── COLUMN 3: TERMINAL SIDEBAR (FX, TOP RANKING, PARTNER ADS) ── -->
-        <div class="col-sidebar">
-          <!-- Widget 1: 실시간 여행 환율 지표 (Live FX Rates) -->
-          <div class="side-panel-wrap">
-            <CurrencyRates />
-          </div>
-
-          <!-- Widget 2:실시간 랭킹 (Top Stories 1~5) -->
-          <div class="side-panel-wrap top-stories-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-
-                <span>실시간 인기 기사 TOP 5</span>
-              </div>
-              <NuxtLink :to="locUrl('/news/realtime')" class="panel-more-link">MORE ↗</NuxtLink>
-            </div>
-            <ol class="rank-list">
-              <li v-for="(art, idx) in popularArticles.slice(0, 5)" :key="art.id" class="rank-item">
-                <span class="rank-badge" :class="{ 'top-three': idx < 3 }">{{ idx + 1 }}</span>
-                <div class="rank-info">
-                  <NuxtLink :to="locUrl(`/news/${art.category}/article/${art.id}`)" class="rank-title">
-                    {{ art.title }}
-                  </NuxtLink>
-                  <div class="rank-meta">
-                    <span class="cat-tag">{{ categoryNames[art.category] || art.category }}</span>
-                    <span class="views">{{ formatViews(art.viewCount) }} views</span>
-                  </div>
-                </div>
+        <aside class="rail">
+          <section v-if="popular.length" class="most-read">
+            <h2 class="section-title">{{ t('most_read') }}</h2>
+            <ol>
+              <li v-for="(item, index) in popular" :key="item.id">
+                <span class="rank">{{ String(index + 1).padStart(2, '0') }}</span>
+                <NuxtLink :to="locUrl(`/news/${item.category}/article/${item.id}`)">{{ item.title }}</NuxtLink>
               </li>
             </ol>
-          </div>
+          </section>
 
-          <!-- Widget 3:여행자 공식 제휴 혜택 (Partners CTA) -->
-          <div class="side-panel-wrap partner-cta-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-
-                <span>여행자 공식 혜택 레이더</span>
-              </div>
-            </div>
-            <div class="partner-cards">
-              <a href="https://tripscanner.com" target="_blank" rel="sponsored noopener noreferrer" class="partner-card">
-                <div class="partner-info">
-                  <span class="p-badge">최저가 검색</span>
-                  <strong>TripScanner</strong>
-                  <p>전 세계 항공권 &amp; 5성급 호텔 실시간 가격 비교</p>
-                </div>
-                <span class="p-cta">비교하기 ↗</span>
-              </a>
-
-              <a href="https://getfortrip.com" target="_blank" rel="sponsored noopener noreferrer" class="partner-card getfortrip">
-                <div class="partner-info">
-                  <span class="p-badge tour">투어·패스</span>
-                  <strong>GetForTrip</strong>
-                  <p>태국 DTV 비자 · 공항 패스트트랙 · eSIM 즉시 발급</p>
-                </div>
-                <span class="p-cta">예약하기 ↗</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Widget 4: 뉴스레터 구독 위젯 -->
-          <div class="side-panel-wrap newsletter-panel">
-            <div class="panel-header">
-              <div class="panel-title">
-
-                <span>INTELLIGENCE BRIEFING</span>
-              </div>
-            </div>
-            <div class="newsletter-body">
-              <p class="desc">글로벌 항공 노선, 호텔 특가, 비자 규정 변경 알림을 매주 가장 먼저 전달합니다.</p>
-              <div v-if="newsletterSuccess" class="success-box">
-                ✓ {{ newsletterMessage }}
-              </div>
-              <form v-else class="newsletter-form" @submit.prevent="handleNewsletterSubmit">
-                <input
-                  v-model="newsletterEmail"
-                  type="email"
-                  required
-                  placeholder="name@example.com"
-                  aria-label="이메일 주소"
-                >
-                <button type="submit" :disabled="newsletterSubmitting">
-                  {{ newsletterSubmitting ? '신청 중...' : '구독 ↗' }}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+          <section class="newsletter">
+            <h2 class="section-title">{{ t('newsletter_title') }}</h2>
+            <p>{{ t('newsletter_desc') }}</p>
+            <form @submit.prevent="subscribe">
+              <label class="sr-only" for="newsletter-email">{{ t('email_placeholder') }}</label>
+              <input id="newsletter-email" v-model="email" type="email" required autocomplete="email" :placeholder="t('email_placeholder')">
+              <button type="submit" :disabled="subscribing">{{ t('subscribe') }}</button>
+            </form>
+            <p v-if="newsletterState === 'ok'" class="note ok" role="status">{{ t('newsletter_success') }}</p>
+            <p v-else-if="newsletterState === 'error'" class="note err" role="alert">{{ t('newsletter_error') }}</p>
+          </section>
+        </aside>
       </div>
 
-      <!-- ── BOTTOM STREAM: ALL CATEGORIES COMPACT ARCHIVE ── -->
-      <section v-if="bottomStreamArticles.length" class="ttr-bottom-stream">
-        <div class="stream-header">
-          <div class="title-left">
-            <span class="stream-bar" />
-            <h3>LATEST INVESTIGATIVE ARCHIVES</h3>
-          </div>
-          <NuxtLink :to="locUrl('/news/major')" class="stream-more">
-            전체 아카이브 더보기 →
-          </NuxtLink>
+      <section v-for="section in curated" :key="section.slug" class="curation">
+        <div class="section-head">
+          <h2 class="section-title">{{ categoryLabel(section.slug) }}</h2>
+          <NuxtLink :to="locUrl(`/news/${section.slug}`)">{{ t('more') }} →</NuxtLink>
         </div>
+        <div class="grid-4">
+          <NewsArticleCard v-for="item in section.items" :key="item.id" :article="item" />
+        </div>
+      </section>
 
-        <div class="ttr-card-grid-3">
-          <NewsArticleCard v-for="art in bottomStreamArticles" :key="art.id" :article="art" />
+      <section v-if="feed.length" class="latest">
+        <div class="section-head"><h2 class="section-title">{{ t('latest_news') }}</h2></div>
+        <div class="grid-3">
+          <NewsArticleCard v-for="item in feed" :key="item.id" :article="item" />
+          <template v-if="loadingMore">
+            <div v-for="n in 3" :key="`sk-${n}`" class="skeleton-card" aria-hidden="true"><div class="sk sk-thumb" /><div class="sk sk-line" /><div class="sk sk-line short" /></div>
+          </template>
+        </div>
+        <div v-if="hasMoreFeed" class="load-more">
+          <button type="button" :disabled="loadingMore" @click="loadMore">{{ loadingMore ? t('loading') : t('load_more') }}</button>
         </div>
       </section>
     </template>
@@ -563,854 +262,77 @@ useHead(() => ({
 </template>
 
 <style scoped>
-.ttr-page-wrap {
-  width: 100%;
-}
-
-/* 0. Header Status Banner (Tetherrock Style) */
-.ttr-terminal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  background: var(--bg-card, #181927);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 12px;
-  margin-bottom: 14px;
-}
-
-.header-left .title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pulse-icon {
-  font-size: 18px;
-}
-
-.main-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-primary, #ffffff);
-  letter-spacing: -0.2px;
-}
-
-.sub-title {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: var(--text-muted, #8e99aa);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-muted, #8e99aa);
-}
-
-.live-pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: blink 2s infinite;
-}
-
-/* Section Tabs (.news-tab-btn) */
-.ttr-tabs-bar {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border, #23253a);
-  margin-bottom: 18px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.ttr-tabs-bar::-webkit-scrollbar {
-  display: none;
-}
-
-.news-tab-btn {
-  padding: 9px 18px;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted, #8e99aa);
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: -1px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.15s ease;
-}
-
-.news-tab-btn:hover {
-  color: var(--text-primary);
-}
-
-.news-tab-btn.active {
-  border-bottom-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.tab-count {
-  background: var(--accent-dim);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 10px;
-}
-
-/* 3-Column Intelligence Grid */
-.ttr-3col-grid {
-  display: grid;
-  grid-template-columns: 1.35fr 1fr 340px;
-  gap: 16px;
-  align-items: start;
-}
-
-/* Col 1: Lead Hero Card */
-.ttr-hero-card {
-  background: var(--bg-card, #181927);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  transition: border-color 0.2s;
-}
-
-.ttr-hero-card:hover {
-  border-color: var(--accent);
-}
-
-.hero-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.hero-image-wrap {
-  position: relative;
-  height: 380px;
-  width: 100%;
-  overflow: hidden;
-  background: var(--bg-input, #11121d);
-}
-
-.hero-image-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.4s ease;
-}
-
-.ttr-hero-card:hover .hero-image-wrap img {
-  transform: scale(1.03);
-}
-
-.hero-fallback {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #13141f 0%, #1c2138 100%);
-  color: var(--text-dim, #7d8696);
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.hero-badges {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 2;
-}
-
-.cat-badge {
-  background: rgba(13, 14, 26, 0.85);
-  backdrop-filter: blur(4px);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-}
-
-.eeat-badge {
-  background: rgba(13, 14, 26, 0.85);
-  backdrop-filter: blur(4px);
-  color: #ffffff;
-  border: 1px solid var(--border, #23253a);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.hero-body {
-  padding: 20px 22px;
-}
-
-.hero-meta {
-  font-size: 11.5px;
-  color: var(--text-muted, #8e99aa);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.meta-sep {
-  color: var(--text-dim, #5a6474);
-}
-
-.hero-headline {
-  margin: 0 0 10px;
-  font-size: clamp(22px, 2.5vw, 28px);
-  font-weight: 800;
-  line-height: 1.35;
-  color: var(--text-primary, #f0f4f8);
-  letter-spacing: -0.3px;
-  transition: color 0.15s;
-}
-
-.ttr-hero-card:hover .hero-headline {
-  color: var(--accent);
-}
-
-.hero-summary {
-  margin: 0 0 16px;
-  font-size: 13.5px;
-  color: var(--text-secondary, #d2d9e3);
-  line-height: 1.65;
-}
-
-.hero-takeaways {
-  background: var(--bg-input, #11121d);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-}
-
-.takeaways-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.takeaways-points {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.takeaways-points li {
-  font-size: 12px;
-  color: var(--text-secondary, #d2d9e3);
-  line-height: 1.5;
-  position: relative;
-  padding-left: 14px;
-}
-
-.takeaways-points li::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-  font-weight: 900;
-}
-
-.hero-read-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-/* Sub-lead 2-Card Grid */
-.sublead-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.sublead-card {
-  background: var(--bg-card, #181927);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 10px;
-  overflow: hidden;
-  transition: all 0.2s;
-}
-
-.sublead-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.sublead-card a {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.sublead-thumb {
-  height: 135px;
-  position: relative;
-  overflow: hidden;
-  background: var(--bg-input, #11121d);
-}
-
-.sublead-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.sublead-cat {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  background: rgba(13, 14, 26, 0.85);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.sublead-body {
-  padding: 12px 14px;
-}
-
-.sublead-meta {
-  font-size: 10.5px;
-  color: var(--text-muted, #8e99aa);
-  margin-bottom: 4px;
-}
-
-.sublead-title {
-  margin: 0 0 6px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-primary, #f0f4f8);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.sublead-desc {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary, #d2d9e3);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Col 2: Aviation & Hotel Radar Panel */
-.news-section-panel {
-  background: var(--bg-card, #181927);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.panel-header {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border, #23253a);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary, #ffffff);
-  letter-spacing: -0.2px;
-}
-
-.panel-live-tag {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.pulse-mini {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: blink 2s infinite;
-}
-
-.filter-chips {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border, #23253a);
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.nf-chip {
-  padding: 4px 10px;
-  border-radius: 14px;
-  border: 1px solid var(--border, #23253a);
-  background: var(--bg-input, #11121d);
-  color: var(--text-muted, #8e99aa);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.nf-chip.on {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.radar-feed-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.radar-feed-item {
-  border-bottom: 1px solid var(--border, #23253a);
-  transition: background 0.15s;
-}
-
-.radar-feed-item:last-child {
-  border-bottom: none;
-}
-
-.radar-feed-item:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.radar-feed-link {
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  text-decoration: none;
-  color: inherit;
-}
-
-.radar-feed-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.radar-feed-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  color: var(--text-muted, #8e99aa);
-  margin-bottom: 4px;
-}
-
-.cat-pill {
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-weight: 700;
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.cat-pill.airline {
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.cat-pill.hotel {
-  background: var(--amber-dim);
-  color: var(--amber);
-}
-
-.radar-feed-title {
-  margin: 0 0 4px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary, #f0f4f8);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.radar-feed-link:hover .radar-feed-title {
-  color: var(--accent);
-}
-
-.radar-feed-snippet {
-  margin: 0;
-  font-size: 11.5px;
-  color: var(--text-muted, #8e99aa);
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.radar-feed-thumb {
-  width: 68px;
-  height: 52px;
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.radar-feed-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.panel-footer {
-  padding: 10px 16px;
-  border-top: 1px solid var(--border, #23253a);
-  text-align: center;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.panel-more-link {
-  color: var(--accent);
-  font-size: 11.5px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-/* Col 3: Terminal Sidebar */
-.col-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.side-panel-wrap {
-  background: var(--bg-card, #181927);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Top 5 Ranking Panel */
-.rank-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.rank-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border, #23253a);
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.rank-item:last-child {
-  border-bottom: none;
-}
-
-.rank-badge {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--text-muted, #8e99aa);
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: var(--bg-input, #11121d);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.rank-badge.top-three {
-  color: var(--accent);
-  background: var(--accent-dim);
-  border: 1px solid var(--accent);
-}
-
-.rank-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.rank-title {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-primary, #f0f4f8);
-  line-height: 1.4;
-  text-decoration: none;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.rank-title:hover {
-  color: var(--accent);
-}
-
-.rank-meta {
-  margin-top: 4px;
-  font-size: 10.5px;
-  color: var(--text-dim, #7d8696);
-  display: flex;
-  gap: 8px;
-}
-
-.cat-tag {
-  color: var(--accent);
-}
-
-/* Partner Benefits Panel */
-.partner-cards {
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.partner-card {
-  background: var(--bg-input, #11121d);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  text-decoration: none;
-  color: inherit;
-  transition: all 0.15s;
-}
-
-.partner-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.partner-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.p-badge {
-  font-size: 9px;
-  font-weight: 800;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 1px 4px;
-  border-radius: 3px;
-  width: fit-content;
-}
-
-.p-badge.tour {
-  color: var(--amber);
-  background: var(--amber-dim);
-}
-
-.partner-info strong {
-  font-size: 13px;
-  color: var(--text-primary, #f0f4f8);
-}
-
-.partner-info p {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-muted, #8e99aa);
-}
-
-.p-cta {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-/* Newsletter Panel */
-.newsletter-body {
-  padding: 14px 16px;
-}
-
-.newsletter-body .desc {
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: var(--text-muted, #8e99aa);
-  line-height: 1.5;
-}
-
-.newsletter-form {
-  display: flex;
-  gap: 6px;
-}
-
-.newsletter-form input {
-  flex: 1;
-  background: var(--bg-input, #11121d);
-  border: 1px solid var(--border, #23253a);
-  border-radius: 6px;
-  padding: 8px 10px;
-  color: var(--text-primary, #f0f4f8);
-  font-size: 12px;
-  outline: none;
-}
-
-.newsletter-form input:focus {
-  border-color: var(--accent);
-}
-
-.newsletter-form button {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: 6px;
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.success-box {
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Bottom Stream Section */
-.ttr-bottom-stream {
-  margin-top: 40px;
-}
-
-.stream-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border, #23253a);
-  padding-bottom: 12px;
-  margin-bottom: 18px;
-}
-
-.stream-header .title-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stream-bar {
-  width: 4px;
-  height: 16px;
-  background: var(--accent);
-  border-radius: 2px;
-}
-
-.stream-header h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-primary, #ffffff);
-  letter-spacing: 0.3px;
-}
-
-.stream-more {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.ttr-card-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-/* Responsive Rules */
-@media (max-width: 1200px) {
-  .ttr-3col-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .col-sidebar {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .ttr-3col-grid {
-    grid-template-columns: 1fr;
-  }
-  .col-sidebar {
-    grid-template-columns: 1fr;
-  }
-  .sublead-grid {
-    grid-template-columns: 1fr;
-  }
-  .ttr-card-grid-3 {
-    grid-template-columns: 1fr;
-  }
-  .hero-image-wrap {
-    height: 240px;
-  }
+.home { padding-top: 28px; padding-bottom: 80px; }
+.section-title { margin: 0; font-family: var(--font-sans); font-size: 19px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--text-primary); }
+.section-head a { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+.top-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; }
+.lead { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 28px; }
+.hero-link { display: grid; gap: 10px; color: inherit; }
+.hero-media { aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; background: var(--bg-surface); }
+.hero-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kicker { margin: 6px 0 0; font-size: 13px; font-weight: 800; color: var(--accent); }
+.hero-title { margin: 0; font-family: var(--font-display); font-size: clamp(26px, 3vw, 34px); line-height: 1.25; color: var(--text-primary); word-break: keep-all; overflow-wrap: anywhere; }
+.hero-link:hover .hero-title { color: var(--accent); }
+.hero-summary { margin: 0; font-size: 16.5px; line-height: 1.65; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.meta { margin: 0; font-size: 13px; color: var(--text-muted); }
+.subleads { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; }
+.subleads li { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.subleads li:first-child { padding-top: 0; }
+
+.rail { position: sticky; top: 150px; display: grid; gap: 28px; }
+.most-read ol { list-style: none; margin: 12px 0 0; padding: 0; }
+.most-read li { display: grid; grid-template-columns: 34px 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 15px; line-height: 1.45; font-weight: 650; color: var(--text-primary); }
+.most-read .rank { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--accent); }
+.most-read a:hover { color: var(--accent); }
+.newsletter { padding: 20px; border-radius: 8px; background: var(--bg-surface); }
+.newsletter p { margin: 8px 0 12px; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.newsletter form { display: grid; gap: 8px; }
+.newsletter input { height: 42px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); }
+.newsletter button, .load-more button { height: 42px; padding: 0 18px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; }
+.newsletter button:disabled, .load-more button:disabled { opacity: 0.6; cursor: progress; }
+.note { margin: 8px 0 0 !important; font-size: 13px !important; }
+.note.ok { color: var(--accent) !important; }
+.note.err { color: var(--red) !important; }
+
+.curation, .latest { margin-top: 56px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 22px; }
+.load-more { display: flex; justify-content: center; margin-top: 32px; }
+
+.search-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; margin-bottom: 24px; }
+.search-head h1 { margin: 0; font-family: var(--font-display); font-size: 28px; color: var(--text-primary); }
+.count { color: var(--text-muted); font-size: 15px; }
+.empty { padding: 56px 20px; text-align: center; border: 1px dashed var(--border-strong); border-radius: 8px; color: var(--text-secondary); }
+.empty-title { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.empty-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+.chip { padding: 7px 14px; border-radius: 999px; background: var(--bg-surface); font-size: 14px; font-weight: 700; }
+.chip:hover { color: var(--accent); }
+.pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 36px; }
+.page-btn, .page-num { min-width: 40px; height: 40px; display: inline-grid; place-items: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; font-weight: 700; font-size: 14px; }
+.page-num.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.page-btn:hover, .page-num:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.skeleton-card { display: grid; gap: 10px; }
+.sk { border-radius: 6px; background: linear-gradient(90deg, var(--bg-surface) 25%, var(--border) 50%, var(--bg-surface) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+.sk-thumb { aspect-ratio: 16 / 10; }
+.sk-line { height: 16px; }
+.sk-line.short { width: 60%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+@media (max-width: 1100px) {
+  .top-grid { grid-template-columns: 1fr; }
+  .rail { position: static; grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .lead { grid-template-columns: 1fr; }
+  .rail { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .home { padding-top: 18px; }
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
 }
 </style>
