@@ -15,11 +15,12 @@ interface SeoCheckItem {
 }
 
 const seoChecklist = ref<SeoCheckItem[]>([
-  { item: 'Google News XML 사이트맵', url: '/sitemap.xml', desc: 'Google 뉴스 표준 네임스페이스 및 최근 2일 이내 발행 기사 우선 색인', kind: 'endpoint', marker: ['<urlset', '<sitemapindex'], status: 'PENDING', detail: '검사 대기 중' },
+  { item: 'XML 사이트맵 인덱스', url: '/sitemap.xml', desc: '정적 페이지·기사(번역본 hreflang 포함)·뉴스 사이트맵 인덱스', kind: 'endpoint', marker: ['<sitemapindex', '<urlset'], status: 'PENDING', detail: '검사 대기 중' },
+  { item: 'Google News 사이트맵', url: '/news-sitemap.xml', desc: 'Google 뉴스 표준 네임스페이스 및 최근 2일 이내 발행 기사', kind: 'endpoint', marker: ['sitemap-news/0.9'], status: 'PENDING', detail: '검사 대기 중' },
   { item: 'RSS 2.0 뉴스 배포 피드', url: '/rss.xml', desc: '글로벌 뉴스 집계기 및 피드 리더용 실시간 기사 피드', kind: 'endpoint', marker: ['<rss', '<feed'], status: 'PENDING', detail: '검사 대기 중' },
   { item: '검색로봇 지침 (robots.txt)', url: '/robots.txt', desc: '검색엔진 크롤러 허용 및 sitemap.xml 자동 인덱싱 연계', kind: 'endpoint', marker: ['User-agent', 'Sitemap'], status: 'PENDING', detail: '검사 대기 중' },
   { item: 'NewsArticle Schema.org JSON-LD', url: '/news (표본 실측)', desc: 'SSR HTML 내 application/ld+json 구조화 데이터 확인', kind: 'page', sampleUrl: '/news', marker: ['application/ld+json'], status: 'PENDING', detail: '검사 대기 중' },
-  { item: '다국어 hreflang 태그 (6개 국어)', url: '/news (표본 실측)', desc: 'ko, en, zh-Hans, th, vi, es 및 x-default 대체 언어 연결', kind: 'page', sampleUrl: '/news', marker: ['hreflang="ko"', 'hreflang="x-default"'], status: 'PENDING', detail: '검사 대기 중' },
+  { item: '다국어 hreflang 태그 (7개 국어)', url: '/news (표본 실측)', desc: 'ko, en, ja, zh-Hans, th, vi, es 및 x-default 대체 언어 연결', kind: 'page', sampleUrl: '/news', marker: ['hreflang="ko"', 'hreflang="ja"', 'hreflang="x-default"'], status: 'PENDING', detail: '검사 대기 중' },
   { item: 'OpenGraph & Twitter Card', url: '/news (표본 실측)', desc: 'og:title, og:description, og:image, twitter:card 지원', kind: 'page', sampleUrl: '/news', marker: ['og:title', 'twitter:card'], status: 'PENDING', detail: '검사 대기 중' },
 ])
 
@@ -46,11 +47,9 @@ async function checkEndpoint(item: SeoCheckItem) {
 async function checkPage(item: SeoCheckItem, pageCache: Map<string, string>) {
   const target = item.sampleUrl || '/news'
   try {
-    let html = pageCache.get(target)
-    if (html === undefined) {
-      html = await $fetch<string>(target, { responseType: 'text' })
-      pageCache.set(target, html)
-    }
+    const cached = pageCache.get(target)
+    const html: string = cached ?? String(await $fetch<string>(target, { responseType: 'text' }))
+    if (cached === undefined) pageCache.set(target, html)
     const missing = (item.marker || []).filter((m) => !html.includes(m))
     if (missing.length === 0) {
       item.status = 'PASS'

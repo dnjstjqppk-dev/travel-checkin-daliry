@@ -1,5 +1,6 @@
 {
   "cSpell.enabled": true,
-  "cSpell.configFile": "${workspaceFolder}/cspell.json"
+  "cSpell.configFile": "${workspaceFolder}/cspell.json",
+  "typescript.tsdk": "checkin-daily/frontend/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
-
