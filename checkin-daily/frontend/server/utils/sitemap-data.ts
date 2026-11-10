@@ -17,10 +17,12 @@ const languages: Record<string, string> = Object.fromEntries(PREFIXED_LOCALES.ma
 export async function articleSitemap(database: D1Database, base: string, page: number): Promise<string> {
   const count = await articleCount(database)
   if (page > Math.max(1, Math.ceil(count / articleShardSize))) throw createError({ statusCode: 404, statusMessage: 'Sitemap page not found' })
+  // One grouped join instead of a correlated subquery per article row.
   const rows = await d1All<SitemapRow>(database, `SELECT a.id, a.category, a.published_at, a.updated_at,
-    (SELECT group_concat(t.lang) FROM article_translations t WHERE t.article_id = a.id
-      AND trim(t.title) <> '' AND trim(t.content) <> '') AS languages
-    FROM articles a WHERE ${publicArticleSql} ORDER BY a.id LIMIT ? OFFSET ?`, articleShardSize, (page - 1) * articleShardSize)
+    group_concat(t.lang) AS languages
+    FROM articles a LEFT JOIN article_translations t ON t.article_id = a.id
+      AND trim(t.title) <> '' AND trim(t.content) <> ''
+    WHERE ${publicArticleSql} GROUP BY a.id ORDER BY a.id LIMIT ? OFFSET ?`, articleShardSize, (page - 1) * articleShardSize)
   const nodes = rows.map(row => {
     const variants = [{ prefix: '', lang: 'ko' }, ...(row.languages || '').split(',')
       .filter(lang => languages[lang]).map(lang => ({ prefix: `/${lang}`, lang: languages[lang]! }))]

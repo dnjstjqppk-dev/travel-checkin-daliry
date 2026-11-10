@@ -17,13 +17,13 @@ export async function newsFeed(event: H3Event, format: 'rss' | 'atom', categoryO
   }
   const database = getD1Database(event)
   if (!database) throw createError({ statusCode: 503, statusMessage: 'Database unavailable' })
-  const base = await resolveBaseUrl(event)
   const translated = lang !== 'ko'
   const filter = category === 'breaking' ? ' AND a.is_breaking = 1' : category && category !== 'latest' ? ' AND a.category = ?' : ''
   // Feed readers poll aggressively; serve repeats from the per-isolate cache.
   setResponseHeader(event, 'Cache-Control', 'public, max-age=900, s-maxage=900, stale-while-revalidate=1800')
   setResponseHeader(event, 'Content-Type', `application/${format === 'rss' ? 'rss' : 'atom'}+xml; charset=utf-8`)
   return cachedPublic(event, { ttlMs: 900_000, swrMs: 1_800_000 }, async () => {
+  const base = await resolveBaseUrl(event)
   const rows = await d1All<FeedRow>(database, `SELECT a.id, ${translated ? 't.title, t.summary' : 'a.title, a.summary'},
     a.category, a.author, a.published_at, a.updated_at, a.source_name, a.source_url FROM articles a
     ${translated ? "JOIN article_translations t ON t.article_id = a.id AND t.lang = ? AND trim(t.title) <> '' AND trim(t.content) <> ''" : ''}

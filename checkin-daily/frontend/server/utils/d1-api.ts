@@ -305,22 +305,19 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const category = canonicalCategory(normalizeSlug(url.searchParams.get('category') ?? ''))
     const condition = category ? `a.id = ? AND ${publicArticleSql} AND a.category = ?` : `a.id = ? AND ${publicArticleSql}`
     const values: Array<string | number> = category ? [id, category] : [id]
-    await trackArticleView(event, database, id, category || undefined)
     // Misses (null) are never cached, so newly published stories appear at once.
     const article = await cachedPublic(event, articleCache, () => getArticle(database, condition, lang, ...values))
-    return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
+    if (!article) return respond(event, { error: 'article not found' }, 404)
+    // Track only after confirming the story exists: 404 probes must not write analytics rows.
+    await trackArticleView(event, database, id, category || undefined)
+    return respond(event, article)
   }
   if (method === 'GET' && path.length === 1 && !admin) {
     const slug = normalizeSlug(path[0] ?? '')
-    const existing = await d1First<{ id: number }>(
-      database,
-      `SELECT a.id FROM articles a WHERE a.slug = ? AND ${publicArticleSql}`,
-      slug,
-    )
-    if (!existing) return respond(event, { error: 'article not found' }, 404)
-    await trackArticleView(event, database, existing.id)
     const article = await cachedPublic(event, articleCache, () => getArticle(database, `a.slug = ? AND ${publicArticleSql}`, lang, slug))
-    return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
+    if (!article) return respond(event, { error: 'article not found' }, 404)
+    await trackArticleView(event, database, (article as unknown as { id: number }).id)
+    return respond(event, article)
   }
   if (method === 'GET' && path.length === 1 && admin) {
     const id = Number(path[0] ?? '')
@@ -389,16 +386,20 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
 
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''
 
-  // Total count calculation
-  const countRow = await d1First<{ count: number }>(
-    database,
-    `SELECT COUNT(DISTINCT a.id) AS count FROM articles a ${where}`,
-    ...values
-  ).catch(() => ({ count: 0 }))
-  const totalCount = countRow?.count ?? 0
-
   const pageParam = url.searchParams.get('page')
   const hasPage = pageParam !== null
+  const wantsMeta = hasPage || url.searchParams.get('with_meta') === 'true'
+
+  // The full-table COUNT exists only for paginated responses; bare-array
+  // callers (ticker, related, most-read) never read totals.
+  const countRow = wantsMeta
+    ? await d1First<{ count: number }>(
+      database,
+      `SELECT COUNT(DISTINCT a.id) AS count FROM articles a ${where}`,
+      ...values,
+    ).catch(() => ({ count: 0 }))
+    : null
+  const totalCount = countRow?.count ?? 0
   let page = 1
   if (hasPage) {
     page = Math.max(1, parseInt(pageParam, 10) || 1)
@@ -428,10 +429,12 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
 
   const totalPages = limit > 0 ? Math.ceil(totalCount / limit) : 1
 
-  setResponseHeader(event, 'X-Total-Count', String(totalCount))
-  setResponseHeader(event, 'X-Total-Pages', String(totalPages))
-  setResponseHeader(event, 'X-Current-Page', String(page))
-  setResponseHeader(event, 'X-Page-Limit', String(limit > 0 ? limit : totalCount))
+  if (wantsMeta) {
+    setResponseHeader(event, 'X-Total-Count', String(totalCount))
+    setResponseHeader(event, 'X-Total-Pages', String(totalPages))
+    setResponseHeader(event, 'X-Current-Page', String(page))
+    setResponseHeader(event, 'X-Page-Limit', String(limit > 0 ? limit : totalCount))
+  }
 
   const sort = !admin && url.searchParams.get('sort') === 'views'
     ? 'a.view_count DESC, a.published_at DESC, a.id DESC'
@@ -465,7 +468,7 @@ async function listArticles(event: H3Event, database: D1Database, url: URL, admi
   )
   const articles = groupArticles(rows)
 
-  if (hasPage || url.searchParams.get('with_meta') === 'true') {
+  if (wantsMeta) {
     return {
       data: articles,
       page,
@@ -515,34 +518,36 @@ async function getArticle(
   if (article && typeof article === 'object') {
     const articleId = (article as Record<string, unknown>).id as number
     try {
-      const citations = await d1All(database, 'SELECT source_name, source_url, published_date, license_type FROM article_citations WHERE article_id = ?', articleId)
-      const factChecks = await d1All(database, 'SELECT claim, verification_status, evidence_url, checked_by, checked_at, notes FROM article_fact_checks WHERE article_id = ?', articleId)
-      const corrections = await d1All(database, "SELECT original_statement, corrected_statement, reason, corrected_at FROM article_corrections WHERE article_id = ? AND status = 'approved'", articleId)
+      // One parallel wave instead of seven sequential round trips.
+      const [citations, factChecks, corrections, prev, next, tags, languages] = await Promise.all([
+        d1All(database, 'SELECT source_name, source_url, published_date, license_type FROM article_citations WHERE article_id = ?', articleId),
+        d1All(database, 'SELECT claim, verification_status, evidence_url, checked_by, checked_at, notes FROM article_fact_checks WHERE article_id = ?', articleId),
+        d1All(database, "SELECT original_statement, corrected_statement, reason, corrected_at FROM article_corrections WHERE article_id = ? AND status = 'approved'", articleId),
+        // Prev & Next articles for bidirectional reader navigation
+        d1First<{ id: number; title: string; category: string; slug: string }>(
+          database,
+          `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
+           LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
+           WHERE a.id < ? AND ${publicArticleSql} ORDER BY a.id DESC LIMIT 1`,
+          normLang,
+          articleId,
+        ),
+        d1First<{ id: number; title: string; category: string; slug: string }>(
+          database,
+          `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
+           LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
+           WHERE a.id > ? AND ${publicArticleSql} ORDER BY a.id ASC LIMIT 1`,
+          normLang,
+          articleId,
+        ),
+        d1All<{ slug: string; name: string }>(database,
+          'SELECT tg.slug, tg.name FROM article_tags at JOIN tags tg ON tg.id = at.tag_id WHERE at.article_id = ? ORDER BY tg.name', articleId),
+        d1All<{ lang: string }>(database,
+          "SELECT lang FROM article_translations WHERE article_id = ? AND trim(title) <> '' AND trim(content) <> '' ORDER BY lang", articleId),
+      ])
       ;(article as Record<string, unknown>).citations = citations
       ;(article as Record<string, unknown>).factChecks = factChecks
       ;(article as Record<string, unknown>).corrections = corrections
-
-      // Prev & Next articles for bidirectional reader navigation
-      const prev = await d1First<{ id: number; title: string; category: string; slug: string }>(
-        database,
-        `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
-         LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
-         WHERE a.id < ? AND ${publicArticleSql} ORDER BY a.id DESC LIMIT 1`,
-        normLang,
-        articleId,
-      )
-      const next = await d1First<{ id: number; title: string; category: string; slug: string }>(
-        database,
-        `SELECT a.id, COALESCE(t.title, a.title) AS title, a.category, a.slug FROM articles a
-         LEFT JOIN article_translations t ON t.article_id = a.id AND t.lang = ?
-         WHERE a.id > ? AND ${publicArticleSql} ORDER BY a.id ASC LIMIT 1`,
-        normLang,
-        articleId,
-      )
-      const tags = await d1All<{ slug: string; name: string }>(database,
-        'SELECT tg.slug, tg.name FROM article_tags at JOIN tags tg ON tg.id = at.tag_id WHERE at.article_id = ? ORDER BY tg.name', articleId)
-      const languages = await d1All<{ lang: string }>(database,
-        "SELECT lang FROM article_translations WHERE article_id = ? AND trim(title) <> '' AND trim(content) <> '' ORDER BY lang", articleId)
       ;(article as Record<string, unknown>).tags = tags
       ;(article as Record<string, unknown>).availableLanguages = ['ko', ...languages.map(row => row.lang)]
       ;(article as Record<string, unknown>).prevArticle = prev || null

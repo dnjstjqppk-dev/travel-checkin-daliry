@@ -1,6 +1,6 @@
 // checkin-daily/frontend/server/api/articles/[id]/comments.get.ts
 import { createError, defineEventHandler, getRouterParam, setResponseHeader } from 'h3'
-import { getD1Database, d1All, d1First } from '../../../utils/d1'
+import { getD1Database, d1All } from '../../../utils/d1'
 import { buildCommentTree, type RawCommentRow } from '../../../utils/comments-guard'
 
 export default defineEventHandler(async (event) => {
@@ -27,15 +27,11 @@ export default defineEventHandler(async (event) => {
     )
 
     const tree = buildCommentTree(rows)
-    const countRes = await d1First<{ count: number }>(
-      database,
-      `SELECT COUNT(*) as count FROM comments WHERE article_id = ? AND status = 'approved'`,
-      articleId,
-    )
 
     return {
       success: true,
-      totalCount: countRes?.count || 0,
+      // The rows above already hold every approved comment; no second query needed.
+      totalCount: rows.reduce((count, row) => count + (row.status === 'approved' ? 1 : 0), 0),
       comments: tree,
     }
   } catch (err: unknown) {

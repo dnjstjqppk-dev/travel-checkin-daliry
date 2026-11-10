@@ -1,8 +1,10 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { createApp, eventHandler, toWebHandler } from 'h3'
+import { createApp, eventHandler, getRequestURL, toWebHandler } from 'h3'
 import { testDatabase } from './sqlite-d1'
 import { handleD1Api } from '../server/utils/d1-api'
+import commentsGet from '../server/api/articles/[id]/comments.get'
+import type { D1Database } from '../server/utils/d1'
 import { cachedPublic, __clearResponseCache, __responseCacheSize } from '../server/utils/response-cache'
 import { parseRssOrAtomXml } from '../server/utils/feed-parser'
 import { calculateTitleSimilarity, isDuplicateOrClustered } from '../server/utils/text-similarity'
@@ -120,15 +122,39 @@ test('response cache evicts oldest entries past capacity', async () => {
   assert.equal(calls, 506, 'oldest entry was evicted and reloaded')
 })
 
-function apiFixture() {
+function apiFixture(wrap: (database: D1Database) => D1Database = (database) => database) {
   const fixture = testDatabase()
+  const db = wrap(fixture.database)
   const app = createApp()
   app.use(eventHandler(async (event) => {
-    event.context.cloudflare = { env: { DB: fixture.database } }
-    return handleD1Api(event, fixture.database)
+    event.context.cloudflare = { env: { DB: db } }
+    const match = /^\/api\/articles\/(\d+)\/comments$/.exec(getRequestURL(event).pathname)
+    if (match?.[1]) {
+      event.context.params = { id: match[1] }
+      return commentsGet(event)
+    }
+    return handleD1Api(event, db)
   }))
   const fetch = (path: string, init?: RequestInit) => toWebHandler(app)(new Request(`https://local.test${path}`, init))
   return { ...fixture, fetch }
+}
+
+/** Records every SQL statement a request executes, for query-count assertions. */
+function countingDatabase(database: D1Database, seen: string[]): D1Database {
+  return {
+    prepare: (sql: string) => {
+      const inner = database.prepare(sql)
+      const normalized = sql.replace(/\s+/g, ' ').trim()
+      const wrapper = {
+        bind(...values: never[]) { inner.bind(...values); return wrapper },
+        async all() { seen.push(normalized); return inner.all() },
+        async first() { seen.push(normalized); return inner.first() },
+        async run() { seen.push(normalized); return inner.run() },
+      }
+      return wrapper as unknown as ReturnType<D1Database['prepare']>
+    },
+    batch: (statements) => database.batch(statements),
+  }
 }
 
 function seedPublished(sqlite: { prepare: (sql: string) => { run: (...values: unknown[]) => { lastInsertRowid: unknown } } }, overrides: Record<string, unknown> = {}) {
@@ -221,6 +247,66 @@ test('duplicate gate matches the full similarity blend on every threshold', () =
       )
     }
   }
+})
+
+test('missing articles record no analytics and bump no views', async () => {
+  const { sqlite, fetch } = apiFixture()
+  assert.equal((await fetch('/api/articles/id/999999999?category=major')).status, 404)
+  assert.equal((await fetch('/api/articles/no-such-slug-xyz')).status, 404)
+  const events = sqlite.prepare('SELECT COUNT(*) n FROM analytics_events').get() as { n: number }
+  assert.equal(events.n, 0, '404 probes must not write analytics rows')
+  sqlite.close()
+})
+
+test('bare article lists skip the total count query', async () => {
+  const seen: string[] = []
+  const { sqlite, fetch } = apiFixture((database) => countingDatabase(database, seen))
+  seedPublished(sqlite as never)
+  const bare = await fetch('/api/articles?limit=5&sort=views&lang=ko')
+  assert.equal(bare.status, 200)
+  assert.ok(Array.isArray(await bare.json()))
+  assert.ok(seen.every(sql => !/COUNT\(/i.test(sql)), `unexpected COUNT in: ${seen.join(' | ')}`)
+  assert.equal(bare.headers.get('x-total-count'), null)
+  seen.length = 0
+  const paged = await fetch('/api/articles?lang=ko&with_meta=true&page=1&limit=5')
+  const body = await paged.json() as { total_count: number; total_pages: number; data: unknown[] }
+  assert.ok(seen.some(sql => /COUNT\(DISTINCT a\.id\)/i.test(sql)), 'paginated lists still count totals')
+  assert.ok(body.total_count >= body.data.length && body.total_pages >= 1)
+  assert.ok(Number(paged.headers.get('x-total-count')) >= body.data.length)
+  sqlite.close()
+})
+
+test('article detail still fans in citations, tags, languages and neighbours', async () => {
+  const { sqlite, fetch } = apiFixture()
+  const article = seedPublished(sqlite as never)
+  const now = new Date().toISOString()
+  sqlite.prepare('INSERT INTO article_citations (article_id, source_name, source_url, published_date, license_type) VALUES (?, ?, ?, ?, ?)')
+    .run(article.id, 'Probe Source', 'https://example.org/probe', now, 'Official')
+  sqlite.prepare("INSERT INTO article_translations (article_id, lang, title, summary, content) VALUES (?, 'en', ?, ?, ?)")
+    .run(article.id, 'EN title', 'EN summary', 'EN body')
+  sqlite.prepare('INSERT INTO tags (slug, name) VALUES (?, ?) ON CONFLICT(slug) DO NOTHING').run('probe-tag-2', 'Probe Tag 2')
+  sqlite.prepare('INSERT OR IGNORE INTO article_tags (article_id, tag_id) SELECT ?, id FROM tags WHERE slug = ?').run(article.id, 'probe-tag-2')
+  const body = await (await fetch(`/api/articles/id/${article.id}?category=${article.category}&lang=ko`)).json() as Record<string, unknown>
+  assert.equal((body.citations as unknown[]).length, 1)
+  assert.equal((body.tags as Array<{ slug: string }>)[0]!.slug, 'probe-tag-2')
+  assert.ok((body.availableLanguages as string[]).includes('en'))
+  assert.ok('prevArticle' in body && 'nextArticle' in body)
+  sqlite.close()
+})
+
+test('comments total counts approved only while the tree keeps deleted placeholders', async () => {
+  const { sqlite, fetch } = apiFixture()
+  const article = seedPublished(sqlite as never)
+  const now = new Date().toISOString()
+  const insert = sqlite.prepare('INSERT INTO comments (article_id, parent_id, author_name, content, status, like_count, created_at, updated_at) VALUES (?, NULL, ?, ?, ?, 0, ?, ?)')
+  insert.run(article.id, 'Reader One', 'First approved comment here.', 'approved', now, now)
+  insert.run(article.id, 'Reader Two', 'Second approved comment here.', 'approved', now, now)
+  insert.run(article.id, 'Gone', 'Removed by moderator.', 'deleted', now, now)
+  const body = await (await fetch(`/api/articles/${article.id}/comments`)).json() as { totalCount: number; comments: Array<{ content: string }> }
+  assert.equal(body.totalCount, 2)
+  assert.equal(body.comments.length, 3)
+  assert.ok(body.comments.some(comment => comment.content.includes('삭제된 댓글')))
+  sqlite.close()
 })
 
 test('markdown renderer memoizes by content and still sanitizes', () => {
