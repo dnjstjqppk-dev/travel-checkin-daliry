@@ -1,5 +1,6 @@
-import { createError, defineEventHandler, getQuery, setResponseHeader } from 'h3'
+import { createError, defineEventHandler, getQuery, setResponseHeader, type H3Event } from 'h3'
 import { d1First, d1Run, getD1Database, type D1Database } from '../utils/d1'
+import { cachedPublic } from '../utils/response-cache'
 
 const providerUrl = 'https://open.er-api.com/v6/latest/KRW'
 const currenciesByCountry = [
@@ -100,6 +101,13 @@ export default defineEventHandler(async (event) => {
   }
   setResponseHeader(event, 'X-Content-Type-Options', 'nosniff')
 
+  // The D1 row already caches provider data for an hour; this per-isolate
+  // layer skips even the D1 read on repeats. Explicit refresh bypasses both.
+  if (forceRefresh) return loadRates(event, true)
+  return cachedPublic(event, { ttlMs: 300_000, swrMs: 600_000 }, () => loadRates(event, false))
+})
+
+async function loadRates(event: H3Event, forceRefresh: boolean) {
   const database = getD1Database(event)
   const cached = database ? await readCachedRates(database) : null
   const now = Math.floor(Date.now() / 1000)
@@ -144,4 +152,4 @@ export default defineEventHandler(async (event) => {
     )
   }
   return formatRates(latest.rates, latest.time_last_update_utc, false)
-})
+}

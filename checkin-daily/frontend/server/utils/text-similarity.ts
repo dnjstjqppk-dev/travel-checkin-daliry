@@ -107,8 +107,27 @@ export function calculateTitleSimilarity(titleA: string, titleB: string): number
 }
 
 /**
- * Determine whether two news stories should be deduplicated or clustered together
+ * Determine whether two news stories should be deduplicated or clustered together.
+ *
+ * Same verdict as `calculateTitleSimilarity(a, b) >= threshold`, but the
+ * O(m*n) Levenshtein pass is skipped when the cheap bigram/token upper bound
+ * already proves the pair cannot reach the threshold. The 1e-9 slack keeps
+ * the gate exact under floating-point rounding; near-boundary pairs still
+ * take the full path with the identical blend expression.
  */
 export function isDuplicateOrClustered(titleA: string, titleB: string, threshold = 0.60): boolean {
-  return calculateTitleSimilarity(titleA, titleB) >= threshold
+  const normA = normalizeTitle(titleA)
+  const normB = normalizeTitle(titleB)
+  if (normA === normB) return 1.0 >= threshold
+  if (!normA || !normB) return 0.0 >= threshold
+
+  const biSim = jaccardSimilarity(getNGrams(normA, 2), getNGrams(normB, 2))
+  const tokensA = new Set(normA.split(' ').filter((w) => w.length > 1))
+  const tokensB = new Set(normB.split(' ').filter((w) => w.length > 1))
+  const tokenSim = jaccardSimilarity(tokensA, tokensB)
+  if (biSim * 0.5 + tokenSim * 0.25 + 0.25 + 1e-9 < threshold) return false
+
+  const maxLen = Math.max(normA.length, normB.length)
+  const levSim = maxLen > 0 ? 1.0 - levenshteinDistance(normA, normB) / maxLen : 0.0
+  return biSim * 0.5 + levSim * 0.25 + tokenSim * 0.25 >= threshold
 }

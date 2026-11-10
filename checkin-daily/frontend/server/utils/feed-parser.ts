@@ -52,8 +52,9 @@ export async function computeContentHash(title: string, link: string): Promise<s
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem[]> {
+export async function parseRssOrAtomXml(xmlText: string, maxItems = 30): Promise<ParsedFeedItem[]> {
   const items: ParsedFeedItem[] = []
+  const cap = Math.max(1, Math.min(500, Math.floor(maxItems) || 30))
 
   // Check if Atom (<entry>) or RSS (<item>)
   const isAtom = /<feed\b[^>]*>/i.test(xmlText) && /<entry\b[^>]*>/i.test(xmlText)
@@ -80,6 +81,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
       if (title && link) {
         const contentHash = await computeContentHash(title, link)
         items.push({ guid, title, link, pubDate, summary, category, contentHash, imageUrl: extractMediaUrl(entryXml) })
+        if (items.length >= cap) break
       }
     }
   } else {
@@ -105,6 +107,7 @@ export async function parseRssOrAtomXml(xmlText: string): Promise<ParsedFeedItem
       if (title && link) {
         const contentHash = await computeContentHash(title, link)
         items.push({ guid, title, link, pubDate, summary, category, contentHash, imageUrl: extractMediaUrl(itemXml) })
+        if (items.length >= cap) break
       }
     }
   }

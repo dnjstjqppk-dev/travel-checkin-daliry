@@ -2,6 +2,7 @@ import { publicArticleSql, sitemapPage } from '../utils/sitemap-data'
 import { escapeXml, isRecentPublication, publicationDate } from '../utils/syndication'
 import { createError, defineEventHandler, setResponseHeader } from 'h3'
 import { d1All, d1First, getD1Database } from '../utils/d1'
+import { cachedPublic } from '../utils/response-cache'
 import { resolveBaseUrl } from '../utils/site-domain'
 
 interface GoogleNewsRow {
@@ -15,8 +16,10 @@ interface GoogleNewsRow {
 
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
-  setResponseHeader(event, 'Cache-Control', 'no-cache')
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=900, s-maxage=900, stale-while-revalidate=1800')
 
+  // Google News polls this endpoint; the 48h article set barely changes minute to minute.
+  return cachedPublic(event, { ttlMs: 900_000, swrMs: 1_800_000 }, async () => {
   const page = sitemapPage(event)
   const baseUrl = await resolveBaseUrl(event)
   const database = getD1Database(event)
@@ -77,5 +80,6 @@ export default defineEventHandler(async (event) => {
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${urlNodes}
 </urlset>`
+  })
 })
 

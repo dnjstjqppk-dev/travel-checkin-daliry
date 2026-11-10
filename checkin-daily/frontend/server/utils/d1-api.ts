@@ -23,6 +23,13 @@ import {
   verifyPassword,
 } from './d1-auth'
 import { d1All, d1First, d1Run, getWorkerEnvironment, type D1Database } from './d1'
+import { cachedPublic } from './response-cache'
+
+// Per-isolate TTLs for public GETs. Short enough that editorial changes
+// surface within a minute, long enough to absorb crawler bursts without
+// re-running D1 on every hit.
+const articleCache = { ttlMs: 60_000, swrMs: 300_000 }
+const referenceCache = { ttlMs: 300_000, swrMs: 900_000 }
 import { validateArticleForPublish } from './article-validator'
 import { siteConfig } from '../../config/site.config'
 import { publicArticleSql } from './sitemap-data'
@@ -289,7 +296,8 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
   const method = event.method
   const lang = (url.searchParams.get('lang') ?? 'ko').trim().toLowerCase()
   if (method === 'GET' && path.length === 0) {
-    return respond(event, await listArticles(event, database, url, admin))
+    // cachedPublic bypasses /api/admin/* internally, so admin lists stay live.
+    return respond(event, await cachedPublic(event, articleCache, () => listArticles(event, database, url, admin)))
   }
   if (method === 'GET' && path.length === 2 && path[0] === 'id' && !admin) {
     const id = Number(path[1] ?? '')
@@ -297,8 +305,9 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
     const category = canonicalCategory(normalizeSlug(url.searchParams.get('category') ?? ''))
     const condition = category ? `a.id = ? AND ${publicArticleSql} AND a.category = ?` : `a.id = ? AND ${publicArticleSql}`
     const values: Array<string | number> = category ? [id, category] : [id]
-    await incrementArticleView(event, database, id, category || undefined)
-    const article = await getArticle(database, condition, lang, ...values)
+    await trackArticleView(event, database, id, category || undefined)
+    // Misses (null) are never cached, so newly published stories appear at once.
+    const article = await cachedPublic(event, articleCache, () => getArticle(database, condition, lang, ...values))
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
   if (method === 'GET' && path.length === 1 && !admin) {
@@ -309,8 +318,8 @@ async function handleArticles(event: H3Event, database: D1Database, path: string
       slug,
     )
     if (!existing) return respond(event, { error: 'article not found' }, 404)
-    await incrementArticleView(event, database, existing.id)
-    const article = await getArticle(database, `a.slug = ? AND ${publicArticleSql}`, lang, slug)
+    await trackArticleView(event, database, existing.id)
+    const article = await cachedPublic(event, articleCache, () => getArticle(database, `a.slug = ? AND ${publicArticleSql}`, lang, slug))
     return article ? respond(event, article) : respond(event, { error: 'article not found' }, 404)
   }
   if (method === 'GET' && path.length === 1 && admin) {
@@ -654,44 +663,65 @@ function groupArticles(rows: ArticleJoinRow[]): Record<string, unknown>[] {
   return [...articles.values()]
 }
 
-async function incrementArticleView(event: H3Event, database: D1Database, articleId: number, category?: string) {
+async function trackArticleView(event: H3Event, database: D1Database, articleId: number, category?: string) {
   const userAgent = (getRequestHeader(event, 'user-agent') || '').toLowerCase()
   const isBot = /bot|crawl|spider|slurp|headless|lighthouse|mediapartners|google|bing|yandex|baidu|facebookexternalhit|whatsapp|telegram/i.test(userAgent)
+  const referrer = getRequestHeader(event, 'referer') ? 'referral' : 'direct'
+  const userAgentSample = userAgent.slice(0, 100)
 
-  try {
-    await d1Run(
-      database,
-      `INSERT INTO analytics_events (article_id, event_type, bot_classification, referrer_category, target_platform, meta_json)
-       VALUES (?, 'page_view', ?, ?, '', ?)`,
-      articleId,
-      isBot ? 'crawler' : 'human',
-      getRequestHeader(event, 'referer') ? 'referral' : 'direct',
-      JSON.stringify({ ua: userAgent.slice(0, 100) }),
-    )
-  } catch {
-    // Analytics error ignored
-  }
-
-  if (!isBot) {
-    if (category) {
+  const task = (async () => {
+    try {
       await d1Run(
         database,
-        'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ? AND category = ?',
+        `INSERT INTO analytics_events (article_id, event_type, bot_classification, referrer_category, target_platform, meta_json)
+         VALUES (?, 'page_view', ?, ?, '', ?)`,
         articleId,
-        'published',
-        category,
+        isBot ? 'crawler' : 'human',
+        referrer,
+        JSON.stringify({ ua: userAgentSample }),
       )
-      return
+    } catch {
+      // Analytics error ignored
     }
-    await d1Run(database, 'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ?', articleId, 'published')
+
+    if (!isBot) {
+      try {
+        if (category) {
+          await d1Run(
+            database,
+            'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ? AND category = ?',
+            articleId,
+            'published',
+            category,
+          )
+          return
+        }
+        await d1Run(database, 'UPDATE articles SET view_count = view_count + 1 WHERE id = ? AND status = ?', articleId, 'published')
+      } catch {
+        // View-count error ignored
+      }
+    }
+  })()
+
+  // Analytics must not serialize in front of the response: on Workers it runs
+  // after the response is sent. Runtimes without waitUntil (tests, CLI) await
+  // it so the side effect stays observable.
+  const waitUntil = (event as unknown as { waitUntil?: unknown }).waitUntil
+  if (typeof waitUntil === 'function') {
+    (waitUntil as (promise: Promise<unknown>) => void)(task.catch(() => {}))
+    return
   }
+  await task
 }
 
 async function handleCategories(event: H3Event, database: D1Database, path: string[]) {
   const method = event.method
   if (method === 'GET' && path.length === 0) {
-    const rows = await d1All<CategoryRow>(database, 'SELECT * FROM categories ORDER BY id ASC')
-    return respond(event, rows.map(categoryJson))
+    const body = await cachedPublic(event, referenceCache, async () => {
+      const rows = await d1All<CategoryRow>(database, 'SELECT * FROM categories ORDER BY id ASC')
+      return rows.map(categoryJson)
+    })
+    return respond(event, body)
   }
   if (method === 'POST' && path.length === 0 && isAdminPath(event)) return createCategory(event, database)
   if (method === 'PUT' && path.length === 1 && isAdminPath(event)) return updateCategory(event, database, path[0] ?? '')
@@ -702,8 +732,11 @@ async function handleCategories(event: H3Event, database: D1Database, path: stri
 async function handleCountries(event: H3Event, database: D1Database, path: string[]) {
   const method = event.method
   if (method === 'GET' && path.length === 0) {
-    const rows = await d1All<CountryRow>(database, 'SELECT * FROM countries ORDER BY sort_order ASC, name_en ASC')
-    return respond(event, rows.map(countryJson))
+    const body = await cachedPublic(event, referenceCache, async () => {
+      const rows = await d1All<CountryRow>(database, 'SELECT * FROM countries ORDER BY sort_order ASC, name_en ASC')
+      return rows.map(countryJson)
+    })
+    return respond(event, body)
   }
   if (method === 'GET' && path.length === 2 && path[1] === 'cities') {
     return listCities(event, database, path[0] ?? '')
@@ -719,24 +752,31 @@ async function handleCountries(event: H3Event, database: D1Database, path: strin
 
 async function listCities(event: H3Event, database: D1Database, code: string) {
   const countryCode = code.trim().toUpperCase()
-  const country = await d1First<{ code: string }>(database, 'SELECT code FROM countries WHERE code = ?', countryCode)
-  if (!country) return respond(event, { error: 'country not found' }, 404)
-  const cities = await d1All<CityRow>(
-    database,
-    'SELECT * FROM cities WHERE country_code = ? ORDER BY name_en ASC',
-    countryCode,
-  )
-  return respond(event, cities.map(cityJson))
+  const body = await cachedPublic(event, referenceCache, async () => {
+    const country = await d1First<{ code: string }>(database, 'SELECT code FROM countries WHERE code = ?', countryCode)
+    if (!country) return null
+    const cities = await d1All<CityRow>(
+      database,
+      'SELECT * FROM cities WHERE country_code = ? ORDER BY name_en ASC',
+      countryCode,
+    )
+    return cities.map(cityJson)
+  })
+  if (!body) return respond(event, { error: 'country not found' }, 404)
+  return respond(event, body)
 }
 
 async function handleAds(event: H3Event, database: D1Database, path: string[], admin: boolean) {
   const method = event.method
   if (method === 'GET' && path.length === 0) {
-    const rows = await d1All<AdPlacementRow>(
-      database,
-      `SELECT * FROM ad_placements ${admin ? '' : 'WHERE is_active = 1'} ORDER BY id ASC`,
-    )
-    return respond(event, rows.map(adPlacementJson))
+    const body = await cachedPublic(event, referenceCache, async () => {
+      const rows = await d1All<AdPlacementRow>(
+        database,
+        `SELECT * FROM ad_placements ${admin ? '' : 'WHERE is_active = 1'} ORDER BY id ASC`,
+      )
+      return rows.map(adPlacementJson)
+    })
+    return respond(event, body)
   }
   if (method === 'POST' && path.length === 0 && admin) return createAdPlacement(event, database)
   if (method === 'PUT' && path.length === 1 && admin) return updateAdPlacement(event, database, path[0] ?? '')
@@ -1404,34 +1444,36 @@ async function handleSettings(event: H3Event, database: D1Database, path: string
   const method = event.method
 
     if (method === 'GET' && path.length === 0) {
-    const rows = await d1All<{ key: string; value: string }>(
-      database,
-      'SELECT key, value FROM site_settings'
-    ).catch(() => [])
+    const merged = await cachedPublic(event, referenceCache, async () => {
+      const rows = await d1All<{ key: string; value: string }>(
+        database,
+        'SELECT key, value FROM site_settings'
+      ).catch(() => [])
 
-    const dbMap: Record<string, string> = {}
-    for (const r of rows) {
-      dbMap[r.key] = r.value
-    }
+      const dbMap: Record<string, string> = {}
+      for (const r of rows) {
+        dbMap[r.key] = r.value
+      }
 
-    // Statutory publisher fields are returned only as configured — never with invented defaults.
-    const merged = {
-      company_name: dbMap.company_name || '',
-      representative: dbMap.representative || '',
-      business_number: dbMap.business_number || '',
-      mail_order_number: dbMap.mail_order_number || '',
-      newspaper_number: dbMap.newspaper_number || '',
-      youth_protection_officer: dbMap.youth_protection_officer || '',
-      publisher: dbMap.publisher || '',
-      address: dbMap.address || '',
-      contact_email: dbMap.contact_email || '',
-      contact_phone: dbMap.contact_phone || '',
-      site_url: dbMap.site_url || siteConfig.domain,
-      brand_name: dbMap.brand_name || 'CHECK-IN',
-      brand_subname: dbMap.brand_subname || 'DAILY',
-      slogan: dbMap.slogan || '글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어',
-      description: dbMap.description || '전 세계 항공, 호텔, 여행지 트렌드 및 여행 정책을 가장 빠르고 깊이 있게 전달하는 글로벌 여행 전문 디지털 뉴스룸',
-    }
+      // Statutory publisher fields are returned only as configured — never with invented defaults.
+      return {
+        company_name: dbMap.company_name || '',
+        representative: dbMap.representative || '',
+        business_number: dbMap.business_number || '',
+        mail_order_number: dbMap.mail_order_number || '',
+        newspaper_number: dbMap.newspaper_number || '',
+        youth_protection_officer: dbMap.youth_protection_officer || '',
+        publisher: dbMap.publisher || '',
+        address: dbMap.address || '',
+        contact_email: dbMap.contact_email || '',
+        contact_phone: dbMap.contact_phone || '',
+        site_url: dbMap.site_url || siteConfig.domain,
+        brand_name: dbMap.brand_name || 'CHECK-IN',
+        brand_subname: dbMap.brand_subname || 'DAILY',
+        slogan: dbMap.slogan || '글로벌 여행 인텔리전스 & 마켓 트렌드 뉴스 미디어',
+        description: dbMap.description || '전 세계 항공, 호텔, 여행지 트렌드 및 여행 정책을 가장 빠르고 깊이 있게 전달하는 글로벌 여행 전문 디지털 뉴스룸',
+      }
+    })
     return respond(event, merged)
   }
 

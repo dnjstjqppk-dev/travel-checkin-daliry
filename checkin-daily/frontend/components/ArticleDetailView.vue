@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { marked } from 'marked'
-import DOMPurify from 'isomorphic-dompurify'
+import { renderMarkdown } from '~/utils/render-markdown'
 import type { Article } from '~/stores/articles'
 import { FALLBACK_COVER_IMAGE, categoryCoverImage } from '~/utils/editorial-media'
 import { HREFLANG, LOCALES, type LocaleCode } from '~/config/locales'
@@ -19,30 +18,8 @@ try {
 
 const SUPPORTED = LOCALES
 
-function escapeAttribute(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
 function headingId(text: string): string {
   return 'sec-' + text.toLowerCase().replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/(^-|-$)/g, '')
-}
-
-function renderMarkdown(raw: string): string {
-  const renderer = new marked.Renderer()
-  renderer.image = ({ href, title, text }) => {
-    const caption = title ? `<figcaption>${escapeAttribute(title)}</figcaption>` : ''
-    return `<figure class="body-figure"><img src="${escapeAttribute(href || '')}" alt="${escapeAttribute(text || '')}" loading="lazy" decoding="async">${caption}</figure>`
-  }
-  renderer.heading = ({ tokens, depth }) => {
-    const inner = renderer.parser.parseInline(tokens)
-    return `<h${depth} id="${headingId(inner)}">${inner}</h${depth}>`
-  }
-  try {
-    const parsed = marked.parse(raw || '', { renderer, async: false }) as string
-    return DOMPurify.sanitize(parsed, { ADD_ATTR: ['loading', 'decoding'] })
-  } catch {
-    return escapeAttribute(raw || '')
-  }
 }
 
 const html = computed(() => renderMarkdown(article.content || ''))

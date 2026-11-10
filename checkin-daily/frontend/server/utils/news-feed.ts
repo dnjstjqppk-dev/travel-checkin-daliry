@@ -1,6 +1,7 @@
 import { LOCALES } from '../../config/locales'
 import { createError, getQuery, setResponseHeader, type H3Event } from 'h3'
 import { d1All, getD1Database } from './d1'
+import { cachedPublic } from './response-cache'
 import { publicArticleSql } from './sitemap-data'
 import { escapeXml, publicationDate } from './syndication'
 import { resolveBaseUrl } from './site-domain'
@@ -19,6 +20,10 @@ export async function newsFeed(event: H3Event, format: 'rss' | 'atom', categoryO
   const base = await resolveBaseUrl(event)
   const translated = lang !== 'ko'
   const filter = category === 'breaking' ? ' AND a.is_breaking = 1' : category && category !== 'latest' ? ' AND a.category = ?' : ''
+  // Feed readers poll aggressively; serve repeats from the per-isolate cache.
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=900, s-maxage=900, stale-while-revalidate=1800')
+  setResponseHeader(event, 'Content-Type', `application/${format === 'rss' ? 'rss' : 'atom'}+xml; charset=utf-8`)
+  return cachedPublic(event, { ttlMs: 900_000, swrMs: 1_800_000 }, async () => {
   const rows = await d1All<FeedRow>(database, `SELECT a.id, ${translated ? 't.title, t.summary' : 'a.title, a.summary'},
     a.category, a.author, a.published_at, a.updated_at, a.source_name, a.source_url FROM articles a
     ${translated ? "JOIN article_translations t ON t.article_id = a.id AND t.lang = ? AND trim(t.title) <> '' AND trim(t.content) <> ''" : ''}
@@ -31,8 +36,6 @@ export async function newsFeed(event: H3Event, format: 'rss' | 'atom', categoryO
   const updated = articles.map(row => publicationDate(row.updated_at) || publicationDate(row.published_at)!)
     .sort((a,b) => b.getTime() - a.getTime())[0]?.toISOString() || '1970-01-01T00:00:00.000Z'
   const e = escapeXml
-  setResponseHeader(event, 'Cache-Control', 'no-cache')
-  setResponseHeader(event, 'Content-Type', `application/${format === 'rss' ? 'rss' : 'atom'}+xml; charset=utf-8`)
   if (format === 'atom') return `<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="${lang}">
     <id>${e(self)}</id><title>Check-in Daily</title><updated>${updated}</updated>
     <link href="${e(base)}"/><link rel="self" href="${e(self)}"/>
@@ -49,4 +52,5 @@ export async function newsFeed(event: H3Event, format: 'rss' | 'atom', categoryO
       <dc:creator>${e(row.author || 'Check-in Daily')}</dc:creator><category>${e(row.category)}</category><description>${e(row.summary || '')}</description>
       ${/^https:\/\//.test(row.source_url) ? `<source url="${e(row.source_url)}">${e(row.source_name || 'Original source')}</source>` : ''}</item>`).join('')}
     </channel></rss>`
+  })
 }

@@ -11,6 +11,7 @@ import rss from '../server/routes/rss.xml'
 import atom from '../server/routes/atom.xml'
 import news from '../server/routes/news-sitemap.xml'
 import sitemap from '../server/routes/sitemap.xml'
+import { __clearResponseCache } from '../server/utils/response-cache'
 const { JSDOM } = createRequire(import.meta.url)('jsdom')
 
 function appFixture() {
@@ -52,6 +53,8 @@ test('HTTP feeds serialize hostile text, preserve GUID and exclude drafts/future
   const untranslated = parseXml(await (await fetch('/rss.xml?lang=en')).text())
   assert.equal(untranslated.querySelectorAll('item').length, 0)
   sqlite.prepare('UPDATE articles SET retracted_at = ? WHERE id = ?').run(now, id)
+  // Public feeds are served from a short-TTL in-Worker cache; expiry must pick up the retraction.
+  __clearResponseCache()
   assert.equal(parseXml(await (await fetch('/rss.xml')).text()).querySelectorAll('item').length, 0)
   sqlite.close()
 })
